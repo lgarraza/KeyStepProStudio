@@ -94,9 +94,12 @@ Icon: the white chassis, black display strip and the four track colours, drawn b
   A strip under the tabs summarises the project (scenes saved, patterns recorded, and per track its patterns, chains and pattern lengths); in the matrix the
   hovered scene and track are highlighted and a chain shows as a strip along the bottom of the cell, one segment per pattern, wide as its length.
   Screenshots to add under `docs/manual/img/` once taken on Windows: `project-map-matrix.png`, `project-map-chains.png`, `project-map-bank.png`.
-- **Generate...** (top row): the ambient generator inside the app. Choose a **mood** (Classic, Ethereal, Dark, Meditative), a **seed** (New seed rolls a
+- **Generate...** (top row): the generator inside the app. Choose a **style** (Ambient, or the `Gen/Styles.h` families Techno, House, Drum & bass) and a
+  **mood** (Ambient: Classic, Ethereal, Dark, Meditative; House: Deep, Chill, Melodic; one each for Techno and Drum & bass), a **seed** (New seed rolls a
   number; the same seed gives the same music), whether the scenes **chain** the variations and whether the time divisions are **slow**, and
   **Generate into this project**: patterns 1-4 of the four tracks and scenes 1-8 of the project that is open are replaced (drums, the arpeggiator
-  and other patterns are left alone). Then play it through the instruments with the KeyStep, hear it, edit it, **Save** it to the library and load it into
+  and other patterns are left alone). A style instead puts track 1 in drum mode, writes drum patterns 1-4 there (default drum map, GM notes),
+  patterns 1-4 of tracks 2-4 (bass, chords, lead, with their division and Mono/Poly) and scenes 1-4; and the project's tempo (techno 130, house 118-128, dnb 174 BPM). While
+  track 1 is in drum mode its instrument listens on channel 10 (the KeyStep's default Drum output). Then play it through the instruments with the KeyStep, hear it, edit it, **Save** it to the library and load it into
   a slot with **Write to slot**. **Undo** brings the project back as it was before the last generation. The settings used are saved with the project
-  (the library file keeps the mood and the seed). It needs a project open (a library project, a backup or one read from the KeyStep).
+  (the library file keeps the style, the mood and the seed). It needs a project open (a library project, a backup or one read from the KeyStep).

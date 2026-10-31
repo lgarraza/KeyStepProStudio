@@ -1,6 +1,6 @@
-// gen_test: Source/Gen/Ambient.h (the ambient pattern generator). No JUCE.
+// gen_test: Source/Gen (the ambient generator, the role engine and the style presets). No JUCE.
 #include <cstdio>
-#include "Gen/Ambient.h"
+#include "Gen/Styles.h"
 
 static int failures = 0;
 
@@ -163,8 +163,8 @@ int main()
         for (const auto& h : d.hits)
         {
             kicks += h.lane == 0;
-            snares += h.lane == 1;
-            hats += h.lane == 2 || h.lane == 3;
+            snares += h.lane == 2;
+            hats += h.lane == 6 || h.lane == 10;
         }
         CHECK (6, kicks == 4 && snares >= 2 && hats == 8);
         const auto d2 = gen::makeDrumPattern (mp, ds, 0);
@@ -176,6 +176,67 @@ int main()
         odd.length = 3;
         odd.kickPulses = 9;
         CHECK (6, check (gen::makeDrumPattern (mp, odd, 1)).empty());
+    }
+
+    // 7. Styles: drums on track 1 (drum mode), roles on 2-4, valid and deterministic; fixed kicks, offbeat hats, fill
+    {
+        CHECK (7, gen::styles().size() == 5 && gen::findStyle ("house-chill") != nullptr && gen::findStyle ("dark") == nullptr);
+        for (const auto& st : gen::styles())
+        {
+            auto proj = p;
+            auto sp = gen::styleParams (st, 3);
+            CHECK (7, gen::applyStyle (proj, st, sp).empty() && gen::applyScenes (proj, sp, false).empty());
+            CHECK (7, isDrumMode (proj));
+            for (int v = 1; v <= 4; ++v)
+            {
+                const auto d = readDrumPattern (proj, v);
+                CHECK (7, d.valid && check (d).empty() && d.hits.size() >= 8);
+                for (int t = 2; t <= 4; ++t)
+                {
+                    const auto pt = readPattern (proj, t, v);
+                    CHECK (7, pt.valid && check (pt).empty());
+                    CHECK (7, divisionBits (pt) == static_cast<int> (st.tracks[t - 2].division) && isPoly (pt) == st.tracks[t - 2].poly);
+                    int notes = 0;
+                    for (const auto& s : pt.steps)
+                        for (const auto& n : s.notes)
+                        {
+                            ++notes;
+                            const auto& siv = gen::intervals (st.scale);
+                            CHECK (7, std::find (siv.begin(), siv.end(), ((n.pitch - st.root) % 12 + 12) % 12) != siv.end());
+                        }
+                    CHECK (7, notes > 0);
+                }
+            }
+            CHECK (7, readScene (proj, 4).valid);
+            CHECK (7, std::abs (gen::tempo (proj) - st.bpm) < 0.001);
+            auto again = p;
+            CHECK (7, gen::applyStyle (again, st, sp).empty() && readDrumPattern (again, 2).hits.size() == readDrumPattern (proj, 2).hits.size());
+        }
+        auto tp = p;
+        CHECK (7, gen::setTempo (tp, 120.0) && *cell (tp, item::project, 0x46, { 1 }) == (12000 & 0x7F)
+                  && *cell (tp, item::project, 0x47, { 1 }) == ((12000 >> 7) & 0x7F) && *cell (tp, item::project, 0x48, { 1 }) == 0);
+        *cell (tp, item::project, 0x46, { 1 }) = 127;
+        *cell (tp, item::project, 0x47, { 1 }) = 127;
+        *cell (tp, item::project, 0x48, { 1 }) = 3;
+        CHECK (7, gen::tempo (tp) == 0.0);
+        const auto& dnb = *gen::findStyle ("dnb");
+        const auto groove = gen::makeDrumPattern (gen::styleParams (dnb), dnb.drums, 0);
+        std::vector<int> kickAt;
+        for (const auto& h : groove.hits)
+            if (h.lane == 0)
+                kickAt.push_back (h.step);
+        CHECK (7, kickAt == std::vector<int> ({ 0, 10 }));
+        const auto& house = *gen::findStyle ("house");
+        int open = 0;
+        for (const auto& h : gen::makeDrumPattern (gen::styleParams (house), house.drums, 0).hits)
+            open += h.lane == 10 && h.step % 4 == 2;
+        CHECK (7, open == 4);
+        auto withFill = dnb.drums;
+        withFill.fill = true;
+        CHECK (7, gen::makeDrumPattern (gen::styleParams (dnb), withFill, 0).hits.size() > groove.hits.size());
+        gen::RoleSpec stab { gen::Role::stab, 16, -1, 60, 5, 4, 2, 20 };
+        const auto sp = gen::makeRolePattern (gen::styleParams (house), stab, 0, Note {});
+        CHECK (7, sp.steps[2].notes.size() == 5 && sp.steps[6].notes.size() == 5 && sp.steps[0].notes.empty() && sp.steps[2].notes[0].gate == 20);
     }
 
     std::printf ("track 3 pattern 1: %s\n", gen::preview (a).c_str());

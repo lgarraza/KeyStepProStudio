@@ -16,7 +16,7 @@
 #include "LibraryWindow.h"
 #include "GeneratorWindow.h"
 #include "ProjectMapWindow.h"
-#include "Gen/Ambient.h"
+#include "Gen/Styles.h"
 #include "MidiMonitor.h"
 #include "PluginTable.h"
 #include "Studio/Library.h"
@@ -1403,6 +1403,8 @@ private:
 
     void loadPattern()
     {
+        // in drum mode the KeyStep plays track 1 on the drum channel (Drum output, 10 by default), not on the track's own
+        engine.setChannel (0, haveProject && ksp::model::isDrumMode (project) ? 10 : 1);
         stopRecording();
         haveTake = false;
         undoTakeButton.setEnabled (false);
@@ -2005,19 +2007,19 @@ private:
         generatorWindow = std::make_unique<ksp::ui::GeneratorWindow> (
             [self] { juce::MessageManager::callAsync ([self] { if (self != nullptr) self->generatorWindow.reset(); }); });
         auto& panel = generatorWindow->content();
-        panel.onGenerate = [self] (const juce::String& mood, unsigned seed, bool chains, bool slow) {
+        panel.onGenerate = [self] (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow) {
             if (self != nullptr)
-                self->generateInto (mood, seed, chains, slow);
+                self->generateInto (style, mood, seed, chains, slow);
         };
         panel.onUndo = [self] { if (self != nullptr) self->undoGenerate(); };
         if (haveStudio)   // the settings the project was generated with
-            panel.setState (juce::String (current.generator.mood), current.generator.seed, current.generator.chains, current.generator.slow,
-                            beforeGenerate.has_value());
+            panel.setState (juce::String (current.generator.style), juce::String (current.generator.mood), current.generator.seed,
+                            current.generator.chains, current.generator.slow, beforeGenerate.has_value());
         else
             panel.setCanUndo (beforeGenerate.has_value());
     }
 
-    void generateInto (const juce::String& mood, unsigned seed, bool chains, bool slow)
+    void generateInto (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow)
     {
         if (! haveProject)
         {
@@ -2028,15 +2030,17 @@ private:
         commitPattern();
         edited = false;
         const auto before = project;
-        auto params = ksp::gen::moodParams (mood.toStdString(), seed);
+        const auto* preset = ksp::gen::findStyle (style.toStdString());
+        auto params = preset != nullptr ? ksp::gen::styleParams (*preset, seed) : ksp::gen::moodParams (mood.toStdString(), seed);
         params.chains = chains;
-        params.slow = slow;
+        if (preset == nullptr)
+            params.slow = slow;
         std::string error;
         try
         {
-            error = ksp::gen::apply (project, params);
+            error = preset != nullptr ? ksp::gen::applyStyle (project, *preset, params) : ksp::gen::apply (project, params);
             if (error.empty())
-                error = ksp::gen::applyScenes (project, params);
+                error = ksp::gen::applyScenes (project, params, preset == nullptr);
         }
         catch (const std::exception& e)
         {
@@ -2050,11 +2054,15 @@ private:
         }
         beforeGenerate = before;
         noteChanged();
-        current.generator = ksp::studio::Generator { mood.toStdString(), seed, chains, slow };
+        current.generator = ksp::studio::Generator { mood.toStdString(), seed, chains, slow, preset != nullptr ? preset->name : "ambient" };
         loadPattern();
         if (generatorWindow != nullptr)
             generatorWindow->content().setCanUndo (true);
-        say ("Generated " + mood + ", seed " + juce::String (seed) + ": patterns 1-4 and scenes 1-8 (not saved, not on the KeyStep yet).");
+        if (preset != nullptr)
+            say ("Generated " + juce::String (preset->label) + ", seed " + juce::String (seed) + ": drums on track 1, patterns 1-4 and scenes 1-4, "
+                 + juce::String (preset->bpm) + " BPM (not saved, not on the KeyStep yet; the grid does not show drum patterns yet).");
+        else
+            say ("Generated " + mood + ", seed " + juce::String (seed) + ": patterns 1-4 and scenes 1-8 (not saved, not on the KeyStep yet).");
     }
 
     void undoGenerate()

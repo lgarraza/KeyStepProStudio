@@ -24,4 +24,4 @@ Protocol details (frames, quirks) live in [`../protocolo.md`](../protocolo.md), 
 | 1b | KspRestore: one project to a slot, backup first, read-back | done, verified (project 1 to slot 16) |
 | 2 | Pattern model + Studio app (edit notes, overdub from the KeyStep, write to slots 10-16) | model + app done; edit and write to slot 15 verified by read-back (device display not yet checked); overdub built, not yet tried with the KeyStep |
 | 3 | VSTi host per track: one VST3 instrument per track, inserts and master chain, KeyStep as clock, WAV recording | done, used live |
-| 4 | Ambient generator (patterns, scenes, chains, moods) | in progress |
+| 4 | Generator: ambient (moods) and style presets techno / house / drum & bass (drums on track 1) | in progress |

@@ -2,18 +2,18 @@
     KspGen: experiment, generates ambient patterns (Source/Gen/Ambient.h) into a test slot of the KeyStep Pro.
     Without --write it only reads the slot and shows what it would write (a dry run). WRITES to the device with --write.
 
-        KspGen [--to 16] [--seed N] [--root 2] [--scale 3] [--tracks 1-4] [--variations 4] [--no-scenes] [--no-slow] [--chains] [--mood classic|ethereal|dark|meditative] [--write] [--device "KeyStep Pro"]
+        KspGen [--to 16] [--seed N] [--root 2] [--scale 3] [--tracks 1-4] [--variations 4] [--no-scenes] [--no-slow] [--chains] [--mood classic|ethereal|dark|meditative] [--style techno|house|house-chill|house-melodic|dnb] [--write] [--device "KeyStep Pro"]
 
     Any slot 1-16. Steps: read the slot and save it to Backups (ksp-pre-restore-P<n>-...), put patterns 1..variations of
     the chosen tracks over what the slot has (everything else in the slot stays), save the generated project to
     Documents/KeyStepPro Studio/Generated/, write, commit and read back to compare (Device::writeSlot, like KspRestore).
-    Track 1 is written as a sequencer track: if it is in drum mode on the device its notes will not play as a melody.
+    Track 1 is written as a sequencer track, or with --style as a drum pattern (track 1 goes to drum mode).
 */
 
 #include <iostream>
 #include <juce_core/juce_core.h>
 #include <juce_events/juce_events.h>
-#include "Gen/Ambient.h"
+#include "Gen/Styles.h"
 #include "Ksp/Device.h"
 
 int main (int argc, char* argv[])
@@ -50,6 +50,18 @@ int main (int argc, char* argv[])
             params.root = m.root;
         if (! args.contains ("--scale"))
             params.scale = m.scale;
+    }
+    const auto* style = ksp::gen::findStyle (option ("--style", "").toStdString());
+    if (args.contains ("--style"))
+    {
+        if (style == nullptr)
+        {
+            std::cout << "--style: techno, house, house-chill, house-melodic or dnb" << std::endl;
+            return 2;
+        }
+        const int variations = params.variations;
+        params = ksp::gen::styleParams (*style, params.seed);   // the style's key and chords (track 1 goes to drum mode)
+        params.variations = variations;
     }
     params.chains = args.contains ("--chains");
     const auto tr = option ("--tracks", "1-4");
@@ -95,13 +107,15 @@ int main (int argc, char* argv[])
     std::cout << "Saved: " << preFile.getFullPathName() << std::endl;
 
     ksp::ProjectData project = device->slotBefore();
-    if (auto e = ksp::gen::apply (project, params, firstTrack, lastTrack); ! e.empty())
+    if (auto e = style != nullptr ? ksp::gen::applyStyle (project, *style, params, firstTrack, lastTrack)
+                                  : ksp::gen::apply (project, params, firstTrack, lastTrack);
+        ! e.empty())
     {
         std::cout << "ERROR: " << e << std::endl;
         return 1;
     }
     if (! args.contains ("--no-scenes"))
-        if (auto e = ksp::gen::applyScenes (project, params); ! e.empty())
+        if (auto e = ksp::gen::applyScenes (project, params, style == nullptr); ! e.empty())
         {
             std::cout << "ERROR: " << e << std::endl;
             return 1;
@@ -109,8 +123,16 @@ int main (int argc, char* argv[])
     std::cout << "Generated (seed " << params.seed << ", root " << ksp::pitchClassName (params.root) << ", "
               << ksp::scaleName (params.scale) << "): " << ksp::summary (project) << std::endl;
     for (int t = firstTrack; t <= lastTrack; ++t)
-        std::cout << "  track " << t << " pattern 1 (" << ksp::gen::kLengths[t - 1] << " steps): "
-                  << ksp::gen::preview (ksp::model::readPattern (project, t, 1)) << std::endl;
+    {
+        if (t == 1 && style != nullptr)
+        {
+            const auto d = ksp::model::readDrumPattern (project, 1);
+            std::cout << "  track 1 drum pattern 1 (" << d.length << " steps): " << d.hits.size() << " hits" << std::endl;
+            continue;
+        }
+        const auto pt = ksp::model::readPattern (project, t, 1);
+        std::cout << "  track " << t << " pattern 1 (" << pt.length << " steps): " << ksp::gen::preview (pt) << std::endl;
+    }
 
     const auto outDir = ksp::backupsFolder().getParentDirectory().getChildFile ("Generated");
     const auto outFile = outDir.getChildFile ("gen-seed" + juce::String (params.seed) + "-P" + juce::String (to) + "-"

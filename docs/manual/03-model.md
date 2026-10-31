@@ -22,10 +22,13 @@
   and flags are left as they are. NOT yet verified on hardware: do a slot 10-16 round trip (backup first) before relying on it.
 - Tests (`tests/`): `protocol_test`, `backup_test`, `restore_test`, `pattern_test`, `drum_test`, `overdub_test`; all with a fake device or none.
   CI (GitHub Actions, Windows only since 2026-10-29) builds everything and runs them.
-- `Source/Gen/Theory.h` + `Roles.h`: the role engine. A `RoleSpec` (role drone / pad / melody / bells / bass, length, density, register,
-  RNG salt) goes through `makeRolePattern`; `euclid` and `makeDrumPattern(DrumSpec)` build drum grooves (kick, backbeat snare, hats,
-  ghosts, swing) for `Model/DrumPattern.h`. Ambient is the first preset (`ambientRole`); `gen_test` freezes its output with a hash.
-  Presets for other styles and the window are still to do.
+- `Source/Gen/Theory.h` + `Roles.h`: the role engine. A `RoleSpec` (role drone / pad / melody / bells / bass / stab, length, density, register,
+  RNG salt; for bass and stab euclidean pulses, rotation and gate) goes through `makeRolePattern`; `euclid` and `makeDrumPattern(DrumSpec)` build drum grooves (kick, backbeat snare, hats,
+  ghosts, swing, fixed kick steps, offbeat open hats, a fill; GM lanes of the default drum map) for `Model/DrumPattern.h`. Ambient is the first preset (`ambientRole`); `gen_test` freezes its output with a hash.
+- `Source/Gen/Styles.h`: the style presets (techno; house deep / chill / melodic; dnb), grouped by family and mood, as data: key, progression, a `DrumSpec` for track 1 and a role, division
+  and Mono/Poly for tracks 2-4. `applyStyle` puts track 1 in drum mode, writes all four and sets the project tempo (`setTempo`: item 0x78
+  params 0x46-0x48 = BPM x 100 in 7-bit parts, low first); `applyScenes(..., cross = false)` the scenes.
+  Drum writes are not yet verified on the device (see `DrumPattern.h`).
 - `Source/Gen/Ambient.h`: experimental ambient generator. Four tracks (drone, pad, slow melody, bells) with pattern
   lengths 16, 13, 17, 19 so they drift apart, four variations over a I-VI-IV-V movement; deterministic per seed.
   `makePattern`, `apply` (into a ProjectData), `preview`. Test: `gen_test`.
