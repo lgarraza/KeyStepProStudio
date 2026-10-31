@@ -19,8 +19,10 @@ Windows (tested) and macOS (builds from the same code, not tested lately). Not a
 - **VST3 host.** One VST3 instrument per KeyStep track (T1 to T4 on MIDI channels 1 to 4), up to four effect inserts per
   track and a master effect chain with a limiter. The KeyStep is the clock: its Play and Stop drive the app.
 - **WAV recording** of the mix and/or one stem per track, started and stopped by the KeyStep's transport.
-- **Ambient generator** (Generate...): writes evolving patterns and scenes into the open project, with moods, a seed,
-  pattern chains and undo.
+- **Generator** (Generate...): writes patterns and scenes into the open project in a style (Ambient with four moods,
+  Techno, House deep / chill / melodic, Drum & bass) with a seed, pattern chains and undo. The styles add drums on track 1
+  and set the project tempo.
+- **Drum patterns**: track 1 in drum mode gets a 24-lane drum grid (General MIDI names of the default drum map).
 - **Backups.** Full read-only backup of all 16 projects and the global settings to JSON (the same format as
   [KSCON](https://github.com/canadianblaken/keystep-con), so backups open in either tool).
 - **Project Map.** Scenes by tracks with a mini piano roll in each cell, the chain timeline and the pattern bank.
@@ -75,7 +77,7 @@ Installed next to the app; useful for backups and troubleshooting.
 | `KspProbe` | no | Connection test: firmware, MIDI settings, the patterns of a project. |
 | `KspBackup` | no | Backup of all projects and the global settings to JSON (about 10 minutes). |
 | `KspRestore` | only with `--write` | Restore a project from a backup to a slot (backup first, read back after). |
-| `KspGen` | only with `--write` | Generate an ambient project into a slot 10-16. |
+| `KspGen` | only with `--write` | Generate an ambient project, or a style with `--style`, into a slot. |
 | `KspHostCheck` | no | Check that a VST3 instrument or effect loads, sounds and restores its state. |
 
 Details in [docs/manual/02-tools.md](docs/manual/02-tools.md).
@@ -105,8 +107,8 @@ To build the Windows installer, see [installer/README.md](installer/README.md).
 
 ## Status and limits
 
-Working and used live: pattern editing, the library, the VST3 host, recording and the generator. Not done yet: drum
-patterns, the arpeggiator, editing scenes and plugin latency compensation. Only VST3 plugins are hosted (no AU, no VST2).
+Working and used live: pattern editing, the library, the VST3 host, recording and the generator. Not done yet: the
+arpeggiator, editing scenes and plugin latency compensation. Only VST3 plugins are hosted (no AU, no VST2).
 
 ## Credits and license
 
