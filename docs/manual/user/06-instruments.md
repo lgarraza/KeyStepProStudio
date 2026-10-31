@@ -27,7 +27,7 @@ never want offered (they are hidden, not deleted; **Show hidden** brings them ba
 
 Above the grid there are four cards, one per track, each in the track's own color (T1 green, T2 orange, T3 yellow,
 T4 red) so you can tell tracks apart at a glance. The card of the selected track is full color with a thick white border; the
-others are dimmed. Click a card to select its track. Each card has:
+others are dimmed. Click anywhere on a card (its controls too) to select its track; the pointer turns into a hand over the cards you can select. Each card has:
 
 - a dot with the track number and the instrument list,
 - a volume slider with its level in dB,
