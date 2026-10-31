@@ -7,6 +7,8 @@
 **Library...** lists your projects (name, date, contents, instruments). **Open** (or double click), **Duplicate**,
 **Delete**. They are files in `Documents\KeyStepPro Studio\Library\`, so you can back that folder up.
 
+![The Library window: name, last change, KeyStep project and instruments of each project](img/shot-library.png)
+
 ## Save
 
 - **Save** puts the project into the Library. The first time it asks for a **name** (a project read from the KeyStep or
