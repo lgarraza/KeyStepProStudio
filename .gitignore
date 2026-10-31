@@ -1,0 +1,11 @@
+build*/
+out/
+.vs/
+.vscode/
+.idea/
+*.user
+.DS_Store
+ksp_probe_report.txt
+exp/
+*.patch
+dist/

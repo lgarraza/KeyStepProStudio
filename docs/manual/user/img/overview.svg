@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 250" font-family="Segoe UI,Arial,sans-serif" font-size="14">
+<rect width="760" height="250" fill="#f4f4f1"/>
+<g stroke="#222" stroke-width="2">
+<rect x="20" y="60" width="190" height="120" rx="10" fill="#fff"/>
+<rect x="285" y="40" width="190" height="160" rx="10" fill="#1b1b1b"/>
+<rect x="550" y="60" width="190" height="120" rx="10" fill="#fff"/></g>
+<text x="115" y="88" text-anchor="middle" font-weight="700">Library</text>
+<text x="115" y="112" text-anchor="middle" fill="#444">your projects, on the PC</text>
+<text x="115" y="132" text-anchor="middle" fill="#444">(the truth)</text>
+<text x="115" y="160" text-anchor="middle" fill="#444">up to ~200 projects</text>
+<text x="380" y="70" text-anchor="middle" fill="#fff" font-weight="700">KeyStepPro Studio</text>
+<g font-size="13" fill="#fff"><text x="380" y="100" text-anchor="middle">pattern grid · Generate</text>
+<text x="380" y="122" text-anchor="middle">4 VST3 instruments · FX</text>
+<text x="380" y="144" text-anchor="middle">transport · WAV recording</text></g>
+<g><rect x="315" y="162" width="25" height="10" fill="#4caf50"/><rect x="345" y="162" width="25" height="10" fill="#f08c2e"/><rect x="375" y="162" width="25" height="10" fill="#f2c230"/><rect x="405" y="162" width="25" height="10" fill="#e0443a"/></g>
+<text x="650" y="88" text-anchor="middle" font-weight="700">KeyStep Pro</text>
+<text x="650" y="112" text-anchor="middle" fill="#444">16 slots = working copy</text>
+<text x="650" y="132" text-anchor="middle" fill="#444">(volatile)</text>
+<text x="650" y="160" text-anchor="middle" fill="#444">plays + sends the clock</text>
+<g stroke="#222" stroke-width="2" fill="none" marker-end="url(#a)"><path d="M212 100 H283"/><path d="M283 140 H212"/><path d="M477 100 H548"/><path d="M548 140 H477"/></g>
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8z" fill="#222"/></marker></defs>
+<g font-size="12" fill="#333" text-anchor="middle"><text x="248" y="92">Save / Open</text><text x="248" y="158">Open</text>
+<text x="513" y="92">Write to slot</text><text x="513" y="158">Read / MIDI</text></g>
+<text x="380" y="232" text-anchor="middle" fill="#555">Edit anywhere; the KeyStep only needs to be connected to read, write or play.</text>
+</svg>
