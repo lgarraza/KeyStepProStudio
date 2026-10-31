@@ -14,7 +14,14 @@ when needed, a Microsoft false-positive submission.
 3. `dist\` now holds:
    - `KeyStepProStudio-Setup-X.Y.Z.exe` (installer)
    - `KeyStepProStudio-X.Y.Z-portable.zip` (same files, no installer; unzip anywhere and run `KeyStepPro Studio.exe`)
+   - `KeyStepPro-Studio-Manual.pdf` (the user manual; also inside the installer and the zip, next to the exe)
    - `SHA256SUMS.txt` (SHA-256 of both, one line each)
+
+The manual PDF is generated from `docs/manual/user/*.md` by `Tools\manual\build-manual-pdf.ps1` (pandoc turns the chapters into
+one HTML page with the images embedded; Edge or Chrome, headless, prints it to PDF). Needs `winget install JohnMacFarlane.Pandoc`
+once. To rebuild only the manual: `powershell -ExecutionPolicy Bypass -File Tools\manual\build-manual-pdf.ps1`. The app's
+**Tools > User manual (PDF)** opens the file next to the exe and says so if it is missing (e.g. a build from source).
+Look at the PDF before releasing (images in place, no broken pages).
 
 The portable zip matters for the forums: it needs no installer, and many people prefer to inspect a zip before running anything.
 
@@ -56,7 +63,7 @@ over time or by signing.
 ## Checklist
 
 - [ ] Release PR merged, tag created
-- [ ] `build-installer.ps1` run, three files in `dist\`
+- [ ] `build-installer.ps1` run, `dist\` filled (installer, zip, manual PDF, checksums)
 - [ ] Both files on VirusTotal, links in the release notes
 - [ ] GitHub release published with `SHA256SUMS.txt`
 - [ ] `main-window.png` refreshed (once per release, see the README)

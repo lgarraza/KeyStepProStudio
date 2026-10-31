@@ -1,0 +1,11 @@
+@page { size: A4; margin: 18mm 16mm; }
+body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; color: #222; max-width: none; }
+h1 { font-size: 22pt; border-bottom: 2px solid #444; padding-bottom: 4px; page-break-before: always; }
+h1:first-of-type, header h1 { page-break-before: avoid; }
+h2 { font-size: 15pt; margin-top: 1.4em; } h3 { font-size: 12pt; }
+img { max-width: 100%; height: auto; page-break-inside: avoid; }
+table { border-collapse: collapse; width: 100%; page-break-inside: avoid; }
+th, td { border: 1px solid #bbb; padding: 4px 8px; text-align: left; }
+th { background: #eee; }
+code, pre { font-family: Consolas, monospace; background: #f3f3f3; font-size: 9.5pt; }
+pre { padding: 8px; white-space: pre-wrap; }

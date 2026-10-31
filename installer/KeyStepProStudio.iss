@@ -51,11 +51,13 @@ Source: "{#BuildDir}\KspGen_artefacts\Release\KspGen.exe"; DestDir: "{app}\tools
 Source: "{#BuildDir}\KspHostCheck_artefacts\Release\KspHostCheck.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
 ; documents
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\KeyStepPro-Studio-Manual.pdf"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 Source: "..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"
+Name: "{group}\User manual (PDF)"; Filename: "{app}\KeyStepPro-Studio-Manual.pdf"
 Name: "{group}\Command-line tools"; Filename: "{cmd}"; Parameters: "/k cd /d ""{app}\tools"""; WorkingDir: "{app}\tools"
 Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon

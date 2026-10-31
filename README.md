@@ -106,6 +106,8 @@ cmake --build build-tests
 ctest --test-dir build-tests
 ```
 
+The release packages include the user guide as `KeyStepPro-Studio-Manual.pdf` (**Tools > User manual (PDF)** in the app).
+
 To build the Windows installer, see [installer/README.md](installer/README.md).
 
 ## Status and limits
