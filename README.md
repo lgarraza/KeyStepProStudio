@@ -26,6 +26,7 @@ Windows (tested) and macOS (builds from the same code, not tested lately). Not a
 - **Backups.** Full read-only backup of all 16 projects and the global settings to JSON (the same format as
   [KSCON](https://github.com/canadianblaken/keystep-con), so backups open in either tool).
 - **Project Map.** Scenes by tracks with a mini piano roll in each cell, the chain timeline and the pattern bank.
+  Click a cell to pick the pattern a track plays in that scene; copy, paste and clear scenes, with Undo.
 - **MIDI monitor** to see what each control of the KeyStep sends.
 
 ![The effects window: four inserts per track and the master chain](docs/images/fx-window.png)
@@ -110,7 +111,7 @@ To build the Windows installer, see [installer/README.md](installer/README.md).
 ## Status and limits
 
 Working and used live: pattern editing, the library, the VST3 host, recording and the generator. Not done yet: the
-arpeggiator, editing scenes and plugin latency compensation. Only VST3 plugins are hosted (no AU, no VST2).
+arpeggiator, editing chains and plugin latency compensation. Only VST3 plugins are hosted (no AU, no VST2).
 
 ## Credits and license
 
