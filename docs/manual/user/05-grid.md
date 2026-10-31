@@ -45,6 +45,18 @@ Drag up/down (hold **Shift** for fine), or use the mouse wheel. They are dark un
 | **Time Shift** | -49% to +50% of a step | Moves the note off the beat; 0 = exactly on the step |
 | **Randomness** | 0-100% | Chance the note plays on each pass; 100 = always |
 
+## Drums (track 1 in drum mode)
+
+When track 1 is in drum mode (set on the KeyStep, or by a generated style) its grid shows 24 drum lanes instead of
+notes, kick at the bottom, each named after the KeyStep's default drum map (kick 36, snare 38, clap 39, closed hat 42,
+open hat 46 ...). Click a cell to add or remove a hit and drag to paint more; the mouse wheel on a hit changes its
+velocity (darker = louder); click a lane name to hear it. END and the length box work as for notes. Root, scale,
+octave, the knobs, Rec and Copy do not apply to drums. The KeyStep holds up to 192 hits per pattern.
+
+The **Drums** button on card 1 switches track 1 between drum and sequencer mode (lit = drums). Both kinds of patterns
+stay stored, so switching back loses nothing. **Clear** (left of *Copy to*) empties the pattern you are looking at,
+notes or drum hits. Like every edit, both reach the KeyStep when you **Write**.
+
 ## Hover card
 
 Rest the mouse on a step with notes: a card shows the note (name, number, frequency), track, pattern, MIDI channel,

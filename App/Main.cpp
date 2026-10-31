@@ -15,6 +15,7 @@
 #include "FxWindow.h"
 #include "LibraryWindow.h"
 #include "GeneratorWindow.h"
+#include "DrumGrid.h"
 #include "ProjectMapWindow.h"
 #include "Gen/Styles.h"
 #include "MidiMonitor.h"
@@ -1033,7 +1034,7 @@ class MainComponent : public juce::Component, private juce::Timer
 public:
     MainComponent()
     {
-        for (auto* b : { &openButton, &readButton, &syncButton, &octDown, &octUp, &copyButton, &recButton, &undoTakeButton, &toolsButton, &libraryButton, &saveButton, &saveAsButton })
+        for (auto* b : { &openButton, &readButton, &syncButton, &octDown, &octUp, &copyButton, &clearButton, &drumModeButton, &recButton, &undoTakeButton, &toolsButton, &libraryButton, &saveButton, &saveAsButton })
             addAndMakeVisible (*b);
         for (auto* c : { &projectBox, &patternBox, &lengthBox, &rootBox, &scaleBox, &copyTrackBox, &copyPatBox, &recChannelBox, &stepBox })
             addAndMakeVisible (*c);
@@ -1060,6 +1061,11 @@ public:
         octDown.setButtonText ("-");
         octUp.setButtonText ("+");
         copyButton.setButtonText ("Copy to");
+        clearButton.setButtonText ("Clear");
+        clearButton.setTooltip ("Empty the pattern shown (notes or drum hits)");
+        drumModeButton.setButtonText ("Drums");
+        drumModeButton.setClickingTogglesState (false);
+        drumModeButton.setTooltip ("Track 1 as a drum track (lit) or a sequencer track");
         toolsButton.setButtonText ("Tools");
         libraryButton.setButtonText ("Library...");
         saveButton.setButtonText ("Save");
@@ -1093,6 +1099,8 @@ public:
         readButton.onClick = [this] { readFromDevice (0); };   // read-only: always reachable, even with unsent edits
         syncButton.onClick = [this] { if (haveProject && fwReadOnly.isEmpty()) confirmWrite(); else readFromDevice(); };
         copyButton.onClick = [this] { copyPattern(); };
+        clearButton.onClick = [this] { clearPattern(); };
+        drumModeButton.onClick = [this] { toggleDrumMode(); };
         toolsButton.onClick = [this] { showToolsMenu(); };
         libraryButton.onClick = [this] { showLibrary(); };
         saveButton.onClick = [this] { saveToLibrary (false); };
@@ -1105,12 +1113,31 @@ public:
         trackTabs.onSelect = [this] (int t) { trackBox.setSelectedId (t, juce::sendNotification); };
         trackBox.onChange = [this] { trackTabs.setSelected (trackBox.getSelectedId(), false); grid.setTrack (track() - 1); refreshCards(); recChannelBox.setSelectedId (track(), juce::dontSendNotification); loadPattern(); };
         patternBox.onChange = [this] { loadPattern(); };
-        lengthBox.onChange = [this] { pattern.length = lengthBox.getSelectedId(); markEdited(); showPattern(); };
+        lengthBox.onChange = [this] {
+            const int n = lengthBox.getSelectedId();
+            if (drumView)
+            {
+                for (auto& l : drum.laneLength)   // lanes that followed the pattern length keep following it
+                    if (l == drum.length)
+                        l = n;
+                drum.length = n;
+                markEdited();
+                drumGrid.repaint();
+                return;
+            }
+            pattern.length = n;
+            markEdited();
+            showPattern();
+        };
         rootBox.onChange = [this] { pattern.root = rootBox.getSelectedId() - 1; markEdited(); };
         scaleBox.onChange = [this] { pattern.scale = scaleBox.getSelectedId() - 1; markEdited(); };
         grid.onEdited = [this] { markEdited(); };
         grid.onNoteAdded = [this] (int pitch, int velocity) { auditionNote (pitch, velocity); };
         grid.onLastStep = [this] (int n) { lengthBox.setSelectedId (n, juce::sendNotification); };
+        drumGrid.onEdited = [this] { markEdited(); };
+        drumGrid.onHit = [this] (int note, int velocity) { auditionNote (note, velocity); };
+        drumGrid.onLastStep = [this] (int n) { lengthBox.setSelectedId (n, juce::sendNotification); };
+        drumGrid.onMessage = [this] (const juce::String& m) { say (m); };
         buildInstrumentRow();
         setSize (1220, 756);
         buildRecordRow();
@@ -1160,6 +1187,8 @@ public:
     /** The selected card full, the rest dimmed (the dB readouts follow the sliders). */
     void refreshCards()
     {
+        drumModeButton.setToggleState (haveProject && ksp::model::isDrumMode (project), juce::dontSendNotification);
+        drumModeButton.setEnabled (haveProject);
         for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
         {
             const auto i = static_cast<std::size_t> (t);
@@ -1226,6 +1255,8 @@ public:
         generateButton.setBounds (top.removeFromLeft (128));
         top.removeFromLeft (6);
         mapButton.setBounds (top.removeFromLeft (110));
+        top.removeFromLeft (6);
+        fxButton.setBounds (top.removeFromLeft (60));
         r.removeFromTop (6);
         auto row = r.removeFromTop (28);
         for (auto* c : { &patternBox, &lengthBox, &rootBox, &scaleBox })
@@ -1237,6 +1268,8 @@ public:
         octLabel.setBounds (row.removeFromLeft (110));
         octUp.setBounds (row.removeFromLeft (28));
         row.removeFromLeft (16);
+        clearButton.setBounds (row.removeFromLeft (52));
+        row.removeFromLeft (6);
         copyButton.setBounds (row.removeFromLeft (70));
         row.removeFromLeft (4);
         copyTrackBox.setBounds (row.removeFromLeft (84));
@@ -1269,6 +1302,11 @@ public:
             cell.removeFromTop (4);
             instLabel[i].setBounds (line1.removeFromLeft (26));
             line1.removeFromLeft (6);
+            if (t == 0)   // track 1 can be the drum track: its switch sits on the top line, so the volume keeps its room
+            {
+                drumModeButton.setBounds (line1.removeFromRight (60));
+                line1.removeFromRight (4);
+            }
             instBox[i].setBounds (line1);
             soloToggle[i].setBounds (cell.removeFromRight (36));
             cell.removeFromRight (4);
@@ -1301,6 +1339,8 @@ private:
     bool haveProject = false, edited = false, glowOn = false;
     bool unsaved = false, unwritten = false;   // changes not in the library / not on the KeyStep yet: asked about when closing
     ksp::model::Pattern pattern;
+    ksp::model::DrumPattern drum;   // the pattern shown when track 1 is in drum mode (drumView)
+    bool drumView = false;
     int lowPitch = 48;
     std::unique_ptr<ksp::Device> device;
     std::optional<ksp::BackupData> backup;
@@ -1322,7 +1362,7 @@ private:
     std::array<juce::Rectangle<int>, 4> cardRect;
     static constexpr int cardHeight = 78;
     std::array<juce::String, 4> missingName;             // a plugin of the project that is not on this machine: kept untouched
-    juce::TextButton toolsButton, mapButton;
+    juce::TextButton toolsButton, mapButton, fxButton;   // FX is also in Tools; on the bar so the effects are easy to find
     ksp::ui::WandButton generateButton;   // a magic wand on it: the way to new music
     std::unique_ptr<ksp::ui::GeneratorWindow> generatorWindow;
     std::unique_ptr<ksp::ui::ProjectMapWindow> mapWindow;
@@ -1349,6 +1389,7 @@ private:
     ksp::model::Pattern takeBefore;              // the pattern before the last take, for Undo take
     bool haveTake = false;
 
+    juce::TextButton clearButton, drumModeButton;
     juce::TextButton libraryButton, saveButton, saveAsButton, copyButton, openButton, readButton, syncButton, octDown, octUp, recButton, undoTakeButton;
     ksp::ui::TrackTabs trackTabs;
     ksp::ui::SevenSegDisplay lenDisplay { 2 }, bpmDisplay { 5 };
@@ -1358,6 +1399,7 @@ private:
     juce::Label status, octLabel, sectionLabel;
     juce::Viewport viewport;
     PatternGrid grid;
+    ksp::ui::DrumGrid drumGrid;
     std::array<KspKnob, 5> knobs { KspKnob ("Pitch"), KspKnob ("Gate"), KspKnob ("Velocity"),
                                    KspKnob ("Time Shift", ksp::model::kShiftMax, ksp::model::kShiftCentre, shiftText),
                                    KspKnob ("Randomness", ksp::model::kRandomMax, 0, randomText) };
@@ -1403,7 +1445,8 @@ private:
         {
             bool valid = false;
             if (haveProject)
-                valid = ksp::model::readPattern (project, track(), p).valid;
+                valid = track() == 1 && ksp::model::isDrumMode (project) ? ksp::model::readDrumPattern (project, p).valid
+                                                                         : ksp::model::readPattern (project, track(), p).valid;
             patternBox.addItem ("Pattern " + juce::String (p) + (valid ? "  *" : ""), p);
         }
         patternBox.setSelectedId (keep, juce::dontSendNotification);
@@ -1414,7 +1457,8 @@ private:
     {
         if (haveProject && edited)
         {
-            const auto err = ksp::model::writePattern (project, loadedTrack, loadedPattern, pattern);
+            const auto err = drumView ? ksp::model::writeDrumPattern (project, loadedPattern, drum)
+                                      : ksp::model::writePattern (project, loadedTrack, loadedPattern, pattern);
             if (! err.empty())
                 say (juce::String (err));
         }
@@ -1432,8 +1476,19 @@ private:
         loadedTrack = track();
         loadedPattern = patNo();
         fillPatternBox();
+        setDrumView (haveProject && loadedTrack == 1 && ksp::model::isDrumMode (project));
         if (! haveProject)
             return;
+        if (drumView)
+        {
+            drum = ksp::model::readDrumPattern (project, loadedPattern);
+            lengthBox.setSelectedId (drum.length, juce::dontSendNotification);
+            drumGrid.setPattern (&drum);
+            say (drum.valid ? "Drum pattern loaded." : "Empty drum pattern (default).");
+            if (drum.unreadable > 0)
+                say ("Warning: " + juce::String (drum.unreadable) + " drum slot(s) could not be read from the backup.");
+            return;
+        }
         pattern = ksp::model::readPattern (project, loadedTrack, loadedPattern);
         lengthBox.setSelectedId (pattern.length, juce::dontSendNotification);
         rootBox.setSelectedId (pattern.root % 12 + 1, juce::dontSendNotification);
@@ -1864,6 +1919,9 @@ private:
         addAndMakeVisible (mapButton);
         mapButton.setButtonText ("Project Map");
         mapButton.onClick = [this] { showMap(); };
+        addAndMakeVisible (fxButton);
+        fxButton.setButtonText ("FX...");
+        fxButton.onClick = [this] { showFx(); };
         generateButton.setButtonText ("Generate...");
         generateButton.onClick = [this] { showGenerator(); };
         transportLabel.setText ("STOP", juce::dontSendNotification);
@@ -2084,7 +2142,7 @@ private:
             generatorWindow->content().setCanUndo (true);
         if (preset != nullptr)
             say ("Generated " + juce::String (preset->label) + ", seed " + juce::String (seed) + ": drums on track 1, patterns 1-4 and scenes 1-4, "
-                 + juce::String (preset->bpm) + " BPM (not saved, not on the KeyStep yet; the grid does not show drum patterns yet).");
+                 + juce::String (preset->bpm) + " BPM (not saved, not on the KeyStep yet).");
         else
             say ("Generated " + mood + ", seed " + juce::String (seed) + ": patterns 1-4 and scenes 1-8 (not saved, not on the KeyStep yet).");
     }
@@ -2431,8 +2489,74 @@ private:
         });
     }
 
+    /** Empties the pattern shown: its notes, or its drum hits in drum view. Length and settings stay; it is a normal edit
+        (written with the project, Undo of the generator does not cover it). */
+    void clearPattern()
+    {
+        if (! haveProject)
+            return;
+        if (drumView)
+        {
+            drum.hits.clear();
+            drumGrid.repaint();
+        }
+        else
+        {
+            for (auto& st : pattern.steps)
+            {
+                st.notes.clear();
+                st.on = false;
+            }
+            showPattern();
+        }
+        markEdited();
+        say ("Pattern cleared (not written yet).");
+    }
+
+    /** Switches track 1 between drum and sequencer mode in the project. Both kinds of patterns stay stored; the grid of
+        track 1 follows the mode. */
+    void toggleDrumMode()
+    {
+        if (! haveProject)
+            return;
+        commitPattern();
+        edited = false;
+        const bool drums = ! ksp::model::isDrumMode (project);
+        if (! ksp::model::setDrumMode (project, drums))
+        {
+            say ("This project has no drum mode value for track 1.");
+            return;
+        }
+        noteChanged();
+        if (track() != 1)
+            trackBox.setSelectedId (1, juce::sendNotification);   // loads track 1
+        else
+            loadPattern();
+        refreshCards();
+        say (drums ? "Track 1 is now a drum track (not written yet)." : "Track 1 is now a sequencer track (not written yet).");
+    }
+
+    /** Track 1 in drum mode shows the drum grid; the note controls (root, scale, octave, knobs, Rec, Copy) do not apply to it. */
+    void setDrumView (bool on)
+    {
+        drumView = on;
+        viewport.setViewedComponent (on ? static_cast<juce::Component*> (&drumGrid) : static_cast<juce::Component*> (&grid), false);
+        for (juce::Component* c : { static_cast<juce::Component*> (&rootBox), static_cast<juce::Component*> (&scaleBox),
+                                    static_cast<juce::Component*> (&octDown), static_cast<juce::Component*> (&octUp),
+                                    static_cast<juce::Component*> (&octLabel), static_cast<juce::Component*> (&recButton),
+                                    static_cast<juce::Component*> (&copyButton), static_cast<juce::Component*> (&copyTrackBox),
+                                    static_cast<juce::Component*> (&copyPatBox) })
+            c->setEnabled (! on);
+        for (auto& k : knobs)
+            k.setEnabled (! on);
+        if (! on)
+            drumGrid.setPattern (nullptr);
+    }
+
     void showPattern()
     {
+        if (drumView)
+            return;
         octLabel.setText (juce::String (ksp::noteName (lowPitch)) + " - " + juce::String (ksp::noteName (lowPitch + kRows - 1)),
                           juce::dontSendNotification);
         grid.setContext (track(), patNo());

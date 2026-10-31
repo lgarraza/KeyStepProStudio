@@ -28,11 +28,18 @@ Icon: the white chassis, black display strip and the four track colours, drawn b
   own playback is not recorded twice. **Stop rec** ends the take; **Undo take** removes it. Switching pattern, track or
   project, reading or writing stops recording. The KeyStep keeps playing the stored pattern until you write the slot,
   and pattern chains are not followed (the position is counted from Start, modulo this pattern's length).
-- Not yet: per-note velocity/gate, drum patterns, scenes, project names, undo.
+- **Drum grid**: when track 1 is in drum mode (the KeyStep's drum track, or after a generated style) the grid becomes 24 lanes x 64 steps
+  (`App/DrumGrid.h`, lane 1 = kick at the bottom, names and notes of the default GM drum map). Click a cell to add / remove a hit, drag
+  to paint more of the same, mouse wheel on a hit for its velocity (its shade), click a lane name to hear it, ruler or length box for the
+  last step (lanes that followed the length follow it). Root, scale, octave, knobs, Rec and Copy are disabled there. Up to 192 hits.
+- **Drums** (card 1, lit when on): switches track 1 between drum and sequencer mode in the project (both kinds of patterns stay
+  stored; the grid follows). **Clear** (left of Copy to) empties the pattern shown, notes or drum hits; length and settings stay.
+  Both are ordinary edits: they reach the KeyStep with Write.
+- Not yet: per-note velocity/gate, scenes, project names, undo.
 - Smoke test without a KeyStep: `xvfb-run` the binary with a backup file; the grid should show its notes.
 - Write to slot now sends only what differs from the slot as it was just read (plus all state blocks), about 75 s in total instead of
   about 200 s (backup read, write, commit, full read-back).
-- **Layout**: the top bar keeps the KeyStep's own actions (Library, Save, Save as, Open backup, Read from KeyStep, project box, STEPS / BPM) plus Generate...; the extras live in the **Tools** menu at its right: Scan plugins, Plugins..., MIDI monitor, Track -8va / +8va, Rec WAV (with mode, tail, Follow the KeyStep and the recordings folder), Audio..., FX... and Test note. Below the grid stay the T1-T4 instrument rows, the transport / REC status and the meter. Wherever these notes say "button" for those items, read "Tools menu item".
+- **Layout**: the top bar keeps the KeyStep's own actions (Library, Save, Save as, Open backup, Read from KeyStep, project box, STEPS / BPM) plus Generate..., Project Map and FX... (also in Tools); the extras live in the **Tools** menu at its right: Scan plugins, Plugins..., MIDI monitor, Track -8va / +8va, Rec WAV (with mode, tail, Follow the KeyStep and the recordings folder), Audio..., FX... and Test note. Below the grid stay the T1-T4 instrument rows, the transport / REC status and the meter. Wherever these notes say "button" for those items, read "Tools menu item".
 - **Scan plugins**: scans the VST3 folders one file at a time in `KspScanner.exe` (next to the app; a plugin that crashes or hangs only
   kills that child and is blacklisted), keeps the list in `Documents/KeyStepPro Studio/KnownPlugins.xml`. First run on Leo's machine:
   116 instruments and 173 effects (289 types, a few minutes; Windows asked once to allow the unsigned scanner).

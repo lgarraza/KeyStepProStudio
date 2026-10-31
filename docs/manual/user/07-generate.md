@@ -16,8 +16,7 @@ patterns are left alone.
 fill), plus patterns 1-4 of track 2 (bass), track 3 (chords) and track 4 (lead), and scenes 1-4. The drums use the
 KeyStep's default drum map (kick 36, snare 38, clap 39, closed hat 42, open hat 46), so load a General MIDI style kit on
 track 1; the app sends track 1 to its instrument on the drum channel (10). The project also gets the style's tempo
-(techno 130; house deep 128, chill 118, melodic 124; drum & bass 174 BPM); change it on the KeyStep if you like. The grid does not show drum
-patterns yet.
+(techno 130; house deep 128, chill 118, melodic 124; drum & bass 174 BPM); change it on the KeyStep if you like. Track 1 then shows the drum grid (see *The grid*).
 
 **Undo** restores the project as it was before the last generation.
 
