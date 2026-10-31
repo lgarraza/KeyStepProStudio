@@ -18,8 +18,10 @@ flowchart LR
 ## One time: scan your plugins
 
 **Scan plugins** checks your VST3 folders one file at a time in a separate process, so a plugin that crashes cannot
-take the app down. The first scan takes a few minutes. **Plugins...** lists the results; tick **Hide** on the ones you
+take the app down. The first scan takes a few minutes. **Plugins...** lists the results (type in the box to filter by name or maker); tick **Hide** on the ones you
 never want offered (they are hidden, not deleted; **Show hidden** brings them back into view).
+
+![The VST3 plugins window with the Hide column](img/shot-plugins.png)
 
 ## Per track
 

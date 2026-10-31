@@ -8,6 +8,8 @@ Pick a project (slot) in the **Project** box and press **Read** next to it. Read
 
 While the app reads or writes the KeyStep, a popup with a progress bar blocks the whole window so nothing can be touched.
 
+![Progress popup while reading a project](img/shot-progress.png)
+
 ## Write
 
 1. The project goes back to the slot it came from (any of the 16; they are working memory). Use **Save as...** to keep it as another project.
@@ -28,7 +30,9 @@ flowchart LR
 The button **blinks** while there are edits not yet on the KeyStep, also after you saved to the Library or cancelled a
 close. A write takes about 75 s.
 
-> **Screenshots pending:** `shot-write-confirm.png`, `shot-write-done.png`.
+![The Send to slot confirmation: what happens, backup first, read back after](img/shot-write-confirm.png)
+
+![The status line says "Slot 1 written and verified."](img/shot-write-done.png)
 
 **Watch out:**
 

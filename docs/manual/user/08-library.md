@@ -7,6 +7,8 @@
 **Library...** lists your projects (name, date, contents, instruments). **Open** (or double click), **Duplicate**,
 **Delete**. They are files in `Documents\KeyStepPro Studio\Library\`, so you can back that folder up.
 
+![The Library window: name, last change, KeyStep project and instruments of each project](img/shot-library.png)
+
 ## Save
 
 - **Save** puts the project into the Library. The first time it asks for a **name** (a project read from the KeyStep or
@@ -16,7 +18,10 @@
 
 ## Closing
 
-If there are changes not saved to the Library, closing asks **Save / Discard / Cancel**. If the changes were never
+If there are changes not saved to the Library, closing asks **Save / Discard / Cancel**.
+
+![Unsaved changes dialog](img/shot-close-warning.png)
+ If the changes were never
 written to the KeyStep, a second notice says so, with **OK / Cancel** to go back and write them.
 
 ```mermaid

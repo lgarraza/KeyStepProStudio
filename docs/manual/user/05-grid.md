@@ -50,7 +50,9 @@ Drag up/down (hold **Shift** for fine), or use the mouse wheel. They are dark un
 Rest the mouse on a step with notes: a card shows the note (name, number, frequency), track, pattern, MIDI channel,
 step and page, velocity, gate, time shift, randomness and the four **passes** it plays in.
 
-> **Screenshots pending:** `shot-grid.png`, `shot-hover-card.png`.
+![Hover card: note, MIDI number, step, velocity, gate, time shift, randomness and the passes it plays on](img/shot-hover-card.png)
+
+The full grid, with note names on keys and notes and the rows in the pattern's scale tinted, is in the [main window](../../images/main-window.png).
 > **Coming:** dragging steps to move them.
 
 **Watch out:** edits live in memory until you **Save** (Library) and **Write to slot** (KeyStep). Switching pattern or
