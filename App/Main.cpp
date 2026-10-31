@@ -1933,7 +1933,7 @@ private:
     /** The Tools menu: the extras that are not the KeyStep's own (plugins, audio, WAV recording, the MIDI monitor). */
     void showToolsMenu()
     {
-        enum { scan = 1, plugins, monitor, down, up, recWav, folder, audio, fx, test, follow, mode0 = 10, tail0 = 20 };
+        enum { scan = 1, plugins, monitor, down, up, recWav, folder, audio, fx, test, follow, manual, mode0 = 10, tail0 = 20 };
         const bool recording = engine.recorder().armed();
         juce::PopupMenu menu, modes, tails;
         const juce::StringArray modeNames { "Mix", "Stems", "Mix + stems" };
@@ -1958,6 +1958,8 @@ private:
         menu.addItem (audio, "Audio...");
         menu.addItem (fx, "FX...");
         menu.addItem (test, "Test note");
+        menu.addSeparator();
+        menu.addItem (manual, "User manual (PDF)");
         menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (toolsButton),
                             [safe = juce::Component::SafePointer<MainComponent> (this)] (int id) {
             if (safe == nullptr || id == 0)
@@ -1976,7 +1978,21 @@ private:
             else if (id == audio)   m.showAudioSettings();
             else if (id == fx)      m.showFx();
             else if (id == test)    m.testNotes();
+            else if (id == manual)  m.openManual();
         });
+    }
+
+    /** Opens KeyStepPro-Studio-Manual.pdf (next to the exe, put there by the installer / portable zip) with the system viewer. */
+    void openManual()
+    {
+        const auto pdf = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getSiblingFile ("KeyStepPro-Studio-Manual.pdf");
+        if (! pdf.existsAsFile())
+        {
+            say ("User manual not found: KeyStepPro-Studio-Manual.pdf should be next to the app. It is in the installer and the portable zip (not in a build from source).");
+            return;
+        }
+        if (! pdf.startAsProcess())
+            say ("Could not open the manual. Open it by hand: " + pdf.getFullPathName());
     }
 
     /** Arms the recording: with "Follow the KeyStep" it starts at the KeyStep's Start and ends after its Stop plus the tail. */

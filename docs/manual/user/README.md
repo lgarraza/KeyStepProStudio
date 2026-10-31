@@ -16,9 +16,14 @@ Short, task-oriented chapters. Each one says what you will do, how, and what to 
 | 7 | [Generate](07-generate.md) | ready |
 | 8 | [Save, Library and closing](08-library.md) | ready |
 | 9 | [Project Map](09-project-map.md) | ready |
-| 9b | Tools menu | coming |
+| 9b | Tools menu | coming (**Tools > User manual (PDF)** opens this guide; see below) |
 | 10 | Dragging steps in the grid | coming |
 | 11 | Transport and WAV recording; MIDI monitor | next batch |
+
+## This guide as a PDF
+
+The installer and the portable zip include this guide as `KeyStepPro-Studio-Manual.pdf` next to the app. Open it from the app with
+**Tools > User manual (PDF)** (the installer also adds a Start menu entry). A build from source does not have the file.
 
 ## Reading the pictures
 
