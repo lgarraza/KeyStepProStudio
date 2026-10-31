@@ -81,3 +81,6 @@
 - 2026-10-29, transport and recording: in the app, Rec WAV (mix + stems, not following the KeyStep) with Mini V4 on track 1 and the test notes wrote six 24-bit
   stereo WAVs at 44.1 kHz of 9.85 s; the T1 stem and the mix both peak at 0.2525 and the other stems are silent (no other instrument, no sends open).
   Armed with "Follow the KeyStep" the label read "armed: waiting for the KeyStep to play". Not yet tried: a recording started by the KeyStep's Play.
+- 2026-10-31, generator styles (first drum pattern write): KspGen --style techno --to 16 --seed 3 --write backed slot 16 up, sent 335 bulk SETs
+  (track 1 in drum mode with the groove, tracks 2-4 sequencer patterns, 8 scenes), committed and read back: every value, drums included, read
+  back as written. Not yet listened to by Leo.
