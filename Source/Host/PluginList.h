@@ -25,10 +25,14 @@ inline juce::File knownListFile() { return dataFolder().getChildFile ("KnownPlug
 inline juce::File deadMansFile()  { return dataFolder().getChildFile ("PluginScan.txt"); }
 inline juce::File hiddenFile()    { return dataFolder().getChildFile ("HiddenPlugins.xml"); }
 
-/** KspScanner.exe: next to the Studio, or in the data folder. */
+/** KspScanner (.exe on Windows): next to the Studio, or in the data folder. */
 inline juce::File scannerExe()
 {
+#if JUCE_WINDOWS
     const juce::String name = "KspScanner.exe";
+#else
+    const juce::String name = "KspScanner";
+#endif
     const juce::File candidates[] = { juce::File::getSpecialLocation (juce::File::currentExecutableFile).getSiblingFile (name),
                                       dataFolder().getChildFile (name) };
     for (auto& f : candidates)

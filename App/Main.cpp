@@ -1563,7 +1563,7 @@ private:
                 if (safe->pluginWindow != nullptr)
                     safe->pluginWindow->refresh();
                 safe->refreshInstrumentChoices();
-                safe->say (n < 0 ? "KspScanner.exe not found next to the app: plugins are not scanned in the app itself."
+                safe->say (n < 0 ? "The plugin scanner (KspScanner) not found next to the app: plugins are not scanned in the app itself."
                                  : "Plugins: " + juce::String (inst) + " instruments, " + juce::String (fx) + " effects.");
             });
         }).detach();
