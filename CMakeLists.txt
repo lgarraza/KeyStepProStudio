@@ -110,10 +110,10 @@ if(NOT KSP_TESTS_ONLY)
         juce::juce_recommended_warning_flags)
 
     # Phase 3: out-of-process VST3 scanner (one plugin file per run; a crash kills only this process).
-    juce_add_console_app(KspScanner PRODUCT_NAME "KspScanner")
-    target_sources(KspScanner PRIVATE Tools/KspScanner/Main.cpp)
-    target_compile_definitions(KspScanner PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_PLUGINHOST_VST3=1 JUCE_PLUGINHOST_AU=0)
-    target_link_libraries(KspScanner PRIVATE
+    juce_add_console_app(KspVstHelper PRODUCT_NAME "KspVstHelper")
+    target_sources(KspVstHelper PRIVATE Tools/KspVstHelper/Main.cpp)
+    target_compile_definitions(KspVstHelper PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_PLUGINHOST_VST3=1 JUCE_PLUGINHOST_AU=0)
+    target_link_libraries(KspVstHelper PRIVATE
         juce::juce_audio_processors
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
@@ -144,7 +144,7 @@ if(NOT KSP_TESTS_ONLY)
         juce::juce_audio_utils
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
-    add_dependencies(KeyStepProStudio KspScanner)
+    add_dependencies(KeyStepProStudio KspVstHelper)
     add_custom_command(TARGET KeyStepProStudio POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:KspScanner> $<TARGET_FILE_DIR:KeyStepProStudio>)
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:KspVstHelper> $<TARGET_FILE_DIR:KeyStepProStudio>)
 endif()

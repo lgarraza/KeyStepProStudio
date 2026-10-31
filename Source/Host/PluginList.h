@@ -3,7 +3,7 @@
     The VST3 plugins the Studio can host: a list of what was found (instruments for the four tracks, effects for their chains),
     saved between runs, and the scan that finds them. JUCE; message thread or a worker thread, never the audio thread.
 
-    Each plugin file is scanned in its own process (KspScanner.exe): a plugin that crashes or hangs takes down the child, not the
+    Each plugin file is scanned in its own process (KspVstHelper.exe): a plugin that crashes or hangs takes down the child, not the
     Studio, and the file is blacklisted (a "dead man's" file marks the plugin being scanned).
 */
 
@@ -25,10 +25,14 @@ inline juce::File knownListFile() { return dataFolder().getChildFile ("KnownPlug
 inline juce::File deadMansFile()  { return dataFolder().getChildFile ("PluginScan.txt"); }
 inline juce::File hiddenFile()    { return dataFolder().getChildFile ("HiddenPlugins.xml"); }
 
-/** KspScanner.exe: next to the Studio, or in the data folder. */
+/** KspVstHelper (.exe on Windows): next to the Studio, or in the data folder. */
 inline juce::File scannerExe()
 {
-    const juce::String name = "KspScanner.exe";
+#if JUCE_WINDOWS
+    const juce::String name = "KspVstHelper.exe";
+#else
+    const juce::String name = "KspVstHelper";
+#endif
     const juce::File candidates[] = { juce::File::getSpecialLocation (juce::File::currentExecutableFile).getSiblingFile (name),
                                       dataFolder().getChildFile (name) };
     for (auto& f : candidates)

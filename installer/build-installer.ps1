@@ -45,7 +45,7 @@ if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 New-Item -ItemType Directory -Path "$stage\tools" | Out-Null
 $bd = Join-Path $root "build"
 Copy-Item "$bd\KeyStepProStudio_artefacts\Release\KeyStepPro Studio.exe" $stage
-Copy-Item "$bd\KspScanner_artefacts\Release\KspScanner.exe" $stage
+Copy-Item "$bd\KspVstHelper_artefacts\Release\KspVstHelper.exe" $stage
 foreach ($t in "KspProbe", "KspBackup", "KspRestore", "KspGen", "KspHostCheck") {
     Copy-Item "$bd\${t}_artefacts\Release\$t.exe" "$stage\tools"
 }

@@ -1,4 +1,4 @@
-// Out-of-process VST3 scanner: KspScanner.exe <plugin file> <result.xml>
+// Out-of-process VST3 helper (lists the plugins in one file): KspVstHelper.exe <plugin file> <result.xml>
 // Loads one plugin file, writes the descriptions it finds to the XML and exits 0. If the plugin crashes, the process dies and the
 // host (Source/Host/PluginList.h, ProcessScanner) blacklists that file and keeps scanning.
 #include <juce_audio_processors/juce_audio_processors.h>

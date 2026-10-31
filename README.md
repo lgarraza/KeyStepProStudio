@@ -50,7 +50,7 @@ start writing to your KeyStep.
 ## Install (Windows)
 
 1. Download `KeyStepProStudio-Setup-x.y.z.exe` from [Releases](../../releases) and run it. It installs the app, the
-   plugin scanner and the command-line tools, and adds a Start menu entry. Prefer no installer? Download
+   VST3 helper and the command-line tools, and adds a Start menu entry. Prefer no installer? Download
    `KeyStepProStudio-x.y.z-portable.zip` instead, unzip it anywhere and run `KeyStepPro Studio.exe`.
 2. The installer and the app are **not code-signed** (see [docs/signing.md](docs/signing.md)). Windows SmartScreen will
    say "Windows protected your PC": click **More info** and then **Run anyway**.

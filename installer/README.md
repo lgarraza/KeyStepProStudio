@@ -1,7 +1,7 @@
 # Windows installer
 
-`KeyStepProStudio.iss` is an [Inno Setup 6](https://jrsoftware.org/isinfo.php) script. It installs the app and the plugin
-scanner in `%LOCALAPPDATA%\Programs\KeyStepPro Studio` (or Program Files if "all users" is chosen), the command-line tools
+`KeyStepProStudio.iss` is an [Inno Setup 6](https://jrsoftware.org/isinfo.php) script. It installs the app and the
+VST3 helper in `%LOCALAPPDATA%\Programs\KeyStepPro Studio` (or Program Files if "all users" is chosen), the command-line tools
 in its `tools` folder, a Start menu entry and an uninstaller. The user's data in `Documents\KeyStepPro Studio` (library,
 backups, recordings, plugin list) is never touched by the installer or the uninstaller.
 
