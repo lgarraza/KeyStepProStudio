@@ -16,7 +16,10 @@
 
 ## Closing
 
-If there are changes not saved to the Library, closing asks **Save / Discard / Cancel**. If the changes were never
+If there are changes not saved to the Library, closing asks **Save / Discard / Cancel**.
+
+![Unsaved changes dialog](img/shot-close-warning.png)
+ If the changes were never
 written to the KeyStep, a second notice says so, with **OK / Cancel** to go back and write them.
 
 ```mermaid
