@@ -142,7 +142,7 @@ private:
         const auto* st = style();
         moodBox.setEnabled (st == nullptr);
         slowToggle.setEnabled (st == nullptr);
-        moodInfo.setText (st != nullptr ? juce::String (st->info) + " Set the tempo on the KeyStep."
+        moodInfo.setText (st != nullptr ? juce::String (st->info) + " The project gets that tempo."
                                         : juce::String (info[juce::jlimit (0, 3, moodBox.getSelectedId() - 1)]),
                           juce::dontSendNotification);
         note.setText (st != nullptr

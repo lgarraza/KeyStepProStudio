@@ -2,12 +2,13 @@
     Styles.h
     Style presets for the role engine (Roles.h): techno, house and drum & bass. A style is data: a key, a progression, a
     drum groove for track 1 (in drum mode) and three RoleSpecs with their time division for tracks 2-4 (bass, chords,
-    lead). Ambient stays in Ambient.h (its moods). The tempo is a suggestion shown to the user: the KeyStep is the clock.
+    lead) and the tempo, written into the project (the KeyStep plays the project at it). Ambient stays in Ambient.h.
     Deterministic. C++17 + std, no JUCE.
 */
 
 #pragma once
 
+#include <cmath>
 #include "Ambient.h"
 
 namespace ksp::gen
@@ -38,7 +39,7 @@ inline const std::vector<Style>& styles()
             Style s;   // four on the floor, offbeat open hats, rolling sixteenth hats, a clap on 2 and 4
             s.name = "techno";
             s.label = "Techno";
-            s.info = "F minor, about 130 BPM: four on the floor, offbeat bass, minor stabs, a sparse lead.";
+            s.info = "F minor, 130 BPM: four on the floor, offbeat bass, minor stabs, a sparse lead.";
             s.bpm = 130;
             s.root = 5;
             s.scale = 2;
@@ -58,8 +59,8 @@ inline const std::vector<Style>& styles()
             Style s;   // four on the floor, a clap on 2 and 4, offbeat open hats, swung hats, deep minor ninths
             s.name = "house";
             s.label = "House";
-            s.info = "A minor, about 124 BPM: four on the floor, clap, offbeat open hats with swing, ninth chords on the offbeats.";
-            s.bpm = 124;
+            s.info = "A minor, 128 BPM: four on the floor, clap, offbeat open hats with swing, ninth chords on the offbeats.";
+            s.bpm = 128;
             s.root = 9;
             s.scale = 2;
             s.progression = { { 0, { 0, 2, 4, 6, 8 } }, { 3, { 0, 2, 4, 6, 8 } }, { 5, { 0, 2, 4, 6 } }, { 4, { 0, 2, 4, 6 } } };
@@ -78,7 +79,7 @@ inline const std::vector<Style>& styles()
             Style s;   // the two-step: kick on 1 and on the "and" of 3, snare on 2 and 4, busy hats with ghosts
             s.name = "dnb";
             s.label = "Drum & bass";
-            s.info = "E minor, about 174 BPM: two-step beat with ghost snares, long sub bass, a slow pad and a melody.";
+            s.info = "E minor, 174 BPM: two-step beat with ghost snares, long sub bass, a slow pad and a melody.";
             s.bpm = 174;
             s.root = 4;
             s.scale = 2;
@@ -122,8 +123,37 @@ inline Params styleParams (const Style& s, unsigned seed = 1)
     return p;
 }
 
+/** The project's tempo (item 0x78, params 0x46-0x48 = BPM x 100 in three 7-bit parts, low first; KSCON's ksp_setlist.py).
+    0 when the project has no such values or they read as an erased block (127 127 3). */
+inline double tempo (ProjectData& p)
+{
+    int v[3] {};
+    for (int k = 0; k < 3; ++k)
+    {
+        const int* c = cell (p, item::project, static_cast<std::uint8_t> (0x46 + k), { 1 });
+        if (c == nullptr || *c == kUnreadable || *c < 0 || *c > 127)
+            return 0.0;
+        v[k] = *c;
+    }
+    const int bpm100 = v[0] | v[1] << 7 | v[2] << 14;
+    return bpm100 >= 3000 && bpm100 <= 30000 ? bpm100 / 100.0 : 0.0;
+}
+
+/** Sets the project's tempo (30-300 BPM). False when the project has no such values. */
+inline bool setTempo (ProjectData& p, double bpm)
+{
+    int* c[3];
+    for (int k = 0; k < 3; ++k)
+        if ((c[k] = cell (p, item::project, static_cast<std::uint8_t> (0x46 + k), { 1 })) == nullptr)
+            return false;
+    const int bpm100 = static_cast<int> (std::lround (std::clamp (bpm, 30.0, 300.0) * 100.0));
+    for (int k = 0; k < 3; ++k)
+        *c[k] = (bpm100 >> (7 * k)) & 0x7F;
+    return true;
+}
+
 /** Writes patterns 1..variations of tracks first..last: track 1 goes to drum mode and gets the groove (the last variation
-    with a fill), tracks 2-4 the style's roles with their time division. Returns an error (the project may be partly
+    with a fill), tracks 2-4 the style's roles with their time division, and the style's tempo. Returns an error (the project may be partly
     changed) or an empty string. */
 inline std::string applyStyle (ProjectData& project, const Style& s, const Params& p, int firstTrack = 1, int lastTrack = 4)
 {
@@ -156,6 +186,8 @@ inline std::string applyStyle (ProjectData& project, const Style& s, const Param
                 return "track " + std::to_string (t) + " pattern " + std::to_string (v + 1) + ": " + e;
         }
     }
+    if (! setTempo (project, s.bpm))
+        return "this project has no tempo value";
     if (int* state = cell (project, item::project, 37, { 1 }))
         *state = 3;
     return {};

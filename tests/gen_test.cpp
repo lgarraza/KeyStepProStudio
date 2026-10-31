@@ -208,9 +208,17 @@ int main()
                 }
             }
             CHECK (7, readScene (proj, 4).valid);
+            CHECK (7, std::abs (gen::tempo (proj) - st.bpm) < 0.001);
             auto again = p;
             CHECK (7, gen::applyStyle (again, st, sp).empty() && readDrumPattern (again, 2).hits.size() == readDrumPattern (proj, 2).hits.size());
         }
+        auto tp = p;
+        CHECK (7, gen::setTempo (tp, 120.0) && *cell (tp, item::project, 0x46, { 1 }) == (12000 & 0x7F)
+                  && *cell (tp, item::project, 0x47, { 1 }) == ((12000 >> 7) & 0x7F) && *cell (tp, item::project, 0x48, { 1 }) == 0);
+        *cell (tp, item::project, 0x46, { 1 }) = 127;
+        *cell (tp, item::project, 0x47, { 1 }) = 127;
+        *cell (tp, item::project, 0x48, { 1 }) = 3;
+        CHECK (7, gen::tempo (tp) == 0.0);
         const auto& dnb = *gen::findStyle ("dnb");
         const auto groove = gen::makeDrumPattern (gen::styleParams (dnb), dnb.drums, 0);
         std::vector<int> kickAt;

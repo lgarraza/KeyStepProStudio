@@ -2059,7 +2059,7 @@ private:
         if (generatorWindow != nullptr)
             generatorWindow->content().setCanUndo (true);
         if (preset != nullptr)
-            say ("Generated " + juce::String (preset->label) + ", seed " + juce::String (seed) + ": drums on track 1, patterns 1-4 and scenes 1-4, about "
+            say ("Generated " + juce::String (preset->label) + ", seed " + juce::String (seed) + ": drums on track 1, patterns 1-4 and scenes 1-4, "
                  + juce::String (preset->bpm) + " BPM (not saved, not on the KeyStep yet; the grid does not show drum patterns yet).");
         else
             say ("Generated " + mood + ", seed " + juce::String (seed) + ": patterns 1-4 and scenes 1-8 (not saved, not on the KeyStep yet).");

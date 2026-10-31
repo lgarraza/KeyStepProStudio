@@ -26,7 +26,8 @@
   RNG salt; for bass and stab euclidean pulses, rotation and gate) goes through `makeRolePattern`; `euclid` and `makeDrumPattern(DrumSpec)` build drum grooves (kick, backbeat snare, hats,
   ghosts, swing, fixed kick steps, offbeat open hats, a fill; GM lanes of the default drum map) for `Model/DrumPattern.h`. Ambient is the first preset (`ambientRole`); `gen_test` freezes its output with a hash.
 - `Source/Gen/Styles.h`: the style presets (techno, house, dnb) as data: key, progression, a `DrumSpec` for track 1 and a role, division
-  and Mono/Poly for tracks 2-4. `applyStyle` puts track 1 in drum mode and writes all four; `applyScenes(..., cross = false)` the scenes.
+  and Mono/Poly for tracks 2-4. `applyStyle` puts track 1 in drum mode, writes all four and sets the project tempo (`setTempo`: item 0x78
+  params 0x46-0x48 = BPM x 100 in 7-bit parts, low first); `applyScenes(..., cross = false)` the scenes.
   Drum writes are not yet verified on the device (see `DrumPattern.h`).
 - `Source/Gen/Ambient.h`: experimental ambient generator. Four tracks (drone, pad, slow melody, bells) with pattern
   lengths 16, 13, 17, 19 so they drift apart, four variations over a I-VI-IV-V movement; deterministic per seed.
