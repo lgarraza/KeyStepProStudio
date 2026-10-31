@@ -180,7 +180,7 @@ int main()
 
     // 7. Styles: drums on track 1 (drum mode), roles on 2-4, valid and deterministic; fixed kicks, offbeat hats, fill
     {
-        CHECK (7, gen::styles().size() == 3 && gen::findStyle ("house") != nullptr && gen::findStyle ("dark") == nullptr);
+        CHECK (7, gen::styles().size() == 5 && gen::findStyle ("house-chill") != nullptr && gen::findStyle ("dark") == nullptr);
         for (const auto& st : gen::styles())
         {
             auto proj = p;

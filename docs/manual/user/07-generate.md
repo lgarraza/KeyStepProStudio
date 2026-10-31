@@ -3,7 +3,8 @@
 **You will:** create patterns and scenes (ambient, techno, house or drum & bass) with one button, then listen and edit.
 
 1. Open (or create) a project; **Generate...** needs one open.
-2. Pick a **style**: Ambient, Techno, House or Drum & bass. For Ambient, also pick a **mood**: Classic, Ethereal, Dark or Meditative.
+2. Pick a **style** and its **mood**: Ambient (Classic, Ethereal, Dark, Meditative), Techno (Driving), House (Deep,
+   Chill, Melodic) or Drum & bass (Liquid).
 3. Set the **seed**. Same seed = same music. **New seed** rolls a number.
 4. Choose whether the scenes **chain** variations and (Ambient only) whether time divisions are **slow**.
 5. Press **Generate into this project**.
@@ -15,7 +16,7 @@ patterns are left alone.
 fill), plus patterns 1-4 of track 2 (bass), track 3 (chords) and track 4 (lead), and scenes 1-4. The drums use the
 KeyStep's default drum map (kick 36, snare 38, clap 39, closed hat 42, open hat 46), so load a General MIDI style kit on
 track 1; the app sends track 1 to its instrument on the drum channel (10). The project also gets the style's tempo
-(techno 130, house 128, drum & bass 174 BPM); change it on the KeyStep if you like. The grid does not show drum
+(techno 130; house deep 128, chill 118, melodic 124; drum & bass 174 BPM); change it on the KeyStep if you like. The grid does not show drum
 patterns yet.
 
 **Undo** restores the project as it was before the last generation.

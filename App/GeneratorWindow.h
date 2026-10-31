@@ -31,18 +31,19 @@ public:
                                     static_cast<juce::Component*> (&note) })
             addAndMakeVisible (*c);
         styleLabel.setText ("Style", juce::dontSendNotification);
+        families.add ("ambient");
         styleBox.addItem ("Ambient", 1);
-        for (std::size_t i = 0; i < ksp::gen::styles().size(); ++i)
-            styleBox.addItem (ksp::gen::styles()[i].label, static_cast<int> (i) + 2);
+        for (const auto& st : ksp::gen::styles())
+            if (! families.contains (juce::String (st.family)))
+            {
+                families.add (st.family);
+                styleBox.addItem (st.familyLabel, families.size());
+            }
         styleBox.setSelectedId (1, juce::dontSendNotification);
-        styleBox.onChange = [this] { showMoodInfo(); };
+        styleBox.onChange = [this] { fillMoods (1); showMoodInfo(); };
         moodLabel.setText ("Mood", juce::dontSendNotification);
         seedLabel.setText ("Seed", juce::dontSendNotification);
-        moodBox.addItem ("Classic", 1);
-        moodBox.addItem ("Ethereal", 2);
-        moodBox.addItem ("Dark", 3);
-        moodBox.addItem ("Meditative", 4);
-        moodBox.setSelectedId (2, juce::dontSendNotification);
+        fillMoods (2);
         moodBox.onChange = [this] { showMoodInfo(); };
         seedBox.setInputRestrictions (9, "0123456789");
         seedBox.setText ("1", false);
@@ -70,13 +71,17 @@ public:
 
     void setState (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool canUndo)
     {
-        int styleId = 1;
-        for (std::size_t i = 0; i < ksp::gen::styles().size(); ++i)
-            if (style == juce::String (ksp::gen::styles()[i].name))
-                styleId = static_cast<int> (i) + 2;
-        styleBox.setSelectedId (styleId, juce::dontSendNotification);
-        const int id = mood == "ethereal" ? 2 : mood == "dark" ? 3 : mood == "meditative" ? 4 : mood == "classic" ? 1 : moodBox.getSelectedId();
-        moodBox.setSelectedId (id, juce::dontSendNotification);
+        if (const auto* st = ksp::gen::findStyle (style.toStdString()))
+        {
+            styleBox.setSelectedId (families.indexOf (juce::String (st->family)) + 1, juce::dontSendNotification);
+            const auto list = familyStyles();
+            fillMoods (static_cast<int> (std::find (list.begin(), list.end(), st) - list.begin()) + 1);
+        }
+        else
+        {
+            styleBox.setSelectedId (1, juce::dontSendNotification);
+            fillMoods (mood == "ethereal" ? 2 : mood == "dark" ? 3 : mood == "meditative" ? 4 : 1);
+        }
         seedBox.setText (juce::String (seed), false);
         chainsToggle.setToggleState (chains, juce::dontSendNotification);
         slowToggle.setToggleState (slow, juce::dontSendNotification);
@@ -116,10 +121,34 @@ public:
     }
 
 private:
+    /** The presets of the family chosen in the Style box (none for Ambient, whose moods are Ambient.h's). */
+    std::vector<const ksp::gen::Style*> familyStyles() const
+    {
+        std::vector<const ksp::gen::Style*> out;
+        const auto family = families[styleBox.getSelectedId() - 1];
+        for (const auto& st : ksp::gen::styles())
+            if (juce::String (st.family) == family)
+                out.push_back (&st);
+        return out;
+    }
+
+    void fillMoods (int select)
+    {
+        moodBox.clear (juce::dontSendNotification);
+        const auto list = familyStyles();
+        if (list.empty())
+            for (auto* m : { "Classic", "Ethereal", "Dark", "Meditative" })
+                moodBox.addItem (m, moodBox.getNumItems() + 1);
+        for (const auto* st : list)
+            moodBox.addItem (st->mood, moodBox.getNumItems() + 1);
+        moodBox.setSelectedId (juce::jlimit (1, moodBox.getNumItems(), select), juce::dontSendNotification);
+    }
+
     const ksp::gen::Style* style() const
     {
-        const int i = styleBox.getSelectedId() - 2;
-        return i >= 0 && i < static_cast<int> (ksp::gen::styles().size()) ? &ksp::gen::styles()[static_cast<std::size_t> (i)] : nullptr;
+        const auto list = familyStyles();
+        const int i = moodBox.getSelectedId() - 1;
+        return i >= 0 && i < static_cast<int> (list.size()) ? list[static_cast<std::size_t> (i)] : nullptr;
     }
 
     juce::String styleName() const { return style() != nullptr ? juce::String (style()->name) : juce::String ("ambient"); }
@@ -140,7 +169,6 @@ private:
         static const char* info[] { "D Dorian with simple triads (the first version).", "C major: Cmaj7sus4, G7sus4, Am9, Fmaj9.",
                                     "D minor: Dm9, Bb maj7, Gm7, Asus4 with the seventh.", "G mixolydian: open sus2 and add9 chords." };
         const auto* st = style();
-        moodBox.setEnabled (st == nullptr);
         slowToggle.setEnabled (st == nullptr);
         moodInfo.setText (st != nullptr ? juce::String (st->info) + " The project gets that tempo."
                                         : juce::String (info[juce::jlimit (0, 3, moodBox.getSelectedId() - 1)]),
@@ -154,6 +182,7 @@ private:
                       juce::dontSendNotification);
     }
 
+    juce::StringArray families;   // "ambient" then the families of Styles.h, in the Style box's order
     juce::ComboBox styleBox, moodBox;
     juce::TextEditor seedBox;
     juce::Label styleLabel, moodLabel, seedLabel, moodInfo, note;

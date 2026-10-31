@@ -24,6 +24,7 @@ struct TrackStyle
 struct Style
 {
     std::string name, label, info;
+    std::string family, familyLabel, mood;   // the window lists the families and, per family, its moods
     int bpm = 120;
     int root = 9, scale = 2;
     std::vector<Chord> progression;
@@ -39,6 +40,7 @@ inline const std::vector<Style>& styles()
             Style s;   // four on the floor, offbeat open hats, rolling sixteenth hats, a clap on 2 and 4
             s.name = "techno";
             s.label = "Techno";
+            s.family = "techno"; s.familyLabel = "Techno"; s.mood = "Driving";
             s.info = "F minor, 130 BPM: four on the floor, offbeat bass, minor stabs, a sparse lead.";
             s.bpm = 130;
             s.root = 5;
@@ -58,7 +60,8 @@ inline const std::vector<Style>& styles()
         {
             Style s;   // four on the floor, a clap on 2 and 4, offbeat open hats, swung hats, deep minor ninths
             s.name = "house";
-            s.label = "House";
+            s.label = "House, deep";
+            s.family = "house"; s.familyLabel = "House"; s.mood = "Deep";
             s.info = "A minor, 128 BPM: four on the floor, clap, offbeat open hats with swing, ninth chords on the offbeats.";
             s.bpm = 128;
             s.root = 9;
@@ -76,9 +79,51 @@ inline const std::vector<Style>& styles()
             v.push_back (s);
         }
         {
+            Style s;   // laid back: kick and offbeat open hats only, a rim on 2 and 4, long major sevenths, a few bells
+            s.name = "house-chill";
+            s.label = "House, chill";
+            s.family = "house"; s.familyLabel = "House"; s.mood = "Chill";
+            s.info = "C major, 118 BPM: soft kick, rim shot on 2 and 4, offbeat open hats, long major seventh chords, a few bells.";
+            s.bpm = 118;
+            s.root = 0;
+            s.scale = 1;
+            s.progression = { { 3, { 0, 2, 4, 6 } }, { 2, { 0, 2, 4, 6 } }, { 1, { 0, 2, 4, 6, 8 } }, { 0, { 0, 2, 4, 6, 8 } } };
+            s.drums.hatEvery = 0;
+            s.drums.offbeatOpenHat = true;
+            s.drums.snareLane = 1;   // side stick
+            s.drums.ghostChance = 3;
+            s.tracks[0].spec = { Role::bass, 16, -1, 36, 20, 3, 6, 60 };       // three notes, long
+            s.tracks[1].spec = { Role::stab, 16, -1, 55, 30, 2, 0, 90 };       // two long chords a bar
+            s.tracks[1].poly = true;
+            s.tracks[2].spec = { Role::bells, 32, 14, 60, 40 };
+            v.push_back (s);
+        }
+        {
+            Style s;   // driving but musical: clap, sixteenth hats, offbeat bass, short chords and a busier melody
+            s.name = "house-melodic";
+            s.label = "House, melodic";
+            s.family = "house"; s.familyLabel = "House"; s.mood = "Melodic";
+            s.info = "D minor, 124 BPM: four on the floor, clap, sixteenth hats, offbeat bass, short chords and a lead melody.";
+            s.bpm = 124;
+            s.root = 2;
+            s.scale = 2;
+            s.progression = { { 0, { 0, 2, 4, 6, 8 } }, { 5, { 0, 2, 4, 6 } }, { 2, { 0, 2, 4, 8 } }, { 6, { 0, 2, 4 } } };
+            s.drums.hatEvery = 1;
+            s.drums.offbeatOpenHat = true;
+            s.drums.snareLane = 3;   // clap
+            s.drums.swingShift = 6;
+            s.drums.ghostChance = 4;
+            s.tracks[0].spec = { Role::bass, 16, -1, 36, 20, 4, 2, 30 };       // offbeat
+            s.tracks[1].spec = { Role::stab, 16, -1, 57, 30, 3, -1, 40 };
+            s.tracks[1].poly = true;
+            s.tracks[2].spec = { Role::melody, 32, 35, 48, 40 };
+            v.push_back (s);
+        }
+        {
             Style s;   // the two-step: kick on 1 and on the "and" of 3, snare on 2 and 4, busy hats with ghosts
             s.name = "dnb";
             s.label = "Drum & bass";
+            s.family = "dnb"; s.familyLabel = "Drum & bass"; s.mood = "Liquid";
             s.info = "E minor, 174 BPM: two-step beat with ghost snares, long sub bass, a slow pad and a melody.";
             s.bpm = 174;
             s.root = 4;

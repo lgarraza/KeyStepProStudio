@@ -2,7 +2,7 @@
     KspGen: experiment, generates ambient patterns (Source/Gen/Ambient.h) into a test slot of the KeyStep Pro.
     Without --write it only reads the slot and shows what it would write (a dry run). WRITES to the device with --write.
 
-        KspGen [--to 16] [--seed N] [--root 2] [--scale 3] [--tracks 1-4] [--variations 4] [--no-scenes] [--no-slow] [--chains] [--mood classic|ethereal|dark|meditative] [--style techno|house|dnb] [--write] [--device "KeyStep Pro"]
+        KspGen [--to 16] [--seed N] [--root 2] [--scale 3] [--tracks 1-4] [--variations 4] [--no-scenes] [--no-slow] [--chains] [--mood classic|ethereal|dark|meditative] [--style techno|house|house-chill|house-melodic|dnb] [--write] [--device "KeyStep Pro"]
 
     Any slot 1-16. Steps: read the slot and save it to Backups (ksp-pre-restore-P<n>-...), put patterns 1..variations of
     the chosen tracks over what the slot has (everything else in the slot stays), save the generated project to
@@ -56,7 +56,7 @@ int main (int argc, char* argv[])
     {
         if (style == nullptr)
         {
-            std::cout << "--style: techno, house or dnb" << std::endl;
+            std::cout << "--style: techno, house, house-chill, house-melodic or dnb" << std::endl;
             return 2;
         }
         const int variations = params.variations;
