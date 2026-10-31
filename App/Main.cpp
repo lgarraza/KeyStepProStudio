@@ -1171,7 +1171,7 @@ public:
             g.fillRoundedRectangle (card, 8.0f);
             g.setColour (sel ? juce::Colours::white : c.darker (0.25f));
             g.drawRoundedRectangle (card.reduced (1.5f), 8.0f, sel ? 3.0f : 2.0f);
-            const auto dot = juce::Rectangle<float> (card.getX() + 8.0f, card.getY() + 12.0f, 26.0f, 26.0f);
+            const auto dot = instLabel[i].getBounds().toFloat();   // the number sits on it, so they share the box
             g.setColour (ksp::ui::palette::ink.withAlpha (sel ? 1.0f : 0.7f));
             g.fillEllipse (dot);
         }
@@ -1195,11 +1195,29 @@ public:
         repaint();
     }
 
+    int cardAt (const juce::MouseEvent& e)
+    {
+        const auto pos = e.getEventRelativeTo (this).getPosition();
+        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
+            if (cardRect[static_cast<std::size_t> (t)].contains (pos))
+                return t + 1;
+        return 0;
+    }
+
     void mouseDown (const juce::MouseEvent& e) override
     {
-        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
-            if (cardRect[static_cast<std::size_t> (t)].contains (e.getPosition()))
-                trackBox.setSelectedId (t + 1, juce::sendNotification);
+        if (const int t = cardAt (e); t != 0 && t != track())
+            trackBox.setSelectedId (t, juce::sendNotification);
+    }
+
+    // a hand over the cards of the tracks that are not selected: clicking one selects it
+    void mouseMove (const juce::MouseEvent& e) override
+    {
+        if (e.eventComponent == this)
+        {
+            const int t = cardAt (e);
+            setMouseCursor (t != 0 && t != track() ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
+        }
     }
 
     void resized() override
@@ -1225,7 +1243,7 @@ public:
         trackTabs.setVisible (false);   // the cards select the track now
         toolsButton.setBounds (top.removeFromRight (80));
         top.removeFromLeft (6);
-        generateButton.setBounds (top.removeFromLeft (110));
+        generateButton.setBounds (top.removeFromLeft (128));
         top.removeFromLeft (6);
         mapButton.setBounds (top.removeFromLeft (110));
         r.removeFromTop (6);
@@ -1326,7 +1344,8 @@ private:
     std::array<juce::Rectangle<int>, 4> cardRect;
     static constexpr int cardHeight = 78;
     std::array<juce::String, 4> missingName;             // a plugin of the project that is not on this machine: kept untouched
-    juce::TextButton toolsButton, generateButton, mapButton;
+    juce::TextButton toolsButton, mapButton;
+    ksp::ui::WandButton generateButton;   // a magic wand on it: the way to new music
     std::unique_ptr<ksp::ui::GeneratorWindow> generatorWindow;
     std::unique_ptr<ksp::ui::ProjectMapWindow> mapWindow;
     std::optional<ksp::ProjectData> beforeGenerate;   // the project as it was before the last generation, for Undo
@@ -1729,6 +1748,11 @@ private:
             soloToggle[i].onClick = [this, t] { engine.setSolo (t, soloToggle[static_cast<std::size_t> (t)].getToggleState()); };
             muteToggle[i].onClick = [this, t] { engine.setMute (t, muteToggle[static_cast<std::size_t> (t)].getToggleState()); };
             volSlider[i].onValueChange = [this, t] { engine.setVolume (t, static_cast<float> (volSlider[static_cast<std::size_t> (t)].getValue())); refreshCards(); };
+            // a click anywhere on a card, its controls included, selects that track (mouseDown below)
+            for (juce::Component* c : { static_cast<juce::Component*> (&instBox[i]), static_cast<juce::Component*> (&editButton[i]),
+                                        static_cast<juce::Component*> (&muteToggle[i]), static_cast<juce::Component*> (&soloToggle[i]),
+                                        static_cast<juce::Component*> (&volSlider[i]) })
+                c->addMouseListener (this, true);
         }
         addAndMakeVisible (meterLabel);
         meterLabel.setText ("Audio off", juce::dontSendNotification);
