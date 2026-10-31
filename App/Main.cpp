@@ -1175,7 +1175,7 @@ public:
         repaint();
     }
 
-    int cardAt (const juce::MouseEvent& e) const
+    int cardAt (const juce::MouseEvent& e)
     {
         const auto pos = e.getEventRelativeTo (this).getPosition();
         for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
@@ -1223,7 +1223,7 @@ public:
         trackTabs.setVisible (false);   // the cards select the track now
         toolsButton.setBounds (top.removeFromRight (80));
         top.removeFromLeft (6);
-        generateButton.setBounds (top.removeFromLeft (110));
+        generateButton.setBounds (top.removeFromLeft (128));
         top.removeFromLeft (6);
         mapButton.setBounds (top.removeFromLeft (110));
         r.removeFromTop (6);
@@ -1322,7 +1322,8 @@ private:
     std::array<juce::Rectangle<int>, 4> cardRect;
     static constexpr int cardHeight = 78;
     std::array<juce::String, 4> missingName;             // a plugin of the project that is not on this machine: kept untouched
-    juce::TextButton toolsButton, generateButton, mapButton;
+    juce::TextButton toolsButton, mapButton;
+    ksp::ui::WandButton generateButton;   // a magic wand on it: the way to new music
     std::unique_ptr<ksp::ui::GeneratorWindow> generatorWindow;
     std::unique_ptr<ksp::ui::ProjectMapWindow> mapWindow;
     std::optional<ksp::ProjectData> beforeGenerate;   // the project as it was before the last generation, for Undo
