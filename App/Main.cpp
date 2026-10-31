@@ -1543,7 +1543,7 @@ private:
              + " an octave (not written to the KeyStep yet).");
     }
 
-    /** Scans the VST3 folders (one file at a time in KspScanner.exe) and keeps the list: instruments for the tracks, effects for
+    /** Scans the VST3 folders (one file at a time in KspVstHelper.exe) and keeps the list: instruments for the tracks, effects for
         their chains. Takes a few minutes the first time. */
     void scanPlugins()
     {
@@ -1563,7 +1563,7 @@ private:
                 if (safe->pluginWindow != nullptr)
                     safe->pluginWindow->refresh();
                 safe->refreshInstrumentChoices();
-                safe->say (n < 0 ? "The plugin scanner (KspScanner) not found next to the app: plugins are not scanned in the app itself."
+                safe->say (n < 0 ? "The VST3 helper (KspVstHelper) was not found next to the app: plugins are not scanned in the app itself."
                                  : "Plugins: " + juce::String (inst) + " instruments, " + juce::String (fx) + " effects.");
             });
         }).detach();

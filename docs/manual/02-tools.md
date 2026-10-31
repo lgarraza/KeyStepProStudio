@@ -26,9 +26,9 @@ to drum mode and gets the style's drum patterns, and tracks 2-4 get bass, chords
 (KspBackup output) using the same rules as the read-back check (`writePlan` fix-ups, then `compareReadBack`). Use it when a tool says
 "value block(s) differ" to see which blocks.
 
-## KspScanner (VST3 scanner, run by the app)
+## KspVstHelper (VST3 helper, run by the app)
 
-`KspScanner <plugin file> <result.xml>`: loads one VST3 file, writes its plugin descriptions to the XML and exits 0; a crash kills only
+`KspVstHelper <plugin file> <result.xml>`: loads one VST3 file, writes its plugin descriptions to the XML and exits 0; a crash kills only
 this process. Not meant to be run by hand; the app starts it per file.
 
 ## KspHostCheck (no device, no window)

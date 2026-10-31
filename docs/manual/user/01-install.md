@@ -14,7 +14,7 @@
    `SHA256SUMS.txt` on the release page. The release notes also link the VirusTotal scans.
 4. Start **KeyStepPro Studio** from the Start menu (installer) or run the exe (zip).
 
-The installer also adds `KspScanner.exe` (plugin scanner) and the command-line tools.
+The installer also adds `KspVstHelper.exe` (VST3 helper) and the command-line tools.
 
 ## First run
 
@@ -31,4 +31,4 @@ The installer also adds `KspScanner.exe` (plugin scanner) and the command-line t
 
 ![Main window](img/shot-first-run.png)
 
-**Watch out:** the first time you run **Scan plugins**, Windows may ask once to allow `KspScanner.exe`. Allow it.
+**Watch out:** the first time you run **Scan plugins**, Windows may ask once to allow `KspVstHelper.exe`. Allow it.

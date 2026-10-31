@@ -40,9 +40,9 @@ Icon: the white chassis, black display strip and the four track colours, drawn b
 - Write to slot now sends only what differs from the slot as it was just read (plus all state blocks), about 75 s in total instead of
   about 200 s (backup read, write, commit, full read-back).
 - **Layout**: the top bar keeps the KeyStep's own actions (Library, Save, Save as, Open backup, Read from KeyStep, project box, STEPS / BPM) plus Generate..., Project Map and FX... (also in Tools); the extras live in the **Tools** menu at its right: Scan plugins, Plugins..., MIDI monitor, Track -8va / +8va, Rec WAV (with mode, tail, Follow the KeyStep and the recordings folder), Audio..., FX... and Test note. Below the grid stay the T1-T4 instrument rows, the transport / REC status and the meter. Wherever these notes say "button" for those items, read "Tools menu item".
-- **Scan plugins**: scans the VST3 folders one file at a time in `KspScanner.exe` (next to the app; a plugin that crashes or hangs only
+- **Scan plugins**: scans the VST3 folders one file at a time in `KspVstHelper.exe` (next to the app; a plugin that crashes or hangs only
   kills that child and is blacklisted), keeps the list in `Documents/KeyStepPro Studio/KnownPlugins.xml`. First run on Leo's machine:
-  116 instruments and 173 effects (289 types, a few minutes; Windows asked once to allow the unsigned scanner).
+  116 instruments and 173 effects (289 types, a few minutes; Windows asked once to allow the unsigned helper).
 - **Plugins...**: the list with filter box, Instruments / Effects selector and a **Hide** checkbox per plugin (kept in `HiddenPlugins.xml`,
   not deleted; **Show hidden** brings them back into view). `PluginList::instruments()` / `effects()`, what the tracks will offer,
   leave the hidden ones out.

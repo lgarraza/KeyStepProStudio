@@ -39,10 +39,14 @@ WizardStyle=modern
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
+[InstallDelete]
+; the helper was called KspScanner.exe up to v0.4.1
+Type: files; Name: "{app}\KspScanner.exe"
+
 [Files]
-; the app and its plugin scanner (the app looks for KspScanner.exe next to itself)
+; the app and its VST3 helper (the app looks for KspVstHelper.exe next to itself)
 Source: "{#BuildDir}\KeyStepProStudio_artefacts\Release\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#BuildDir}\KspScanner_artefacts\Release\KspScanner.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#BuildDir}\KspVstHelper_artefacts\Release\KspVstHelper.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; command-line tools
 Source: "{#BuildDir}\KspProbe_artefacts\Release\KspProbe.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
 Source: "{#BuildDir}\KspBackup_artefacts\Release\KspBackup.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
