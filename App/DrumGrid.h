@@ -133,13 +133,13 @@ public:
 
     void mouseDown (const juce::MouseEvent& e) override
     {
-        paint = Paint::none;
+        brush = Paint::none;
         if (pattern == nullptr)
             return;
         if (e.y < kRulerH)
         {
             setLength (e.x);
-            paint = Paint::ruler;
+            brush = Paint::ruler;
             return;
         }
         const int lane = laneAt (e.y);
@@ -150,19 +150,19 @@ public:
             return;
         }
         const int step = stepAt (e.x);
-        paint = find (lane, step) != nullptr ? Paint::erase : Paint::add;
+        brush = find (lane, step) != nullptr ? Paint::erase : Paint::add;
         apply (lane, step);
     }
 
     void mouseDrag (const juce::MouseEvent& e) override
     {
-        if (paint == Paint::ruler)
+        if (brush == Paint::ruler)
             setLength (e.x);
-        else if (paint != Paint::none && e.x >= kNameW && e.y >= kRulerH && e.y < getHeight())
+        else if (brush != Paint::none && e.x >= kNameW && e.y >= kRulerH && e.y < getHeight())
             apply (laneAt (e.y), stepAt (e.x));
     }
 
-    void mouseUp (const juce::MouseEvent&) override { paint = Paint::none; }
+    void mouseUp (const juce::MouseEvent&) override { brush = Paint::none; }
 
     void mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& w) override
     {
@@ -197,7 +197,7 @@ private:
     void apply (int lane, int step)
     {
         auto& hits = pattern->hits;
-        if (paint == Paint::erase)
+        if (brush == Paint::erase)
         {
             const auto it = std::find_if (hits.begin(), hits.end(), [&] (const auto& h) { return h.lane == lane && h.step == step; });
             if (it == hits.end())
@@ -238,7 +238,7 @@ private:
     }
 
     ksp::model::DrumPattern* pattern = nullptr;
-    Paint paint = Paint::none;
+    Paint brush = Paint::none;
     int hoverLane = -1;
 };
 
