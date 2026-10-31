@@ -7,7 +7,7 @@
     Any slot 1-16. Steps: read the slot and save it to Backups (ksp-pre-restore-P<n>-...), put patterns 1..variations of
     the chosen tracks over what the slot has (everything else in the slot stays), save the generated project to
     Documents/KeyStepPro Studio/Generated/, write, commit and read back to compare (Device::writeSlot, like KspRestore).
-    Track 1 is written as a sequencer track: if it is in drum mode on the device its notes will not play as a melody.
+    Track 1 is written as a sequencer track, or with --style as a drum pattern (track 1 goes to drum mode).
 */
 
 #include <iostream>
@@ -123,8 +123,16 @@ int main (int argc, char* argv[])
     std::cout << "Generated (seed " << params.seed << ", root " << ksp::pitchClassName (params.root) << ", "
               << ksp::scaleName (params.scale) << "): " << ksp::summary (project) << std::endl;
     for (int t = firstTrack; t <= lastTrack; ++t)
-        std::cout << "  track " << t << " pattern 1 (" << ksp::gen::kLengths[t - 1] << " steps): "
-                  << ksp::gen::preview (ksp::model::readPattern (project, t, 1)) << std::endl;
+    {
+        if (t == 1 && style != nullptr)
+        {
+            const auto d = ksp::model::readDrumPattern (project, 1);
+            std::cout << "  track 1 drum pattern 1 (" << d.length << " steps): " << d.hits.size() << " hits" << std::endl;
+            continue;
+        }
+        const auto pt = ksp::model::readPattern (project, t, 1);
+        std::cout << "  track " << t << " pattern 1 (" << pt.length << " steps): " << ksp::gen::preview (pt) << std::endl;
+    }
 
     const auto outDir = ksp::backupsFolder().getParentDirectory().getChildFile ("Generated");
     const auto outFile = outDir.getChildFile ("gen-seed" + juce::String (params.seed) + "-P" + juce::String (to) + "-"
