@@ -1255,6 +1255,8 @@ public:
         generateButton.setBounds (top.removeFromLeft (128));
         top.removeFromLeft (6);
         mapButton.setBounds (top.removeFromLeft (110));
+        top.removeFromLeft (6);
+        fxButton.setBounds (top.removeFromLeft (60));
         r.removeFromTop (6);
         auto row = r.removeFromTop (28);
         for (auto* c : { &patternBox, &lengthBox, &rootBox, &scaleBox })
@@ -1360,7 +1362,7 @@ private:
     std::array<juce::Rectangle<int>, 4> cardRect;
     static constexpr int cardHeight = 78;
     std::array<juce::String, 4> missingName;             // a plugin of the project that is not on this machine: kept untouched
-    juce::TextButton toolsButton, mapButton;
+    juce::TextButton toolsButton, mapButton, fxButton;   // FX is also in Tools; on the bar so the effects are easy to find
     ksp::ui::WandButton generateButton;   // a magic wand on it: the way to new music
     std::unique_ptr<ksp::ui::GeneratorWindow> generatorWindow;
     std::unique_ptr<ksp::ui::ProjectMapWindow> mapWindow;
@@ -1917,6 +1919,9 @@ private:
         addAndMakeVisible (mapButton);
         mapButton.setButtonText ("Project Map");
         mapButton.onClick = [this] { showMap(); };
+        addAndMakeVisible (fxButton);
+        fxButton.setButtonText ("FX...");
+        fxButton.onClick = [this] { showFx(); };
         generateButton.setButtonText ("Generate...");
         generateButton.onClick = [this] { showGenerator(); };
         transportLabel.setText ("STOP", juce::dontSendNotification);
