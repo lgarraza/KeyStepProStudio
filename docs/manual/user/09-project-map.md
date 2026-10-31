@@ -2,7 +2,7 @@
 
 **You will:** see the whole structure of the project at a glance: which pattern each track plays in each scene, how the chains run, and the pattern bank.
 
-Click **Project Map** in the top row. It opens a window with three views; nothing in it changes your project.
+Click **Project Map** in the top row. It opens a window with three views. Only the Scene matrix edits the project (see below); the other two just show it.
 
 ## Scene matrix
 
@@ -12,7 +12,15 @@ Click **Project Map** in the top row. It opens a window with three views; nothin
 2. Scenes 01-16 across the top (**SAVED** or **EMPTY**), tracks T1-T4 down the side in the KeyStep colours.
 3. Each cell is the pattern that track plays in that scene, drawn as a small piano roll. The number is the pattern; `x4` means the track plays a chain of 4 patterns, shown in order on the strip at the bottom of the cell.
 4. Hatched cells play nothing. Drums are not shown yet.
-5. Hover or click a cell to see its pattern, length, notes and chain in the panel on the right.
+5. Hover a cell to see its pattern, length, notes and chain in the panel on the right.
+
+### Editing scenes
+
+- **Click a cell** and pick the pattern (1-16) that track plays in that scene. This removes that cell's chain; the menu also has *Remove the chain* to keep the pattern and drop the chain. Picking a pattern in an empty scene makes it a saved scene.
+- **Right-click a scene number** for **Copy**, **Paste** and **Clear** (back to an empty scene).
+- **Undo edit** (top right) takes back the last change.
+
+Edits are not saved and not on the KeyStep yet: use **Save** and **Write** as usual. Editing chains (adding, removing, reordering patterns) is not here yet.
 
 ## Chain timeline
 
