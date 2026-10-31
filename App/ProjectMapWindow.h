@@ -13,6 +13,8 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include <algorithm>
+#include <optional>
+#include <functional>
 #include <vector>
 
 namespace ksp::ui
@@ -34,8 +36,19 @@ public:
             addAndMakeVisible (b);
         }
         tabs[0].setToggleState (true, juce::dontSendNotification);
+        undoButton.setButtonText ("Undo edit");
+        undoButton.setEnabled (false);
+        undoButton.onClick = [this] { if (onUndo) onUndo(); };
+        addAndMakeVisible (undoButton);
         setSize (1120, 640);
     }
+
+    /** Edits: `onEditScene` writes a scene (scene 1..16); `onClearScene` resets one; `onUndo` takes back the last map edit. */
+    std::function<void (int, const ksp::model::Scene&)> onEditScene;
+    std::function<void (int)> onClearScene;
+    std::function<void()> onUndo;
+
+    void setCanUndo (bool can) { undoButton.setEnabled (can); }
 
     void setProject (const ksp::model::ProjectMap& m, const juce::String& name)
     {
@@ -63,6 +76,7 @@ public:
             b.setBounds (top.removeFromLeft (130));
             top.removeFromLeft (6);
         }
+        undoButton.setBounds (top.removeFromRight (100));
     }
 
     void paint (juce::Graphics& g) override
@@ -75,7 +89,7 @@ public:
         auto top = r.removeFromTop (28);
         g.setColour (inkSoft);
         g.setFont (juce::FontOptions (12.0f));
-        g.drawText ("Structure of the KeyStep Pro project:  " + title + "   (tracks, patterns, scenes, chains)", top.withTrimmedLeft (3 * 136 + 8),
+        g.drawText ("Structure of the KeyStep Pro project:  " + title + "   (tracks, patterns, scenes, chains)", top.withTrimmedLeft (3 * 136 + 8).withTrimmedRight (108),
                     juce::Justification::centredLeft);
         r.removeFromTop (8);
         paintSummary (g, r.removeFromTop (48));
@@ -95,6 +109,21 @@ public:
     void mouseMove (const juce::MouseEvent& e) override { pick (e.getPosition(), false); }
     void mouseDown (const juce::MouseEvent& e) override { pick (e.getPosition(), true); }
     void mouseExit (const juce::MouseEvent&) override {}
+
+    void mouseUp (const juce::MouseEvent& e) override
+    {
+        if (view != 0)
+            return;
+        for (const auto& h : hits)
+            if (h.first.contains (e.getPosition()))
+            {
+                if (h.second.sceneButton && e.mods.isPopupMenu())
+                    sceneMenu (h.second.scene);
+                else if (! h.second.sceneButton && h.second.scene > 0 && h.second.track >= 0)
+                    cellMenu (h.second.scene, h.second.track);
+                return;
+            }
+    }
 
 private:
     struct Hit
@@ -129,6 +158,56 @@ private:
                 }
                 return;
             }
+    }
+
+    /** Pick the pattern a track plays in a scene (drops that cell's chain; the scene becomes a saved scene). */
+    void cellMenu (int s, int t)
+    {
+        if (! onEditScene)
+            return;
+        juce::PopupMenu m;
+        m.addSectionHeader ("Scene " + juce::String (s) + ", track " + juce::String (t + 1) + ": play pattern");
+        const auto& sc = map.scenes[static_cast<std::size_t> (s - 1)];
+        for (int k = 1; k <= ksp::model::kPatterns; ++k)
+        {
+            const auto* p = patternAt (t, k);
+            const bool cur = sc.valid && sc.chain[static_cast<std::size_t> (t)].empty() && sc.pattern[static_cast<std::size_t> (t)] == k;
+            m.addItem (k, "Pattern " + juce::String (k) + (p == nullptr ? "  (empty)" : "  (" + juce::String (p->length) + " steps)"), true, cur);
+        }
+        if (sc.valid && ! sc.chain[static_cast<std::size_t> (t)].empty())
+        {
+            m.addSeparator();
+            m.addItem (100, "Remove the chain (keep pattern " + juce::String (sc.pattern[static_cast<std::size_t> (t)]) + ")");
+        }
+        m.showMenuAsync (juce::PopupMenu::Options(), [this, s, t, sc] (int r) {
+            if (r == 0)
+                return;
+            auto n = sc;
+            if (r <= 99)
+                n.pattern[static_cast<std::size_t> (t)] = r;
+            n.chain[static_cast<std::size_t> (t)].clear();
+            onEditScene (s, n);
+        });
+    }
+
+    void sceneMenu (int s)
+    {
+        if (! onEditScene)
+            return;
+        const auto sc = map.scenes[static_cast<std::size_t> (s - 1)];
+        juce::PopupMenu m;
+        m.addSectionHeader ("Scene " + juce::String (s));
+        m.addItem (1, "Copy", sc.valid);
+        m.addItem (2, "Paste", clipboard.has_value());
+        m.addItem (3, "Clear", sc.valid);
+        m.showMenuAsync (juce::PopupMenu::Options(), [this, s, sc] (int r) {
+            if (r == 1)
+                clipboard = sc;
+            else if (r == 2 && clipboard.has_value())
+                onEditScene (s, *clipboard);
+            else if (r == 3 && onClearScene)
+                onClearScene (s);
+        });
     }
 
     const ksp::model::Pattern* patternAt (int track, int pat) const
@@ -362,7 +441,7 @@ private:
         g.setColour (palette::inkSoft);
         g.setFont (juce::FontOptions (11.5f));
         g.drawFittedText ("Each cell is the pattern that track plays in that scene, drawn as its own piano roll. The number is the pattern, x n means the track plays "
-                          "a chain of n patterns; the strip at the bottom of the cell shows that chain in order, to scale. Hatched: nothing to play. Drums are not shown yet.",
+                          "a chain of n patterns; the strip at the bottom of the cell shows that chain in order, to scale. Hatched: nothing to play. Click a cell to pick its pattern; right-click a scene number to copy, paste or clear it. Drums are not shown yet.",
                           note, juce::Justification::topLeft, 3);
     }
 
@@ -571,6 +650,8 @@ private:
     }
 
     std::array<juce::TextButton, 3> tabs;
+    juce::TextButton undoButton;
+    std::optional<ksp::model::Scene> clipboard;
     ksp::model::ProjectMap map;
     juce::String title { "Project" };
     int view = 0, scene = 1;

@@ -1366,6 +1366,7 @@ private:
     ksp::ui::WandButton generateButton;   // a magic wand on it: the way to new music
     std::unique_ptr<ksp::ui::GeneratorWindow> generatorWindow;
     std::unique_ptr<ksp::ui::ProjectMapWindow> mapWindow;
+    std::optional<ksp::ProjectData> beforeMapEdit;    // the project before the last Project Map edit, for Undo edit
     std::optional<ksp::ProjectData> beforeGenerate;   // the project as it was before the last generation, for Undo
     std::unique_ptr<ksp::ui::MidiMonitorWindow> monitorWindow;
     std::shared_ptr<std::atomic<bool>> monitorOn = std::make_shared<std::atomic<bool>> (false);
@@ -2058,6 +2059,7 @@ private:
                                   : haveStudio  ? juce::String (current.name) + "  (KeyStep Pro project " + juce::String (project.project) + ")"
                                                 : "KeyStep Pro project " + juce::String (project.project) + " (not in the library)";
         mapWindow->content().setProject (haveProject ? ksp::model::buildMap (project) : ksp::model::ProjectMap {}, name);
+        mapWindow->content().setCanUndo (beforeMapEdit.has_value());
     }
 
     void showMap()
@@ -2073,8 +2075,48 @@ private:
         mapWindow = std::make_unique<ksp::ui::ProjectMapWindow> (
             [self] { juce::MessageManager::callAsync ([self] { if (self != nullptr) self->mapWindow.reset(); }); },
             [self] { if (self != nullptr) { self->commitPattern(); self->refreshMap(); } });
+        auto& panel = mapWindow->content();
+        panel.onEditScene = [self] (int sc, const ksp::model::Scene& n) { if (self != nullptr) self->editScene (sc, &n); };
+        panel.onClearScene = [self] (int sc) { if (self != nullptr) self->editScene (sc, nullptr); };
+        panel.onUndo = [self] { if (self != nullptr) self->undoMapEdit(); };
         commitPattern();
         refreshMap();
+    }
+
+    /** Project Map edit: writes `n` into scene `sc` (nullptr = clear it), keeping the project as it was for Undo edit. */
+    void editScene (int sc, const ksp::model::Scene* n)
+    {
+        if (! haveProject)
+            return;
+        stopRecording();
+        commitPattern();
+        const auto before = project;
+        const auto error = n != nullptr ? ksp::model::writeScene (project, sc, *n) : ksp::model::clearScene (project, sc);
+        if (! error.empty())
+        {
+            project = before;
+            say ("Could not edit scene " + juce::String (sc) + ": " + juce::String (error));
+            return;
+        }
+        beforeMapEdit = before;
+        noteChanged();
+        refreshMap();
+        if (mapWindow != nullptr)
+            mapWindow->content().setCanUndo (true);
+        say ("Scene " + juce::String (sc) + (n != nullptr ? " edited" : " cleared") + " (not saved, not on the KeyStep yet).");
+    }
+
+    void undoMapEdit()
+    {
+        if (! beforeMapEdit.has_value())
+            return;
+        project = *beforeMapEdit;
+        beforeMapEdit.reset();
+        noteChanged();
+        refreshMap();
+        if (mapWindow != nullptr)
+            mapWindow->content().setCanUndo (false);
+        say ("Map edit undone.");
     }
 
     // ---- the ambient generator: patterns 1-4 of the four tracks and the scenes, into the project that is open
@@ -2567,6 +2609,7 @@ private:
     void setProject (ksp::ProjectData p, const juce::String& what)
     {
         stopRecording();
+        beforeMapEdit.reset();
         beforeGenerate.reset();   // Undo belongs to the project it was made on
         if (generatorWindow != nullptr)
             generatorWindow->content().setCanUndo (false);

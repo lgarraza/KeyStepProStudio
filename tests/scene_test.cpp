@@ -54,6 +54,11 @@ int main()
     chained.chain[1] = { 17 };
     CHECK (1, ! writeScene (p, 4, chained).empty());
 
+    // 1c. clearScene puts a saved scene (with a chain) back to the default
+    CHECK (1, clearScene (p, 3).empty() && ! readScene (p, 3).valid);
+    CHECK (1, *cell (p, item::scene, sp::state, { 3 }) == 2 && *cell (p, item::scene, sp::pattern, { 3, 1 }) == 0);
+    CHECK (1, readScene (p, 3).chain[0].empty() && ! clearScene (p, 17).empty());
+
     // 2. Limits
     CHECK (2, ! writeScene (p, 17, {}).empty() && ! writeScene (p, 0, {}).empty());
     CHECK (2, ! writeScene (p, 2, { true, { 0, 1, 1, 1 } }).empty() && ! writeScene (p, 2, { true, { 1, 1, 17, 1 } }).empty());

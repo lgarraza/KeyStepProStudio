@@ -93,7 +93,7 @@ Icon: the white chassis, black display strip and the four track colours, drawn b
   The clock is only counted (24 a quarter note would drown the log). **Pause**, **Clear** and **Copy all** (the table and the log to the clipboard).
   It opens the KeyStep's MIDI port if the app has not. Its purpose is to find out what each knob, strip, pad and button really sends, to design
   how they map to the app (docs/manual/07-live-sync.md lists what is still to check).
-- **Project Map** (top row): the open project as one picture, in its own window (read only; it refreshes when you bring it to the front). Three views: the
+- **Project Map** (top row): the open project as one picture, in its own window (it refreshes when you bring it to the front; the scene matrix edits: click a cell to pick that track's pattern for the scene, which drops its chain, right-click a scene number for Copy / Paste / Clear, "Undo edit" takes back the last one; `Scene.h` `clearScene`; chain editing is not done). Three views: the
   **scene matrix** (scenes 1-16 by tracks T1-T4, each cell the piano roll of the pattern that track plays, its number, "x n" (chain length, not the MIDI channel) when it plays a chain; hatched when
   there is nothing to play), the **chain timeline** of one scene (its patterns to scale in steps, so different lengths show how the loops drift) and the **pattern
   bank** (16 patterns per track and the scenes that use each). Hover or click a cell for the pattern, length, notes, range, scale and chain on the right. Drums

@@ -110,4 +110,16 @@ inline std::string writeScene (ProjectData& p, int scene, const Scene& sc)
     return {};
 }
 
+/** Puts scene 1..16 back to the default (state 2, pattern 1 on every track, no chains). Returns the error or an empty string. */
+inline std::string clearScene (ProjectData& p, int scene)
+{
+    if (scene < 1 || scene > kScenes)
+        return "scene is 1-16";
+    if (auto e = writeScene (p, scene, Scene {}); ! e.empty())
+        return e;
+    const auto s = static_cast<std::uint8_t> (scene);
+    *cell (p, item::scene, sp::state, { s }) = 2;
+    return {};
+}
+
 } // namespace ksp::model
