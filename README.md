@@ -23,6 +23,7 @@ Windows (tested) and macOS (builds from the same code, not tested lately). Not a
   pattern chains and undo.
 - **Backups.** Full read-only backup of all 16 projects and the global settings to JSON (the same format as
   [KSCON](https://github.com/canadianblaken/keystep-con), so backups open in either tool).
+- **Project Map.** Scenes by tracks with a mini piano roll in each cell, the chain timeline and the pattern bank.
 - **MIDI monitor** to see what each control of the KeyStep sends.
 
 ![The effects window: four inserts per track and the master chain](docs/images/fx-window.png)

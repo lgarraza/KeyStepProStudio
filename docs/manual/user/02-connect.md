@@ -18,7 +18,9 @@ flowchart LR
   D -- no --> F[Read only]
 ```
 
-> **Screenshot pending:** `shot-connect.png` — top row with the KeyStep connected.
+![Top row: Library, Save, Open backup, Project box with Read and Write, Generate, Project Map](img/shot-connect.png)
+
+The row at the top, left to right: **Library...**, **Save**, **Save as...**, **Open backup...**, the **Project** box with **Read** and **Write**, **Generate...** and **Project Map**. The status line at the bottom confirms the KeyStep is connected.
 
 **Watch out:**
 

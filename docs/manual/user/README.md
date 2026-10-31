@@ -15,14 +15,15 @@ Short, task-oriented chapters. Each one says what you will do, how, and what to 
 | 6 | [Tracks and instruments (VST3)](06-instruments.md) | ready |
 | 7 | [Generate](07-generate.md) | ready |
 | 8 | [Save, Library and closing](08-library.md) | ready |
-| 9 | Tools menu | coming (PR #49) |
+| 9 | [Project Map](09-project-map.md) | ready |
+| 9b | Tools menu | coming |
 | 10 | Dragging steps in the grid | coming |
 | 11 | Transport and WAV recording; MIDI monitor | next batch |
 
 ## Reading the pictures
 
 - Diagrams in this guide are drawn, not photographed, so they stay valid when the look changes slightly.
-- **Screenshot pending** notes mark where a real screenshot with numbered callouts will go. The shot list is in
+- Screenshots come from the current build; the shot list, with what is still missing, is in
   [`SCREENSHOTS.md`](SCREENSHOTS.md).
 - Track colours match the KeyStep: **T1** green, **T2** orange, **T3** yellow, **T4** red.
 
