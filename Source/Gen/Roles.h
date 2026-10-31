@@ -14,7 +14,7 @@
 namespace ksp::gen
 {
 
-enum class Role { drone, pad, melody, bells, bass };
+enum class Role { drone, pad, melody, bells, bass, stab };
 
 struct RoleSpec
 {
@@ -23,6 +23,9 @@ struct RoleSpec
     int density = -1;       // % of steps that play (melody, bells, bass); -1 = the role's own
     int low = -1;           // lowest pitch of the role's register (the root at or above it); -1 = the role's own
     unsigned salt = 0;      // RNG stream: the seed is p.seed * 1000 + salt + variation, so tracks differ
+    int pulses = -1;        // bass and stab: euclidean hits in the pattern; -1 = from the density
+    int rotation = -1;      // bass and stab: rotation of those hits; -1 = a random one
+    int gate = -1;          // bass and stab: the gate of every note; -1 = the role's own
 };
 
 inline int roleLow (const RoleSpec& s)
@@ -34,7 +37,7 @@ inline int roleLow (const RoleSpec& s)
         case Role::drone: return 36;
         case Role::bass:  return 36;
         case Role::bells: return 72;
-        default:          return 60;
+        default:          return 60;   // pad, melody, stab
     }
 }
 
@@ -42,7 +45,7 @@ inline int roleDensity (const RoleSpec& s)
 {
     if (s.density >= 0)
         return s.density;
-    return s.role == Role::melody ? 40 : s.role == Role::bells ? 14 : s.role == Role::bass ? 50 : 100;
+    return s.role == Role::melody ? 40 : s.role == Role::bells ? 14 : s.role == Role::bass || s.role == Role::stab ? 50 : 100;
 }
 
 /** Euclidean rhythm: `pulses` hits spread over `steps`, rotated by `rotation`. */
@@ -128,19 +131,34 @@ inline model::Pattern makeRolePattern (const Params& p, const RoleSpec& spec, in
             break;
         case Role::bass:    // the chord root on step 1 and on a euclidean spread of steps, the fifth now and then
         {
-            const auto hits = euclid (std::max (1, len * density / 400), len, r.below (len));
+            const int pulses = spec.pulses >= 0 ? spec.pulses : std::max (1, len * density / 400);
+            const auto hits = euclid (pulses, len, spec.rotation >= 0 ? spec.rotation : r.below (len));
             for (int s = 0; s < len; ++s)
                 if (s == 0 || hits[static_cast<std::size_t> (s)])
-                    add (pt, s, degreePitch (p, s != 0 && r.chance (25) ? deg + 4 : deg, low), r.between (40, 70),
-                         s == 0 ? r.between (95, 115) : r.between (70, 95), defaults);
+                    add (pt, s, degreePitch (p, s != 0 && r.chance (25) ? deg + 4 : deg, low),
+                         spec.gate >= 0 ? spec.gate : r.between (40, 70), s == 0 ? r.between (95, 115) : r.between (70, 95), defaults);
+            break;
+        }
+        case Role::stab:    // the whole chord, short, on a euclidean spread of steps (house and techno chords)
+        {
+            const int pulses = spec.pulses >= 0 ? spec.pulses : std::max (1, len * density / 400);
+            const auto hits = euclid (pulses, len, spec.rotation >= 0 ? spec.rotation : r.below (len));
+            for (int s = 0; s < len; ++s)
+                if (hits[static_cast<std::size_t> (s)])
+                {
+                    const int vel = r.between (70, 100);
+                    for (int off : chord.offsets)
+                        add (pt, s, degreePitch (p, deg + off, low), spec.gate >= 0 ? spec.gate : 24, vel, defaults);
+                }
             break;
         }
     }
     return pt;
 }
 
-/** A drum groove: a kick on a euclidean spread, the snare on the backbeat, hats every n-th step. Lanes are the drum map's
-    lanes (kick 0, snare 1, closed hat 2, open hat 3), whatever notes the map gives them. */
+/** A drum groove: a kick on a euclidean spread (or on fixed steps), the snare on the backbeat, hats every n-th step, an open
+    hat on the offbeats, a snare run at the end. Lanes are the drum map's lanes; the defaults are the General MIDI sounds
+    of the KeyStep's default map (lane n plays note 36 + n): kick 36, snare 38, clap 39, closed hat 42, open hat 46. */
 struct DrumSpec
 {
     unsigned salt = 0;
@@ -153,6 +171,10 @@ struct DrumSpec
     int openHatChance = 0;    // % of the hats that are open (lane 3)
     int ghostChance = 0;      // % of the steps that get a soft snare
     int swingShift = 0;       // time shift added to the odd steps (as the knob: 49 = on the step)
+    std::vector<int> kickSteps;   // fixed kick steps (0-based) instead of the euclidean spread (broken beats)
+    bool offbeatOpenHat = false;  // an open hat on every offbeat eighth (the 3rd sixteenth of each beat)
+    bool fill = false;        // a snare run over the last quarter of the pattern
+    int kickLane = 0, snareLane = 2, hatLane = 6, openHatLane = 10;
 };
 
 inline model::DrumPattern makeDrumPattern (const Params& p, const DrumSpec& spec, int variation)
@@ -176,21 +198,37 @@ inline model::DrumPattern makeDrumPattern (const Params& p, const DrumSpec& spec
         h.shift = std::clamp (model::kShiftCentre + shiftAdd, 0, model::kShiftMax);
         d.hits.push_back (h);
     };
-    const auto kick = euclid (spec.kickPulses, len, spec.kickRotation);
+    auto kick = euclid (spec.kickPulses, len, spec.kickRotation);
+    if (! spec.kickSteps.empty())
+    {
+        std::fill (kick.begin(), kick.end(), false);
+        for (int s : spec.kickSteps)
+            if (s >= 0 && s < len)
+                kick[static_cast<std::size_t> (s)] = true;
+    }
     for (int s = 0; s < len; ++s)
         if (kick[static_cast<std::size_t> (s)])
-            hit (0, s, 64, s == 0 ? r.between (112, 127) : r.between (95, 115));
+            hit (spec.kickLane, s, 64, s == 0 ? r.between (112, 127) : r.between (95, 115));
     if (spec.backbeat && len >= 4)
         for (int s = len / 4; s < len; s += len / 2)
-            hit (1, s, 64, r.between (100, 120));
+            hit (spec.snareLane, s, 64, r.between (100, 120));
+    const auto offbeat = [&] (int s) { return spec.offbeatOpenHat && s % 4 == 2; };
+    if (spec.offbeatOpenHat)
+        for (int s = 2; s < len; s += 4)
+            hit (spec.openHatLane, s, 40, r.between (80, 100));
     if (spec.hatEvery > 0)
         for (int s = spec.hatOffset; s < len; s += spec.hatEvery)
-            hit (spec.openHatChance > 0 && r.chance (spec.openHatChance) ? 3 : 2, s, 30,
-                 s % 4 == 0 ? r.between (85, 100) : r.between (55, 80), s % 2 ? spec.swingShift : 0);
+            if (! offbeat (s))
+                hit (spec.openHatChance > 0 && r.chance (spec.openHatChance) ? spec.openHatLane : spec.hatLane, s, 30,
+                     s % 4 == 0 ? r.between (85, 100) : r.between (55, 80), s % 2 ? spec.swingShift : 0);
     if (spec.ghostChance > 0)
         for (int s = 0; s < len; ++s)
             if (r.chance (spec.ghostChance))
-                hit (1, s, 30, r.between (30, 55));
+                hit (spec.snareLane, s, 30, r.between (30, 55));
+    if (spec.fill && len >= 8)   // louder towards the end; on a step that already has a ghost the ghost stays
+        for (int s = len - len / 4; s < len; ++s)
+            if (s % 2 == 0 || r.chance (50))
+                hit (spec.snareLane, s, 30, r.between (55, 70) + 40 * (s - (len - len / 4)) / (len / 4));
     if (static_cast<int> (d.hits.size()) > model::kSlots)
         d.hits.resize (static_cast<std::size_t> (model::kSlots));
     return d;

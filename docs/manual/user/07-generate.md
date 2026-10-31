@@ -1,19 +1,28 @@
 # 7. Generate
 
-**You will:** create ambient patterns and scenes with one button, then listen and edit.
+**You will:** create patterns and scenes (ambient, techno, house or drum & bass) with one button, then listen and edit.
 
 1. Open (or create) a project; **Generate...** needs one open.
-2. Pick a **mood**: Classic, Ethereal, Dark or Meditative.
+2. Pick a **style**: Ambient, Techno, House or Drum & bass. For Ambient, also pick a **mood**: Classic, Ethereal, Dark or Meditative.
 3. Set the **seed**. Same seed = same music. **New seed** rolls a number.
-4. Choose whether the scenes **chain** variations and whether time divisions are **slow**.
+4. Choose whether the scenes **chain** variations and (Ambient only) whether time divisions are **slow**.
 5. Press **Generate into this project**.
 
-It replaces patterns 1-4 of the four tracks and scenes 1-8 of the open project. Drums, the arpeggiator and other
-patterns are left alone. **Undo** restores the project as it was before the last generation.
+**Ambient** replaces patterns 1-4 of the four tracks and scenes 1-8 of the open project. Drums, the arpeggiator and other
+patterns are left alone.
+
+**Techno, House and Drum & bass** put track 1 in drum mode and write its drum patterns 1-4 (the last one ends with a
+fill), plus patterns 1-4 of track 2 (bass), track 3 (chords) and track 4 (lead), and scenes 1-4. The drums use the
+KeyStep's default drum map (kick 36, snare 38, clap 39, closed hat 42, open hat 46), so load a General MIDI style kit on
+track 1; the app sends track 1 to its instrument on the drum channel (10). Set the tempo on the KeyStep: the window
+shows the one each style is made for (techno 130, house 124, drum & bass 174 BPM). The grid does not show drum
+patterns yet.
+
+**Undo** restores the project as it was before the last generation.
 
 ```mermaid
 flowchart LR
-  A[Mood + seed] --> B[Generate]
+  A[Style + seed] --> B[Generate]
   B --> C[Listen through the instruments]
   C --> D{Like it?}
   D -- no --> A
@@ -24,5 +33,5 @@ flowchart LR
 
 > **Screenshot pending:** `shot-generate.png`.
 
-**Watch out:** the mood and seed are saved with the project, so you can come back to the same music. Generating changes
+**Watch out:** the style, mood and seed are saved with the project, so you can come back to the same music. Generating changes
 the project in memory only; it reaches the KeyStep when you **Write to slot**.

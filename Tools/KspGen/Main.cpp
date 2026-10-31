@@ -2,7 +2,7 @@
     KspGen: experiment, generates ambient patterns (Source/Gen/Ambient.h) into a test slot of the KeyStep Pro.
     Without --write it only reads the slot and shows what it would write (a dry run). WRITES to the device with --write.
 
-        KspGen [--to 16] [--seed N] [--root 2] [--scale 3] [--tracks 1-4] [--variations 4] [--no-scenes] [--no-slow] [--chains] [--mood classic|ethereal|dark|meditative] [--write] [--device "KeyStep Pro"]
+        KspGen [--to 16] [--seed N] [--root 2] [--scale 3] [--tracks 1-4] [--variations 4] [--no-scenes] [--no-slow] [--chains] [--mood classic|ethereal|dark|meditative] [--style techno|house|dnb] [--write] [--device "KeyStep Pro"]
 
     Any slot 1-16. Steps: read the slot and save it to Backups (ksp-pre-restore-P<n>-...), put patterns 1..variations of
     the chosen tracks over what the slot has (everything else in the slot stays), save the generated project to
@@ -13,7 +13,7 @@
 #include <iostream>
 #include <juce_core/juce_core.h>
 #include <juce_events/juce_events.h>
-#include "Gen/Ambient.h"
+#include "Gen/Styles.h"
 #include "Ksp/Device.h"
 
 int main (int argc, char* argv[])
@@ -50,6 +50,18 @@ int main (int argc, char* argv[])
             params.root = m.root;
         if (! args.contains ("--scale"))
             params.scale = m.scale;
+    }
+    const auto* style = ksp::gen::findStyle (option ("--style", "").toStdString());
+    if (args.contains ("--style"))
+    {
+        if (style == nullptr)
+        {
+            std::cout << "--style: techno, house or dnb" << std::endl;
+            return 2;
+        }
+        const int variations = params.variations;
+        params = ksp::gen::styleParams (*style, params.seed);   // the style's key and chords (track 1 goes to drum mode)
+        params.variations = variations;
     }
     params.chains = args.contains ("--chains");
     const auto tr = option ("--tracks", "1-4");
@@ -95,13 +107,15 @@ int main (int argc, char* argv[])
     std::cout << "Saved: " << preFile.getFullPathName() << std::endl;
 
     ksp::ProjectData project = device->slotBefore();
-    if (auto e = ksp::gen::apply (project, params, firstTrack, lastTrack); ! e.empty())
+    if (auto e = style != nullptr ? ksp::gen::applyStyle (project, *style, params, firstTrack, lastTrack)
+                                  : ksp::gen::apply (project, params, firstTrack, lastTrack);
+        ! e.empty())
     {
         std::cout << "ERROR: " << e << std::endl;
         return 1;
     }
     if (! args.contains ("--no-scenes"))
-        if (auto e = ksp::gen::applyScenes (project, params); ! e.empty())
+        if (auto e = ksp::gen::applyScenes (project, params, style == nullptr); ! e.empty())
         {
             std::cout << "ERROR: " << e << std::endl;
             return 1;

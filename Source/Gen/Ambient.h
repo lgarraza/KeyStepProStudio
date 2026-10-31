@@ -97,12 +97,12 @@ inline std::string apply (ProjectData& project, const Params& p, int firstTrack 
     return {};
 }
 
-/** Scenes: 1..V play variation s on every track (the harmony of the four tracks agrees); V+1..2V keep the drone and the
-    pad on variation s and move the melody and the bells one variation on (they cross the chord on purpose). */
-inline std::string applyScenes (ProjectData& project, const Params& p)
+/** Scenes: 1..V play variation s on every track (the harmony of the four tracks agrees); with `cross`, V+1..2V keep the
+    drone and the pad on variation s and move the melody and the bells one variation on (they cross the chord on purpose). */
+inline std::string applyScenes (ProjectData& project, const Params& p, bool cross = true)
 {
     const int v = p.variations;
-    for (int s = 0; s < std::min (2 * v, model::kScenes); ++s)
+    for (int s = 0; s < std::min (cross ? 2 * v : v, model::kScenes); ++s)
     {
         model::Scene sc;
         sc.valid = true;
