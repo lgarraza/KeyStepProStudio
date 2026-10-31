@@ -5,9 +5,14 @@
 ## Install (Windows)
 
 1. Download `KeyStepProStudio-Setup-x.y.z.exe` from the [Releases](../../../../../releases) page and run it.
-2. Windows SmartScreen says *"Windows protected your PC"* because the installer is not code-signed.
-   Click **More info → Run anyway** (see [signing](../../signing.md); each release lists the SHA-256 of its files so you can check the download).
-3. Start **KeyStepPro Studio** from the Start menu.
+   No installer wanted? Download `KeyStepProStudio-x.y.z-portable.zip`, unzip it anywhere and run `KeyStepPro Studio.exe`
+   (your data still goes to `Documents\KeyStepPro Studio\`).
+2. Windows SmartScreen says *"Windows protected your PC"* because the file is not code-signed (see [signing](../../signing.md)).
+   Click **More info → Run anyway**.
+3. Optional: check the download. Open PowerShell in the folder and run
+   `Get-FileHash .\KeyStepProStudio-Setup-x.y.z.exe -Algorithm SHA256`; the result must equal the line for that file in
+   `SHA256SUMS.txt` on the release page. The release notes also link the VirusTotal scans.
+4. Start **KeyStepPro Studio** from the Start menu (installer) or run the exe (zip).
 
 The installer also adds `KspScanner.exe` (plugin scanner) and the command-line tools.
 

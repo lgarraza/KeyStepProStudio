@@ -49,12 +49,14 @@ start writing to your KeyStep.
 ## Install (Windows)
 
 1. Download `KeyStepProStudio-Setup-x.y.z.exe` from [Releases](../../releases) and run it. It installs the app, the
-   plugin scanner and the command-line tools, and adds a Start menu entry.
+   plugin scanner and the command-line tools, and adds a Start menu entry. Prefer no installer? Download
+   `KeyStepProStudio-x.y.z-portable.zip` instead, unzip it anywhere and run `KeyStepPro Studio.exe`.
 2. The installer and the app are **not code-signed** (see [docs/signing.md](docs/signing.md)). Windows SmartScreen will
-   say "Windows protected your PC": click **More info** and then **Run anyway**. Each release lists the SHA-256 of its
-   files so you can check what you downloaded:
+   say "Windows protected your PC": click **More info** and then **Run anyway**.
+3. To check what you downloaded, compare its SHA-256 with the line in `SHA256SUMS.txt` on the release page (the release
+   notes also link the VirusTotal scans):
    `Get-FileHash .\KeyStepProStudio-Setup-x.y.z.exe -Algorithm SHA256`.
-3. Connect the KeyStep Pro by USB, close MIDI Control Center and start **KeyStepPro Studio**.
+4. Connect the KeyStep Pro by USB, close MIDI Control Center and start **KeyStepPro Studio**.
 
 ## Quick start
 
