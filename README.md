@@ -28,6 +28,8 @@ Windows (tested) and macOS (builds from the same code, not tested lately). Not a
 
 ![The effects window: four inserts per track and the master chain](docs/images/fx-window.png)
 
+![Project Map: scenes by tracks, each cell a mini piano roll](docs/images/project-map.png)
+
 ## Safety first
 
 The app talks to the KeyStep with Arturia's undocumented SysEx protocol (mapped by KSCON). To protect your device:
