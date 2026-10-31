@@ -27,6 +27,7 @@ inline const juce::Colour gridLine  { 0xffc3c9ce };
 inline const juce::Colour lit       { 0xff3df2a0 };   // a lit button (the green of Restart / the lit step keys)
 inline const juce::Colour segOn     { 0xfff4f6f8 };   // the white digits of the track displays
 inline const juce::Colour step      { 0xffdadee2 };   // the 1..16 step buttons
+inline const juce::Colour magic     { 0xffe8b320 };   // the gold sparkle of the Generate wand
 inline const std::array<juce::Colour, 4> track { juce::Colour (0xff12a67f), juce::Colour (0xfff25a1f),
                                                   juce::Colour (0xfff7c40d), juce::Colour (0xffe3202e) };
 inline juce::Colour trackColour (int t) { return track[static_cast<std::size_t> (juce::jlimit (0, 3, t))]; }
@@ -247,6 +248,51 @@ public:
 
 //==============================================================================
 /** Four coloured panels like the KeyStep's track blocks (green, orange, yellow, red), each with a grey "Track N" key. */
+/** A text button with a magic wand drawn left of its label (the Generate button: it should catch the eye). */
+class WandButton : public juce::TextButton
+{
+public:
+    void paintButton (juce::Graphics& g, bool over, bool down) override
+    {
+        auto& lf = getLookAndFeel();
+        lf.drawButtonBackground (g, *this, findColour (buttonColourId), over, down);
+        auto r = getLocalBounds().reduced (8, 4);
+        const auto icon = r.removeFromLeft (r.getHeight()).toFloat().reduced (1.0f);
+        r.removeFromLeft (4);
+        // the stick, from bottom left towards the star, with a light tip
+        const juce::Point<float> a (icon.getX() + icon.getWidth() * 0.12f, icon.getBottom() - icon.getHeight() * 0.10f),
+                                 b (icon.getX() + icon.getWidth() * 0.58f, icon.getY() + icon.getHeight() * 0.44f);
+        g.setColour (palette::ink);
+        g.drawLine ({ a, b }, 3.0f);
+        g.setColour (palette::chassis);
+        g.drawLine ({ b.translated (-2.6f, 2.6f), b }, 2.0f);
+        // the sparkle: a four-point star at the tip and two small ones around it
+        auto star = [&g] (juce::Point<float> c, float rad) {
+            juce::Path p;
+            for (int i = 0; i < 8; ++i)
+            {
+                const float ang = juce::MathConstants<float>::pi * 0.25f * static_cast<float> (i);
+                const float len = i % 2 == 0 ? rad : rad * 0.32f;
+                const juce::Point<float> pt (c.x + len * std::sin (ang), c.y - len * std::cos (ang));
+                if (i == 0)
+                    p.startNewSubPath (pt);
+                else
+                    p.lineTo (pt);
+            }
+            p.closeSubPath();
+            g.fillPath (p);
+        };
+        g.setColour (palette::magic);
+        const float s = icon.getHeight();
+        star ({ icon.getX() + s * 0.74f, icon.getY() + s * 0.28f }, s * 0.30f);
+        star ({ icon.getX() + s * 0.30f, icon.getY() + s * 0.20f }, s * 0.13f);
+        star ({ icon.getRight() - s * 0.05f, icon.getY() + s * 0.66f }, s * 0.11f);
+        g.setColour (findColour (textColourOffId));
+        g.setFont (lf.getTextButtonFont (*this, getHeight()));
+        g.drawText (getButtonText(), r, juce::Justification::centredLeft);
+    }
+};
+
 class TrackTabs : public juce::Component
 {
 public:
