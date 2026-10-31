@@ -9,7 +9,7 @@ Save as PNG in `img/`, named as below. Add numbered red callouts (1, 2, 3...) ma
 | `shot-connect.png` | 2 (done) | Top row with the KeyStep connected (status text visible), Project box and the Read and Write buttons next to it |
 | `shot-progress.png` | 3 (done) | The blocking progress popup while reading a slot |
 | `shot-write-confirm.png` | 3 (done) | The "Write to slot" confirmation dialog |
-| `shot-write-done.png` | 3 | "written and verified" message |
+| `shot-write-done.png` | 3 (done) | "written and verified" message |
 | `shot-grid.png` | 5 (done) | Grid with a few notes, one selected, knobs lit, note names on keys and notes, in-scale rows tinted (callouts as in `img/grid.svg`) |
 | `shot-hover-card.png` | 5 (done) | Hover card beside a step |
 | `shot-end-drag.png` | 5 | END grip on the line, hovered (lit, white outline) with the dimmed area after it |

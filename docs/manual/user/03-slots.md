@@ -32,7 +32,7 @@ close. A write takes about 75 s.
 
 ![The Send to slot confirmation: what happens, backup first, read back after](img/shot-write-confirm.png)
 
-> **Screenshot pending:** `shot-write-done.png` (the "written and verified" message).
+![The status line says "Slot 1 written and verified."](img/shot-write-done.png)
 
 **Watch out:**
 
