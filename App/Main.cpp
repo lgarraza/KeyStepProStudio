@@ -1933,7 +1933,7 @@ private:
     /** The Tools menu: the extras that are not the KeyStep's own (plugins, audio, WAV recording, the MIDI monitor). */
     void showToolsMenu()
     {
-        enum { scan = 1, plugins, monitor, down, up, recWav, folder, audio, fx, test, follow, manual, mode0 = 10, tail0 = 20 };
+        enum { scan = 1, plugins, monitor, down, up, recWav, folder, audio, fx, test, follow, manual, mode0 = 100, tail0 = 200 };
         const bool recording = engine.recorder().armed();
         juce::PopupMenu menu, modes, tails;
         const juce::StringArray modeNames { "Mix", "Stems", "Mix + stems" };
