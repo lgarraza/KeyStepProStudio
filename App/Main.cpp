@@ -1300,6 +1300,11 @@ public:
             cell.removeFromTop (4);
             instLabel[i].setBounds (line1.removeFromLeft (26));
             line1.removeFromLeft (6);
+            if (t == 0)   // track 1 can be the drum track: its switch sits on the top line, so the volume keeps its room
+            {
+                drumModeButton.setBounds (line1.removeFromRight (60));
+                line1.removeFromRight (4);
+            }
             instBox[i].setBounds (line1);
             soloToggle[i].setBounds (cell.removeFromRight (36));
             cell.removeFromRight (4);
@@ -1307,11 +1312,6 @@ public:
             cell.removeFromRight (4);
             editButton[i].setBounds (cell.removeFromRight (46));
             cell.removeFromRight (4);
-            if (t == 0)   // track 1 can be the drum track
-            {
-                drumModeButton.setBounds (cell.removeFromRight (56));
-                cell.removeFromRight (4);
-            }
             dbLabel[i].setBounds (cell.removeFromRight (54));
             volSlider[i].setBounds (cell);
         }
