@@ -1151,7 +1151,7 @@ public:
             g.fillRoundedRectangle (card, 8.0f);
             g.setColour (sel ? juce::Colours::white : c.darker (0.25f));
             g.drawRoundedRectangle (card.reduced (1.5f), 8.0f, sel ? 3.0f : 2.0f);
-            const auto dot = juce::Rectangle<float> (card.getX() + 8.0f, card.getY() + 12.0f, 26.0f, 26.0f);
+            const auto dot = instLabel[i].getBounds().toFloat();   // the number sits on it, so they share the box
             g.setColour (ksp::ui::palette::ink.withAlpha (sel ? 1.0f : 0.7f));
             g.fillEllipse (dot);
         }
