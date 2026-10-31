@@ -13,7 +13,7 @@ The Windows installer and the app are not code-signed yet. What that means and w
 
 | Option | Cost | Removes SmartScreen? | Notes |
 | --- | --- | --- | --- |
-| Publish SHA-256 checksums and a VirusTotal link with each release | free | no | Lets users check the file is the one published. Done by `installer/build-installer.ps1`. |
+| Publish SHA-256 checksums and a VirusTotal link with each release | free | no | Lets users check the file is the one published. Checksums and the portable zip are made by `installer/build-installer.ps1`; steps in [RELEASING.md](RELEASING.md). |
 | Submit a flagged file to Microsoft (https://www.microsoft.com/wdsi/filesubmission) | free | no, fixes Defender detections | Use "software developer" and "incorrectly detected"; usually cleared in a few days. Other vendors have similar forms. |
 | SignPath Foundation | free for open source | gradually | Applied for; the application was not accepted, so it is not an option for now. |
 | Azure Trusted Signing (Artifact Signing) | about 10 USD a month | gradually | Microsoft's own service. Open to organisations in some regions and to individual developers only in the US and Canada at the time of writing: check eligibility first. |
@@ -25,6 +25,6 @@ helps because reputation then belongs to the signer and carries over to the next
 
 ## Where this stands
 
-Releases are unsigned, with SHA-256 checksums and a VirusTotal scan link in the release notes, and the SmartScreen
+Releases are unsigned, with a portable zip, SHA-256 checksums and VirusTotal scan links in the release notes, and the SmartScreen
 instructions in the README. If Defender ever flags a release, submit it to Microsoft. Signing may be revisited later
 (for example with a paid certificate); until then the checksums are the way to verify a download.

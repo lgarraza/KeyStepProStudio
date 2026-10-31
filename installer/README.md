@@ -13,14 +13,12 @@ Needs CMake, Visual Studio 2022 or newer with the C++ workload, and Inno Setup 6
 powershell -ExecutionPolicy Bypass -File installer\build-installer.ps1
 ```
 
-It builds Release into `build\`, compiles the installer into `dist\KeyStepProStudio-Setup-<version>.exe` and writes
-`dist\SHA256SUMS.txt`. Options: `-JuceDir <path>` to use a local JUCE, `-SkipBuild` to package what is already built.
+It builds Release into `build\`, compiles the installer into `dist\KeyStepProStudio-Setup-<version>.exe`, zips the same
+files as `dist\KeyStepProStudio-<version>-portable.zip` (no installer: unzip anywhere and run) and writes
+`dist\SHA256SUMS.txt` with the SHA-256 of both. Options: `-JuceDir <path>` to use a local JUCE, `-SkipBuild` to package what is already built.
 The version comes from `project(... VERSION x.y.z)` in `CMakeLists.txt`.
 
 ## Release
 
-1. Bump the version in `CMakeLists.txt`, build the installer.
-2. Upload the setup exe to [VirusTotal](https://www.virustotal.com) and keep the link.
-3. Create a GitHub release with the setup exe and `SHA256SUMS.txt`, and the VirusTotal link in the notes.
-
+Step by step, including VirusTotal and the Microsoft false-positive form: [../docs/RELEASING.md](../docs/RELEASING.md).
 The installer is not code-signed; see [../docs/signing.md](../docs/signing.md).
