@@ -32,6 +32,9 @@ Icon: the white chassis, black display strip and the four track colours, drawn b
   (`App/DrumGrid.h`, lane 1 = kick at the bottom, names and notes of the default GM drum map). Click a cell to add / remove a hit, drag
   to paint more of the same, mouse wheel on a hit for its velocity (its shade), click a lane name to hear it, ruler or length box for the
   last step (lanes that followed the length follow it). Root, scale, octave, knobs, Rec and Copy are disabled there. Up to 192 hits.
+- **Drums** (card 1, lit when on): switches track 1 between drum and sequencer mode in the project (both kinds of patterns stay
+  stored; the grid follows). **Clear** (left of Copy to) empties the pattern shown, notes or drum hits; length and settings stay.
+  Both are ordinary edits: they reach the KeyStep with Write.
 - Not yet: per-note velocity/gate, scenes, project names, undo.
 - Smoke test without a KeyStep: `xvfb-run` the binary with a backup file; the grid should show its notes.
 - Write to slot now sends only what differs from the slot as it was just read (plus all state blocks), about 75 s in total instead of

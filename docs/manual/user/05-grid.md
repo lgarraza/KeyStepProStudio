@@ -53,6 +53,10 @@ open hat 46 ...). Click a cell to add or remove a hit and drag to paint more; th
 velocity (darker = louder); click a lane name to hear it. END and the length box work as for notes. Root, scale,
 octave, the knobs, Rec and Copy do not apply to drums. The KeyStep holds up to 192 hits per pattern.
 
+The **Drums** button on card 1 switches track 1 between drum and sequencer mode (lit = drums). Both kinds of patterns
+stay stored, so switching back loses nothing. **Clear** (left of *Copy to*) empties the pattern you are looking at,
+notes or drum hits. Like every edit, both reach the KeyStep when you **Write**.
+
 ## Hover card
 
 Rest the mouse on a step with notes: a card shows the note (name, number, frequency), track, pattern, MIDI channel,

@@ -1034,7 +1034,7 @@ class MainComponent : public juce::Component, private juce::Timer
 public:
     MainComponent()
     {
-        for (auto* b : { &openButton, &readButton, &syncButton, &octDown, &octUp, &copyButton, &recButton, &undoTakeButton, &toolsButton, &libraryButton, &saveButton, &saveAsButton })
+        for (auto* b : { &openButton, &readButton, &syncButton, &octDown, &octUp, &copyButton, &clearButton, &drumModeButton, &recButton, &undoTakeButton, &toolsButton, &libraryButton, &saveButton, &saveAsButton })
             addAndMakeVisible (*b);
         for (auto* c : { &projectBox, &patternBox, &lengthBox, &rootBox, &scaleBox, &copyTrackBox, &copyPatBox, &recChannelBox, &stepBox })
             addAndMakeVisible (*c);
@@ -1061,6 +1061,11 @@ public:
         octDown.setButtonText ("-");
         octUp.setButtonText ("+");
         copyButton.setButtonText ("Copy to");
+        clearButton.setButtonText ("Clear");
+        clearButton.setTooltip ("Empty the pattern shown (notes or drum hits)");
+        drumModeButton.setButtonText ("Drums");
+        drumModeButton.setClickingTogglesState (false);
+        drumModeButton.setTooltip ("Track 1 as a drum track (lit) or a sequencer track");
         toolsButton.setButtonText ("Tools");
         libraryButton.setButtonText ("Library...");
         saveButton.setButtonText ("Save");
@@ -1094,6 +1099,8 @@ public:
         readButton.onClick = [this] { readFromDevice (0); };   // read-only: always reachable, even with unsent edits
         syncButton.onClick = [this] { if (haveProject && fwReadOnly.isEmpty()) confirmWrite(); else readFromDevice(); };
         copyButton.onClick = [this] { copyPattern(); };
+        clearButton.onClick = [this] { clearPattern(); };
+        drumModeButton.onClick = [this] { toggleDrumMode(); };
         toolsButton.onClick = [this] { showToolsMenu(); };
         libraryButton.onClick = [this] { showLibrary(); };
         saveButton.onClick = [this] { saveToLibrary (false); };
@@ -1180,6 +1187,8 @@ public:
     /** The selected card full, the rest dimmed (the dB readouts follow the sliders). */
     void refreshCards()
     {
+        drumModeButton.setToggleState (haveProject && ksp::model::isDrumMode (project), juce::dontSendNotification);
+        drumModeButton.setEnabled (haveProject);
         for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
         {
             const auto i = static_cast<std::size_t> (t);
@@ -1257,6 +1266,8 @@ public:
         octLabel.setBounds (row.removeFromLeft (110));
         octUp.setBounds (row.removeFromLeft (28));
         row.removeFromLeft (16);
+        clearButton.setBounds (row.removeFromLeft (52));
+        row.removeFromLeft (6);
         copyButton.setBounds (row.removeFromLeft (70));
         row.removeFromLeft (4);
         copyTrackBox.setBounds (row.removeFromLeft (84));
@@ -1296,6 +1307,11 @@ public:
             cell.removeFromRight (4);
             editButton[i].setBounds (cell.removeFromRight (46));
             cell.removeFromRight (4);
+            if (t == 0)   // track 1 can be the drum track
+            {
+                drumModeButton.setBounds (cell.removeFromRight (56));
+                cell.removeFromRight (4);
+            }
             dbLabel[i].setBounds (cell.removeFromRight (54));
             volSlider[i].setBounds (cell);
         }
@@ -1371,6 +1387,7 @@ private:
     ksp::model::Pattern takeBefore;              // the pattern before the last take, for Undo take
     bool haveTake = false;
 
+    juce::TextButton clearButton, drumModeButton;
     juce::TextButton libraryButton, saveButton, saveAsButton, copyButton, openButton, readButton, syncButton, octDown, octUp, recButton, undoTakeButton;
     ksp::ui::TrackTabs trackTabs;
     ksp::ui::SevenSegDisplay lenDisplay { 2 }, bpmDisplay { 5 };
@@ -2465,6 +2482,53 @@ private:
         slot = std::make_unique<EditorWindow> (fx->description().name, editor, [self, pos] {
             juce::MessageManager::callAsync ([self, pos] { if (self != nullptr) self->fxEditorWindow[static_cast<std::size_t> (pos)].reset(); });
         });
+    }
+
+    /** Empties the pattern shown: its notes, or its drum hits in drum view. Length and settings stay; it is a normal edit
+        (written with the project, Undo of the generator does not cover it). */
+    void clearPattern()
+    {
+        if (! haveProject)
+            return;
+        if (drumView)
+        {
+            drum.hits.clear();
+            drumGrid.repaint();
+        }
+        else
+        {
+            for (auto& st : pattern.steps)
+            {
+                st.notes.clear();
+                st.on = false;
+            }
+            showPattern();
+        }
+        markEdited();
+        say ("Pattern cleared (not written yet).");
+    }
+
+    /** Switches track 1 between drum and sequencer mode in the project. Both kinds of patterns stay stored; the grid of
+        track 1 follows the mode. */
+    void toggleDrumMode()
+    {
+        if (! haveProject)
+            return;
+        commitPattern();
+        edited = false;
+        const bool drums = ! ksp::model::isDrumMode (project);
+        if (! ksp::model::setDrumMode (project, drums))
+        {
+            say ("This project has no drum mode value for track 1.");
+            return;
+        }
+        noteChanged();
+        if (track() != 1)
+            trackBox.setSelectedId (1, juce::sendNotification);   // loads track 1
+        else
+            loadPattern();
+        refreshCards();
+        say (drums ? "Track 1 is now a drum track (not written yet)." : "Track 1 is now a sequencer track (not written yet).");
     }
 
     /** Track 1 in drum mode shows the drum grid; the note controls (root, scale, octave, knobs, Rec, Copy) do not apply to it. */
