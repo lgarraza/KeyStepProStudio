@@ -23,7 +23,7 @@ $browser = @(
 if (-not $browser) { throw "Edge or Chrome not found" }
 
 $dir = "docs\manual\user"
-$chapters = @("$dir\README.md") + (Get-ChildItem $dir -Filter "[0-9][0-9]-*.md" | Sort-Object Name | ForEach-Object { "$dir\$($_.Name)" })
+$chapters = @("$dir\README.md") + (Get-ChildItem $dir -Filter "*.md" | Where-Object Name -match '^\d\d-' | Sort-Object Name | ForEach-Object { "$dir\$($_.Name)" })
 $html = Join-Path ([IO.Path]::GetTempPath()) "ksp-manual.html"
 & $pandoc -f gfm -t html5 --standalone --embed-resources `
     --metadata title="KeyStepPro Studio - User guide" --css Tools\manual\manual.css `
