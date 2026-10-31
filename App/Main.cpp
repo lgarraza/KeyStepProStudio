@@ -1991,7 +1991,10 @@ private:
             say ("User manual not found: KeyStepPro-Studio-Manual.pdf should be next to the app. It is in the installer and the portable zip (not in a build from source).");
             return;
         }
-        if (! pdf.startAsProcess())
+        // the default PDF viewer first; with none associated, the default browser (Edge shows PDFs)
+        if (pdf.startAsProcess() || juce::URL (pdf).launchInDefaultBrowser())
+            say ("Opening the manual: " + pdf.getFullPathName());
+        else
             say ("Could not open the manual. Open it by hand: " + pdf.getFullPathName());
     }
 
