@@ -51,7 +51,7 @@ flowchart LR
   F --> G[Write to slot]
 ```
 
-> **Screenshot pending:** `shot-generate.png`.
+![The Generate window: style, mood, seed, key and scale, the options and what the style writes](img/shot-generate.png)
 
 **Watch out:** the style, mood and seed are saved with the project, so you can come back to the same music. Generating changes
 the project in memory only; it reaches the KeyStep when you **Write to slot**.
