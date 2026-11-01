@@ -76,6 +76,8 @@ inline std::string apply (ProjectData& project, const Params& p, int firstTrack 
 {
     if (p.variations < 1 || p.variations > 16)
         return "variations must be 1-16";
+    if (firstTrack <= 1 && lastTrack >= 1)
+        model::setDrumMode (project, false);   // track 1 plays notes here: a project left in drum mode by a style would hide them
     for (int t = firstTrack; t <= lastTrack; ++t)
         for (int v = 0; v < p.variations; ++v)
         {

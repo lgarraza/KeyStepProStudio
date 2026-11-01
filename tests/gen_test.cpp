@@ -305,6 +305,15 @@ int main()
         }
     }
 
+    // 9. Ambient after a style: track 1 goes back to sequencer mode, so its notes show
+    {
+        auto pr = blank();
+        const auto& house = *gen::findStyle ("house");
+        CHECK (9, gen::applyStyle (pr, house, gen::styleParams (house, 3), 1, 1).empty() && isDrumMode (pr));
+        CHECK (9, gen::apply (pr, params, 1, 1).empty() && ! isDrumMode (pr));
+        CHECK (9, gen::applyStyle (pr, house, gen::styleParams (house, 3), 1, 1).empty() && gen::apply (pr, params, 2, 4).empty() && isDrumMode (pr));
+    }
+
     std::printf ("track 3 pattern 1: %s\n", gen::preview (a).c_str());
     std::printf (failures == 0 ? "gen_test: OK\n" : "gen_test: %d FAIL\n", failures);
     return failures == 0 ? 0 : 1;

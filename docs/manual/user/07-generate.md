@@ -10,8 +10,8 @@
    **Musical arrangement** on (see below) or turn it off for the simple four-scene version.
 5. Press **Generate into this project**.
 
-**Ambient** replaces patterns 1-4 of the four tracks and scenes 1-8 of the open project. Drums, the arpeggiator and other
-patterns are left alone.
+**Ambient** replaces patterns 1-4 of the four tracks and scenes 1-8 of the open project, and puts track 1 back in
+sequencer mode (a style had put it in drum mode). The arpeggiator, the drum patterns and the other patterns are left alone.
 
 **Techno, House and Drum & bass** put track 1 in drum mode and write its drum patterns 1-4 (the last one ends with a
 fill), plus patterns 1-4 of track 2 (bass), track 3 (chords) and track 4 (lead), and scenes 1-4. The drums use the
