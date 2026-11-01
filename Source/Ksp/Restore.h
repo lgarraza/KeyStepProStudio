@@ -451,6 +451,8 @@ inline std::vector<std::string> compareReadBack (const ProjectData& written, con
         }
         const bool unstored = w.item == item::project && w.path.size() == 1
                               && ((w.param == 55 && w.path[0] == 5) || (w.param == 56 && w.path[0] >= 4));
+        // track 1, param 0x75 at pattern level: the KeyStep returns nothing for it when the pattern has no kick (hardware, 2026-11-01); nothing writes it
+        const bool drumPatternLane = w.item == item::track1 && w.param == 0x75 && w.path.size() == 1;
         if (unstored)
             continue;
         bool same = r.values.size() == w.values.size();
@@ -458,7 +460,7 @@ inline std::vector<std::string> compareReadBack (const ProjectData& written, con
         {
             const bool emptySlot = wStep != nullptr && rStep != nullptr && j < wStep->values.size() && j < rStep->values.size()
                                    && wStep->values[j] == kEmpty && rStep->values[j] == kEmpty;
-            same = emptySlot || w.values[j] == kUnreadable || r.values[j] == w.values[j]
+            same = emptySlot || (drumPatternLane && r.values[j] == kUnreadable) || w.values[j] == kUnreadable || r.values[j] == w.values[j]
                    || (w.param == param::trackState && w.values[j] == 2 && r.values[j] == 3);
         }
         if (same)

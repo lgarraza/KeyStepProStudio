@@ -47,6 +47,8 @@ public:
     std::function<void (int, const ksp::model::Scene&)> onEditScene;
     std::function<void (int)> onClearScene;
     std::function<void()> onUndo;
+    /** A scene number was clicked: the scene (1..16) and the pattern each track plays first in it (0 = none), for the editor to follow. */
+    std::function<void (int, std::array<int, 4>)> onSelectScene;
 
     void setCanUndo (bool can) { undoButton.setEnabled (can); }
 
@@ -106,9 +108,17 @@ public:
         paintDetail (g, detail);
     }
 
-    void mouseMove (const juce::MouseEvent& e) override { pick (e.getPosition(), false); }
+    void mouseMove (const juce::MouseEvent& e) override
+    {
+        bool clickable = false;   // scene numbers, and the cells of the scene matrix (they open the pattern menu)
+        for (const auto& h : hits)
+            if (h.first.contains (e.getPosition()))
+                clickable = h.second.sceneButton || (view == 0 && h.second.scene > 0 && h.second.track >= 0);
+        setMouseCursor (clickable ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
+        pick (e.getPosition(), false);
+    }
     void mouseDown (const juce::MouseEvent& e) override { pick (e.getPosition(), true); }
-    void mouseExit (const juce::MouseEvent&) override {}
+    void mouseExit (const juce::MouseEvent&) override { setMouseCursor (juce::MouseCursor::NormalCursor); }
 
     void mouseUp (const juce::MouseEvent& e) override
     {
@@ -143,10 +153,19 @@ private:
             {
                 if (h.second.sceneButton)
                 {
-                    if (click && map.scenes[static_cast<std::size_t> (h.second.scene - 1)].valid)
+                    if (click)   // selects the scene (empty ones too: the timeline says it is not saved)
                     {
                         scene = h.second.scene;
                         hover = {};
+                        if (onSelectScene)
+                        {
+                            const auto& sc = map.scenes[static_cast<std::size_t> (scene - 1)];
+                            std::array<int, 4> pats {};
+                            if (sc.valid)
+                                for (std::size_t t = 0; t < 4; ++t)
+                                    pats[t] = sc.pattern[t];
+                            onSelectScene (scene, pats);
+                        }
                         repaint();
                     }
                     return;
@@ -375,6 +394,10 @@ private:
         const int labelW = 36, headH = 36, gap = 3;
         const int cw = (r.getWidth() - labelW - gap * kScenes) / kScenes;
         const int ch = juce::jmax (40, juce::jmin (96, (r.getHeight() - headH - 40 - gap * 4) / 4));
+        {   // the selected scene (click its number) keeps a column band
+            g.setColour (palette::lit.withAlpha (0.24f));
+            g.fillRect (r.getX() + labelW + (scene - 1) * (cw + gap) - 2, r.getY(), cw + 4, headH + 4 * (ch + gap));
+        }
         if (hover.scene > 0)   // the scene's column and the track's row stand out
         {
             g.setColour (palette::lit.withAlpha (0.16f));
@@ -386,7 +409,9 @@ private:
         for (int s = 1; s <= kScenes; ++s)
         {
             const int x = r.getX() + labelW + (s - 1) * (cw + gap);
-            sceneHeader (g, { x, r.getY(), cw, headH - 4 }, s, s == hover.scene);
+            const juce::Rectangle<int> head { x, r.getY(), cw, headH - 4 };
+            sceneHeader (g, head, s, s == hover.scene || s == scene);
+            hits.push_back ({ head, { s, -1, 0, -1, true } });
         }
         for (int t = 0; t < 4; ++t)
         {
@@ -441,7 +466,7 @@ private:
         g.setColour (palette::inkSoft);
         g.setFont (juce::FontOptions (11.5f));
         g.drawFittedText ("Each cell is the pattern that track plays in that scene, drawn as its own piano roll. The number is the pattern, x n means the track plays "
-                          "a chain of n patterns; the strip at the bottom of the cell shows that chain in order, to scale. Hatched: nothing to play. Click a cell to pick its pattern; right-click a scene number to copy, paste or clear it. Drums are not shown yet.",
+                          "a chain of n patterns; the strip at the bottom of the cell shows that chain in order, to scale. Hatched: nothing to play. Click a cell to pick its pattern; click a scene number to select that scene (the Chain timeline shows it), right-click it to copy, paste or clear it. Drums are not shown yet.",
                           note, juce::Justification::topLeft, 3);
     }
 
@@ -581,6 +606,11 @@ private:
 
         if (hover.track < 0)
         {
+            if (view == 0 && scene >= 1 && scene <= kScenes)
+            {
+                paintSceneSummary (g, r);
+                return;
+            }
             g.setColour (palette::inkSoft);
             g.drawFittedText ("Hover or click a cell to see the pattern, its length, notes and chain.", r, juce::Justification::topLeft, 4);
             return;
@@ -647,6 +677,52 @@ private:
                 }
             }
         }
+    }
+
+    /** The selected scene as a whole: what each track plays and for how many bars. */
+    void paintSceneSummary (juce::Graphics& g, juce::Rectangle<int> r)
+    {
+        using namespace ksp::model;
+        const auto& sc = map.scenes[static_cast<std::size_t> (scene - 1)];
+        auto head = r.removeFromTop (22);
+        badge (g, head.removeFromLeft (86), "SCENE " + juce::String (scene), palette::panelDark, palette::segOn);
+        r.removeFromTop (10);
+        if (! sc.valid)
+        {
+            g.setColour (palette::inkSoft);
+            g.drawFittedText ("This scene is empty. Click a cell to pick a pattern and save it as a scene.", r, juce::Justification::topLeft, 3);
+            return;
+        }
+        for (int t = 0; t < 4; ++t)
+        {
+            const auto tc = palette::trackColour (t);
+            auto row = r.removeFromTop (24);
+            badge (g, row.removeFromLeft (30), "T" + juce::String (t + 1), tc, textOn (tc));
+            row.removeFromLeft (6);
+            const auto& c = sc.chain[static_cast<std::size_t> (t)];
+            if (c.empty())
+            {
+                g.setColour (palette::inkSoft);
+                g.setFont (juce::FontOptions (12.0f));
+                g.drawText (sc.pattern[static_cast<std::size_t> (t)] > 0 ? "pattern " + juce::String (sc.pattern[static_cast<std::size_t> (t)]) : juce::String ("nothing"),
+                            row, juce::Justification::centredLeft);
+            }
+            else
+                for (std::size_t i = 0; i < c.size() && row.getWidth() > 24; ++i)
+                {
+                    badge (g, row.removeFromLeft (22), juce::String (c[i]), palette::panelDark, palette::segOn);
+                    row.removeFromLeft (3);
+                }
+            r.removeFromTop (6);
+        }
+        r.removeFromTop (6);
+        int steps = 0;
+        for (int t = 0; t < 4; ++t)
+            steps = juce::jmax (steps, loopSteps (map, scene, t));
+        g.setColour (palette::inkSoft);
+        g.setFont (juce::FontOptions (12.0f));
+        g.drawFittedText ("Plays its chains for " + juce::String (steps / 16.0, 1) + " bars before it repeats. Hover a cell for its pattern; right-click the number to copy, paste or clear.",
+                          r, juce::Justification::topLeft, 4);
     }
 
     std::array<juce::TextButton, 3> tabs;
