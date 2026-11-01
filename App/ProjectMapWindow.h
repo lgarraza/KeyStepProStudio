@@ -106,7 +106,15 @@ public:
         paintDetail (g, detail);
     }
 
-    void mouseMove (const juce::MouseEvent& e) override { pick (e.getPosition(), false); }
+    void mouseMove (const juce::MouseEvent& e) override
+    {
+        bool onScene = false;
+        for (const auto& h : hits)
+            if (h.first.contains (e.getPosition()))
+                onScene = h.second.sceneButton;
+        setMouseCursor (onScene ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
+        pick (e.getPosition(), false);
+    }
     void mouseDown (const juce::MouseEvent& e) override { pick (e.getPosition(), true); }
     void mouseExit (const juce::MouseEvent&) override {}
 
@@ -143,7 +151,7 @@ private:
             {
                 if (h.second.sceneButton)
                 {
-                    if (click && map.scenes[static_cast<std::size_t> (h.second.scene - 1)].valid)
+                    if (click)   // selects the scene (empty ones too: the timeline says it is not saved)
                     {
                         scene = h.second.scene;
                         hover = {};
@@ -375,6 +383,10 @@ private:
         const int labelW = 36, headH = 36, gap = 3;
         const int cw = (r.getWidth() - labelW - gap * kScenes) / kScenes;
         const int ch = juce::jmax (40, juce::jmin (96, (r.getHeight() - headH - 40 - gap * 4) / 4));
+        {   // the selected scene (click its number) keeps a column band
+            g.setColour (palette::lit.withAlpha (0.10f));
+            g.fillRect (r.getX() + labelW + (scene - 1) * (cw + gap) - 2, r.getY(), cw + 4, headH + 4 * (ch + gap));
+        }
         if (hover.scene > 0)   // the scene's column and the track's row stand out
         {
             g.setColour (palette::lit.withAlpha (0.16f));
@@ -386,7 +398,7 @@ private:
         for (int s = 1; s <= kScenes; ++s)
         {
             const int x = r.getX() + labelW + (s - 1) * (cw + gap);
-            sceneHeader (g, { x, r.getY(), cw, headH - 4 }, s, s == hover.scene);
+            sceneHeader (g, { x, r.getY(), cw, headH - 4 }, s, s == hover.scene || s == scene);
         }
         for (int t = 0; t < 4; ++t)
         {
@@ -441,7 +453,7 @@ private:
         g.setColour (palette::inkSoft);
         g.setFont (juce::FontOptions (11.5f));
         g.drawFittedText ("Each cell is the pattern that track plays in that scene, drawn as its own piano roll. The number is the pattern, x n means the track plays "
-                          "a chain of n patterns; the strip at the bottom of the cell shows that chain in order, to scale. Hatched: nothing to play. Click a cell to pick its pattern; right-click a scene number to copy, paste or clear it. Drums are not shown yet.",
+                          "a chain of n patterns; the strip at the bottom of the cell shows that chain in order, to scale. Hatched: nothing to play. Click a cell to pick its pattern; click a scene number to select that scene (the Chain timeline shows it), right-click it to copy, paste or clear it. Drums are not shown yet.",
                           note, juce::Justification::topLeft, 3);
     }
 

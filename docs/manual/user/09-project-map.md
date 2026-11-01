@@ -17,6 +17,7 @@ Click **Project Map** in the top row. It opens a window with three views. Only t
 ### Editing scenes
 
 - **Click a cell** and pick the pattern (1-16) that track plays in that scene. This removes that cell's chain; the menu also has *Remove the chain* to keep the pattern and drop the chain. Picking a pattern in an empty scene makes it a saved scene.
+- **Click a scene number** to select that scene: its column stays highlighted and the Chain timeline shows it.
 - **Right-click a scene number** for **Copy**, **Paste** and **Clear** (back to an empty scene).
 - **Undo edit** (top right) takes back the last change.
 
