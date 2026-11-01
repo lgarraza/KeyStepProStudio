@@ -108,15 +108,15 @@ public:
 
     void mouseMove (const juce::MouseEvent& e) override
     {
-        bool onScene = false;
+        bool clickable = false;   // scene numbers, and the cells of the scene matrix (they open the pattern menu)
         for (const auto& h : hits)
             if (h.first.contains (e.getPosition()))
-                onScene = h.second.sceneButton;
-        setMouseCursor (onScene ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
+                clickable = h.second.sceneButton || (view == 0 && h.second.scene > 0 && h.second.track >= 0);
+        setMouseCursor (clickable ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
         pick (e.getPosition(), false);
     }
     void mouseDown (const juce::MouseEvent& e) override { pick (e.getPosition(), true); }
-    void mouseExit (const juce::MouseEvent&) override {}
+    void mouseExit (const juce::MouseEvent&) override { setMouseCursor (juce::MouseCursor::NormalCursor); }
 
     void mouseUp (const juce::MouseEvent& e) override
     {
