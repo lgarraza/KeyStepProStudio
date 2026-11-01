@@ -197,6 +197,26 @@ inline bool setTempo (ProjectData& p, double bpm)
     return true;
 }
 
+/** Empties the sequencer patterns 1-16 of track 1 (in the style's key), so that switching track 1 back from drums to the
+    sequencer shows clean patterns and not what the project had before. */
+inline std::string clearTrack1Sequencer (ProjectData& project, const Params& p)
+{
+    for (int pat = 1; pat <= 16; ++pat)
+    {
+        const auto base = model::readPattern (project, 1, pat);
+        model::Pattern pt;
+        pt.valid = true;
+        pt.length = 16;
+        pt.root = p.root;
+        pt.scale = p.scale;
+        pt.defaults = base.defaults;
+        pt.config = base.config;
+        if (auto e = model::writePattern (project, 1, pat, pt); ! e.empty())
+            return "track 1 sequencer pattern " + std::to_string (pat) + ": " + e;
+    }
+    return {};
+}
+
 /** Writes patterns 1..variations of tracks first..last: track 1 goes to drum mode and gets the groove (the last variation
     with a fill), tracks 2-4 the style's roles with their time division, and the style's tempo. Returns an error (the project may be partly
     changed) or an empty string. */
@@ -208,6 +228,9 @@ inline std::string applyStyle (ProjectData& project, const Style& s, const Param
     {
         if (t == 1 && ! model::setDrumMode (project, true))
             return "this project has no drum mode value for track 1";
+        if (t == 1)
+            if (auto e = clearTrack1Sequencer (project, p); ! e.empty())
+                return e;
         for (int v = 0; v < p.variations; ++v)
         {
             std::string e;

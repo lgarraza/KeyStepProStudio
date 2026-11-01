@@ -145,6 +145,8 @@ inline std::string applyArrangement (ProjectData& project, const Style& s, const
 {
     if (! model::setDrumMode (project, true))
         return "this project has no drum mode value for track 1";
+    if (auto e = clearTrack1Sequencer (project, p); ! e.empty())
+        return e;
     for (int level = 0; level < kDrumLevels; ++level)
         if (auto e = model::writeDrumPattern (project, level + 1, makeDrumPattern (p, drumLevelSpec (s.drums, level), level)); ! e.empty())
             return "track 1 pattern " + std::to_string (level + 1) + ": " + e;

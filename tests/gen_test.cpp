@@ -248,6 +248,14 @@ int main()
         const auto prm = gen::styleParams (st, 5);
         CHECK (8, gen::applyArrangement (pr, st, prm).empty());
         CHECK (8, gen::tempo (pr) == st.bpm);
+        for (int pat : { 1, 7, 16 })   // the sequencer side of track 1 is clean, in the style's key
+        {
+            const auto q = readPattern (pr, 1, pat);
+            bool any = false;
+            for (const auto& step : q.steps)
+                any = any || ! step.notes.empty();
+            CHECK (8, ! any && q.root == prm.root && q.scale == prm.scale);
+        }
         auto count = [&] (int t, int idx) {
             int n = 0;
             for (const auto& step : readPattern (pr, t, idx).steps)
