@@ -2150,19 +2150,20 @@ private:
         generatorWindow = std::make_unique<ksp::ui::GeneratorWindow> (
             [self] { juce::MessageManager::callAsync ([self] { if (self != nullptr) self->generatorWindow.reset(); }); });
         auto& panel = generatorWindow->content();
-        panel.onGenerate = [self] (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool musical) {
+        panel.onGenerate = [self] (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool musical, int key, int scale) {
             if (self != nullptr)
-                self->generateInto (style, mood, seed, chains, slow, musical);
+                self->generateInto (style, mood, seed, chains, slow, musical, key, scale);
         };
         panel.onUndo = [self] { if (self != nullptr) self->undoGenerate(); };
         if (haveStudio)   // the settings the project was generated with
             panel.setState (juce::String (current.generator.style), juce::String (current.generator.mood), current.generator.seed,
-                            current.generator.chains, current.generator.slow, current.generator.musical, beforeGenerate.has_value());
+                            current.generator.chains, current.generator.slow, current.generator.musical, current.generator.key,
+                            current.generator.scale, beforeGenerate.has_value());
         else
             panel.setCanUndo (beforeGenerate.has_value());
     }
 
-    void generateInto (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool musical)
+    void generateInto (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool musical, int key, int scale)
     {
         if (! haveProject)
         {
@@ -2176,6 +2177,10 @@ private:
         const auto* preset = ksp::gen::findStyle (style.toStdString());
         auto params = preset != nullptr ? ksp::gen::styleParams (*preset, seed) : ksp::gen::moodParams (mood.toStdString(), seed);
         params.chains = chains;
+        if (key >= 0 && key <= 11)
+            params.root = key;   // Auto keeps the key and scale of the style or mood
+        if (scale >= 1 && scale <= 5)
+            params.scale = scale;
         if (preset == nullptr)
             params.slow = slow;
         musical = musical && preset != nullptr;
@@ -2203,7 +2208,7 @@ private:
         }
         beforeGenerate = before;
         noteChanged();
-        current.generator = ksp::studio::Generator { mood.toStdString(), seed, chains, slow, preset != nullptr ? preset->name : "ambient", musical };
+        current.generator = ksp::studio::Generator { mood.toStdString(), seed, chains, slow, preset != nullptr ? preset->name : "ambient", musical, key, scale };
         loadPattern();
         if (generatorWindow != nullptr)
             generatorWindow->content().setCanUndo (true);

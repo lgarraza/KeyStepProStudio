@@ -314,6 +314,27 @@ int main()
         CHECK (9, gen::applyStyle (pr, house, gen::styleParams (house, 3), 1, 1).empty() && gen::apply (pr, params, 2, 4).empty() && isDrumMode (pr));
     }
 
+    // 10. A key and a scale chosen by the user replace the style's: every note of the four tracks is in it
+    {
+        const auto& st = *gen::findStyle ("house");
+        auto prm = gen::styleParams (st, 4);
+        prm.root = 7;    // G
+        prm.scale = 1;   // major
+        auto pr = blank();
+        CHECK (10, gen::applyStyle (pr, st, prm).empty());
+        const auto& major = gen::intervals (1);
+        int notes = 0;
+        for (int t = 2; t <= 4; ++t)
+            for (int v = 1; v <= 4; ++v)
+                for (const auto& step : readPattern (pr, t, v).steps)
+                    for (const auto& n : step.notes)
+                    {
+                        ++notes;
+                        CHECK (10, std::find (major.begin(), major.end(), ((n.pitch - 7) % 12 + 12) % 12) != major.end());
+                    }
+        CHECK (10, notes > 0 && readPattern (pr, 2, 1).root == 7 && readPattern (pr, 2, 1).scale == 1);
+    }
+
     std::printf ("track 3 pattern 1: %s\n", gen::preview (a).c_str());
     std::printf (failures == 0 ? "gen_test: OK\n" : "gen_test: %d FAIL\n", failures);
     return failures == 0 ? 0 : 1;
