@@ -17,7 +17,7 @@ namespace ksp::ui
 class GeneratorPanel : public juce::Component
 {
 public:
-    std::function<void (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow)> onGenerate;
+    std::function<void (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool musical)> onGenerate;
     std::function<void()> onUndo;
 
     GeneratorPanel()
@@ -27,6 +27,7 @@ public:
                                     static_cast<juce::Component*> (&moodInfo), static_cast<juce::Component*> (&seedLabel),
                                     static_cast<juce::Component*> (&seedBox), static_cast<juce::Component*> (&diceButton),
                                     static_cast<juce::Component*> (&chainsToggle), static_cast<juce::Component*> (&slowToggle),
+                                    static_cast<juce::Component*> (&musicalToggle),
                                     static_cast<juce::Component*> (&generateButton), static_cast<juce::Component*> (&undoButton),
                                     static_cast<juce::Component*> (&note) })
             addAndMakeVisible (*c);
@@ -51,6 +52,9 @@ public:
         diceButton.onClick = [this] { seedBox.setText (juce::String (juce::Random::getSystemRandom().nextInt (1000000) + 1), false); };
         chainsToggle.setButtonText ("Chain the variations in every scene (the patterns advance by themselves)");
         slowToggle.setButtonText ("Slow time divisions (drone, pad and bells 1/4, melody 1/8)");
+        musicalToggle.setButtonText ("Musical arrangement: 8 scenes with an energy curve (intro, drop, breakdown, peak, outro)");
+        musicalToggle.setToggleState (true, juce::dontSendNotification);
+        musicalToggle.onClick = [this] { showMoodInfo(); };
         chainsToggle.setToggleState (true, juce::dontSendNotification);
         slowToggle.setToggleState (true, juce::dontSendNotification);
         generateButton.setButtonText ("Generate into this project");
@@ -59,17 +63,17 @@ public:
         generateButton.onClick = [this] {
             if (onGenerate)
                 onGenerate (styleName(), moodName(), static_cast<unsigned> (juce::jmax (1, seedBox.getText().getIntValue())), chainsToggle.getToggleState(),
-                            slowToggle.getToggleState());
+                            slowToggle.getToggleState(), musicalToggle.getToggleState());
         };
         undoButton.onClick = [this] { if (onUndo) onUndo(); };
         moodInfo.setFont (juce::FontOptions (12.0f));
         note.setFont (juce::FontOptions (11.0f));
         note.setColour (juce::Label::textColourId, juce::Colours::grey);
         showMoodInfo();
-        setSize (560, 380);
+        setSize (560, 410);
     }
 
-    void setState (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool canUndo)
+    void setState (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool musical, bool canUndo)
     {
         if (const auto* st = ksp::gen::findStyle (style.toStdString()))
         {
@@ -85,6 +89,7 @@ public:
         seedBox.setText (juce::String (seed), false);
         chainsToggle.setToggleState (chains, juce::dontSendNotification);
         slowToggle.setToggleState (slow, juce::dontSendNotification);
+        musicalToggle.setToggleState (musical, juce::dontSendNotification);
         undoButton.setEnabled (canUndo);
         showMoodInfo();
     }
@@ -111,6 +116,7 @@ public:
         r.removeFromTop (10);
         chainsToggle.setBounds (r.removeFromTop (26));
         slowToggle.setBounds (r.removeFromTop (26));
+        musicalToggle.setBounds (r.removeFromTop (26));
         r.removeFromTop (12);
         auto buttons = r.removeFromTop (32);
         generateButton.setBounds (buttons.removeFromLeft (230));
@@ -170,10 +176,18 @@ private:
                                     "D minor: Dm9, Bb maj7, Gm7, Asus4 with the seventh.", "G mixolydian: open sus2 and add9 chords." };
         const auto* st = style();
         slowToggle.setEnabled (st == nullptr);
+        musicalToggle.setEnabled (st != nullptr);
+        chainsToggle.setEnabled (st == nullptr || ! musicalToggle.getToggleState());
         moodInfo.setText (st != nullptr ? juce::String (st->info) + " The project gets that tempo."
                                         : juce::String (info[juce::jlimit (0, 3, moodBox.getSelectedId() - 1)]),
                           juce::dontSendNotification);
-        note.setText (st != nullptr
+        const bool musical = st != nullptr && musicalToggle.getToggleState();
+        note.setText (musical
+                          ? "Puts track 1 in drum mode and replaces its drum patterns 1-5 and 16, patterns 1-12 and 16 of tracks 2-4 (energy levels by "
+                            "chord; 16 is empty) and scenes 1-8: intro, groove, drop, drop variation, breakdown, build, peak, outro. Each scene chains four "
+                            "patterns per track. The KeyStep does not change scenes by itself: you play them live. Drums use the default drum map "
+                            "and reach the track 1 instrument on the drum channel (10). Nothing reaches the KeyStep until you load it (Write to slot)."
+                      : st != nullptr
                           ? "Puts track 1 in drum mode and replaces its drum patterns 1-4, patterns 1-4 of tracks 2-4 (bass, chords, lead; their time "
                             "division and Mono/Poly too) and scenes 1-4. Drums use the default drum map (kick 36, snare 38, clap 39, hats 42 and 46) and "
                             "reach the track 1 instrument on the drum channel (10). Nothing reaches the KeyStep until you load it (Write to slot)."
@@ -186,7 +200,7 @@ private:
     juce::ComboBox styleBox, moodBox;
     juce::TextEditor seedBox;
     juce::Label styleLabel, moodLabel, seedLabel, moodInfo, note;
-    juce::ToggleButton chainsToggle, slowToggle;
+    juce::ToggleButton chainsToggle, slowToggle, musicalToggle;
     juce::TextButton diceButton, generateButton, undoButton;
 };
 
