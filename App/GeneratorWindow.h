@@ -27,7 +27,7 @@ public:
                                     static_cast<juce::Component*> (&moodInfo), static_cast<juce::Component*> (&seedLabel),
                                     static_cast<juce::Component*> (&seedBox), static_cast<juce::Component*> (&diceButton),
                                     static_cast<juce::Component*> (&chainsToggle), static_cast<juce::Component*> (&slowToggle),
-                                    static_cast<juce::Component*> (&musicalToggle),
+                                    static_cast<juce::Component*> (&musicalToggle), static_cast<juce::Component*> (&seedHelp),
                                     static_cast<juce::Component*> (&generateButton), static_cast<juce::Component*> (&undoButton),
                                     static_cast<juce::Component*> (&note) })
             addAndMakeVisible (*c);
@@ -66,11 +66,18 @@ public:
                             slowToggle.getToggleState(), musicalToggle.getToggleState());
         };
         undoButton.onClick = [this] { if (onUndo) onUndo(); };
+        seedHelp.setText ("Seed: the number the generator \"rolls the dice\" with. The same style and seed always give the same music, so note "
+                          "the number of a take you like. Another seed is another take of the same idea (same key, tempo and style, different notes).",
+                          juce::dontSendNotification);
+        seedHelp.setFont (juce::FontOptions (11.0f));
+        seedHelp.setColour (juce::Label::textColourId, juce::Colours::grey);
+        seedBox.setTooltip ("The same style and seed always give the same music; another seed is another take.");
+        diceButton.setTooltip ("A random seed: a new take of the same style.");
         moodInfo.setFont (juce::FontOptions (12.0f));
         note.setFont (juce::FontOptions (11.0f));
         note.setColour (juce::Label::textColourId, juce::Colours::grey);
         showMoodInfo();
-        setSize (560, 410);
+        setSize (560, 460);
     }
 
     void setState (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool musical, bool canUndo)
@@ -111,7 +118,9 @@ public:
         seedBox.setBounds (row.removeFromLeft (110));
         row.removeFromLeft (6);
         diceButton.setBounds (row.removeFromLeft (90));
-        r.removeFromTop (6);
+        r.removeFromTop (4);
+        seedHelp.setBounds (r.removeFromTop (44));
+        r.removeFromTop (2);
         moodInfo.setBounds (r.removeFromTop (36));
         r.removeFromTop (10);
         chainsToggle.setBounds (r.removeFromTop (26));
@@ -199,7 +208,7 @@ private:
     juce::StringArray families;   // "ambient" then the families of Styles.h, in the Style box's order
     juce::ComboBox styleBox, moodBox;
     juce::TextEditor seedBox;
-    juce::Label styleLabel, moodLabel, seedLabel, moodInfo, note;
+    juce::Label styleLabel, moodLabel, seedLabel, seedHelp, moodInfo, note;
     juce::ToggleButton chainsToggle, slowToggle, musicalToggle;
     juce::TextButton diceButton, generateButton, undoButton;
 };
