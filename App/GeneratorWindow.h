@@ -53,6 +53,8 @@ public:
         scaleBox.addItem ("Auto (the style's)", 1);
         for (int sc = 1; sc <= 5; ++sc)
             scaleBox.addItem (ksp::scaleName (sc), sc + 1);
+        keyBox.onChange = [this] { showMoodInfo(); };
+        scaleBox.onChange = [this] { showMoodInfo(); };
         keyBox.setSelectedId (1, juce::dontSendNotification);
         scaleBox.setSelectedId (1, juce::dontSendNotification);
         keyBox.setTooltip ("Auto uses the key of the style and mood (shown below); a key here puts all four tracks in it.");
@@ -91,7 +93,7 @@ public:
         note.setFont (juce::FontOptions (11.0f));
         note.setColour (juce::Label::textColourId, juce::Colours::grey);
         showMoodInfo();
-        setSize (560, 512);
+        setSize (560, 528);
     }
 
     void setState (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool musical, int key, int scale, bool canUndo)
@@ -144,7 +146,7 @@ public:
         r.removeFromTop (4);
         seedHelp.setBounds (r.removeFromTop (44));
         r.removeFromTop (2);
-        moodInfo.setBounds (r.removeFromTop (52));
+        moodInfo.setBounds (r.removeFromTop (66));
         r.removeFromTop (10);
         chainsToggle.setBounds (r.removeFromTop (26));
         slowToggle.setBounds (r.removeFromTop (26));
@@ -214,10 +216,18 @@ private:
                                                         + ", track 3 " + ksp::gen::roleLabel (st->tracks[1].spec.role)
                                                         + ", track 4 " + ksp::gen::roleLabel (st->tracks[2].spec.role) + "."
                                                   : juce::String ("Track 1 drone, track 2 pad chords, track 3 lead melody, track 4 bells.");
-        moodInfo.setText ((st != nullptr ? juce::String (st->info) + " The project gets that tempo."
-                                         : juce::String (info[juce::jlimit (0, 3, moodBox.getSelectedId() - 1)]))
-                              + "\n" + tracks,
-                          juce::dontSendNotification);
+        // the key and scale the music will have: the choice, else the style's or the mood's own
+        const auto own = st != nullptr ? ksp::gen::styleParams (*st) : ksp::gen::moodParams (moodName().toStdString());
+        const int keyPick = keyBox.getSelectedId() - 2, scalePick = scaleBox.getSelectedId() - 1;
+        const bool chosen = keyPick >= 0 || scalePick >= 1;
+        const juce::String keyScale = juce::String (ksp::pitchClassName (keyPick >= 0 ? keyPick : own.root)) + " "
+                                      + juce::String (ksp::scaleName (scalePick >= 1 ? scalePick : own.scale)).toLowerCase();
+        juce::String text = st != nullptr ? keyScale + juce::String (st->info).fromFirstOccurrenceOf (",", true, false) + " The project gets that tempo."
+                                          : juce::String (info[juce::jlimit (0, 3, moodBox.getSelectedId() - 1)]);
+        if (chosen)
+            text += st != nullptr ? " (Your key and scale; the chords keep the style's degrees.)"
+                                  : " It will be played in " + keyScale + " (your choice; the chords keep the mood's degrees).";
+        moodInfo.setText (text + "\n" + tracks, juce::dontSendNotification);
         const bool musical = st != nullptr && musicalToggle.getToggleState();
         note.setText (musical
                           ? "Puts track 1 in drum mode and replaces its drum patterns 1-5 and 16, patterns 1-12 and 16 of tracks 2-4 (energy levels by "
