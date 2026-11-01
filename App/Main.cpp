@@ -2098,6 +2098,14 @@ private:
         panel.onEditScene = [self] (int sc, const ksp::model::Scene& n) { if (self != nullptr) self->editScene (sc, &n); };
         panel.onClearScene = [self] (int sc) { if (self != nullptr) self->editScene (sc, nullptr); };
         panel.onUndo = [self] { if (self != nullptr) self->undoMapEdit(); };
+        // selecting a scene shows, in the editor, the pattern the selected track plays in it
+        panel.onSelectScene = [self] (int, std::array<int, 4> pats) {
+            if (self == nullptr)
+                return;
+            const int p = pats[static_cast<std::size_t> (std::max (1, self->track()) - 1)];
+            if (p >= 1 && p <= 16 && p != self->patNo())
+                self->patternBox.setSelectedId (p, juce::sendNotification);
+        };
         commitPattern();
         refreshMap();
     }

@@ -55,3 +55,5 @@ flowchart LR
 
 **Watch out:** the style, mood and seed are saved with the project, so you can come back to the same music. Generating changes
 the project in memory only; it reaches the KeyStep when you **Write to slot**.
+
+A style also empties the sequencer patterns of track 1, so switching **Drums** off on that track shows clean patterns in the style's key.
