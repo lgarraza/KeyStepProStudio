@@ -2207,14 +2207,18 @@ private:
         loadPattern();
         if (generatorWindow != nullptr)
             generatorWindow->content().setCanUndo (true);
-        if (musical)
-            say ("Generated " + juce::String (preset->label) + ", seed " + juce::String (seed) + ": drums on track 1, 8 scenes with an energy curve (patterns 1-12 and 16), "
+        if (preset != nullptr)
+        {
+            const auto tracks = juce::String (" Track 1 drums, track 2 ") + ksp::gen::roleLabel (preset->tracks[0].spec.role)
+                                + ", track 3 " + ksp::gen::roleLabel (preset->tracks[1].spec.role)
+                                + ", track 4 " + ksp::gen::roleLabel (preset->tracks[2].spec.role) + ".";
+            say ("Generated " + juce::String (preset->label) + ", seed " + juce::String (seed) + ":" + tracks
+                 + (musical ? " 8 scenes with an energy curve (patterns 1-12 and 16), " : " Patterns 1-4 and scenes 1-4, ")
                  + juce::String (preset->bpm) + " BPM (not saved, not on the KeyStep yet).");
-        else if (preset != nullptr)
-            say ("Generated " + juce::String (preset->label) + ", seed " + juce::String (seed) + ": drums on track 1, patterns 1-4 and scenes 1-4, "
-                 + juce::String (preset->bpm) + " BPM (not saved, not on the KeyStep yet).");
+        }
         else
-            say ("Generated " + mood + ", seed " + juce::String (seed) + ": patterns 1-4 and scenes 1-8 (not saved, not on the KeyStep yet).");
+            say ("Generated " + mood + ", seed " + juce::String (seed) + ": track 1 drone, track 2 pad chords, track 3 lead melody, track 4 bells; "
+                 "patterns 1-4 and scenes 1-8 (not saved, not on the KeyStep yet).");
     }
 
     void undoGenerate()

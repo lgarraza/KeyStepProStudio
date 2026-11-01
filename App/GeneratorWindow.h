@@ -77,7 +77,7 @@ public:
         note.setFont (juce::FontOptions (11.0f));
         note.setColour (juce::Label::textColourId, juce::Colours::grey);
         showMoodInfo();
-        setSize (560, 460);
+        setSize (560, 476);
     }
 
     void setState (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool musical, bool canUndo)
@@ -121,7 +121,7 @@ public:
         r.removeFromTop (4);
         seedHelp.setBounds (r.removeFromTop (44));
         r.removeFromTop (2);
-        moodInfo.setBounds (r.removeFromTop (36));
+        moodInfo.setBounds (r.removeFromTop (52));
         r.removeFromTop (10);
         chainsToggle.setBounds (r.removeFromTop (26));
         slowToggle.setBounds (r.removeFromTop (26));
@@ -187,8 +187,13 @@ private:
         slowToggle.setEnabled (st == nullptr);
         musicalToggle.setEnabled (st != nullptr);
         chainsToggle.setEnabled (st == nullptr || ! musicalToggle.getToggleState());
-        moodInfo.setText (st != nullptr ? juce::String (st->info) + " The project gets that tempo."
-                                        : juce::String (info[juce::jlimit (0, 3, moodBox.getSelectedId() - 1)]),
+        const juce::String tracks = st != nullptr ? juce::String ("Track 1 drums, track 2 ") + ksp::gen::roleLabel (st->tracks[0].spec.role)
+                                                        + ", track 3 " + ksp::gen::roleLabel (st->tracks[1].spec.role)
+                                                        + ", track 4 " + ksp::gen::roleLabel (st->tracks[2].spec.role) + "."
+                                                  : juce::String ("Track 1 drone, track 2 pad chords, track 3 lead melody, track 4 bells.");
+        moodInfo.setText ((st != nullptr ? juce::String (st->info) + " The project gets that tempo."
+                                         : juce::String (info[juce::jlimit (0, 3, moodBox.getSelectedId() - 1)]))
+                              + "\n" + tracks,
                           juce::dontSendNotification);
         const bool musical = st != nullptr && musicalToggle.getToggleState();
         note.setText (musical

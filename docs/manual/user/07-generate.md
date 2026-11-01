@@ -29,6 +29,10 @@ and pattern 16 of every track is empty, to silence a track. Each scene chains fo
 between levels, and all four tracks play the same chord in a scene. The KeyStep does not change scenes by itself: you play
 them live, so think of the eight scenes as a map. The Mood and seed still change the notes.
 
+The window and the message after generating say which track plays what, so you know which instrument to load on each: styles
+put the **drums on track 1**, then bass (track 2), chords (track 3) and a lead melody or bells (track 4); Ambient puts a drone on
+track 1, pad chords on 2, a lead melody on 3 and bells on 4.
+
 **Undo** restores the project as it was before the last generation.
 
 ```mermaid
