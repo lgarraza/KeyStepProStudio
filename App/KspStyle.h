@@ -138,6 +138,19 @@ private:
 class KspLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
+    /** Every enabled button, menu box and knob shows the hand: what can be clicked looks clickable. A component that sets its
+        own cursor (text boxes, the grids, the Project Map) keeps it. */
+    juce::MouseCursor getMouseCursorFor (juce::Component& c) override
+    {
+        const auto own = LookAndFeel_V4::getMouseCursorFor (c);
+        if (own != juce::MouseCursor::NormalCursor || ! c.isEnabled())
+            return own;
+        auto* box = dynamic_cast<juce::ComboBox*> (&c) != nullptr ? &c : dynamic_cast<juce::ComboBox*> (c.getParentComponent());   // its text is a child label
+        if (dynamic_cast<juce::Button*> (&c) != nullptr || box != nullptr || dynamic_cast<juce::Slider*> (&c) != nullptr)
+            return juce::MouseCursor::PointingHandCursor;
+        return own;
+    }
+
     KspLookAndFeel()
     {
         using namespace palette;

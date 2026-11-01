@@ -15,7 +15,7 @@ Save as PNG in `img/`, named as below. Add numbered red callouts (1, 2, 3...) ma
 | `shot-end-drag.png` | 5 | END grip on the line, hovered (lit, white outline) with the dimmed area after it |
 | `shot-instruments.png` | 6 (use the main-window shot until a closer one exists) | Four track cards (color per track, one selected, others dimmed) with plugins loaded |
 | `shot-plugins.png` | 6 (done) | Plugins... window (Hide column) |
-| `shot-generate.png` | 7 (postponed: the Generate feature is being reworked) | Generate... window |
+| `shot-generate.png` | 7 (done) | Generate... window |
 | `shot-library.png` | 8 (done) | Library window with a few projects |
 | `shot-close-warning.png` | 8 (done) | The Save / Discard / Cancel dialog |
 | `shot-project-map.png` | 9 (done) | Project Map, Scene matrix |
