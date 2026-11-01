@@ -5,7 +5,9 @@
 1. Open (or create) a project; **Generate...** needs one open.
 2. Pick a **style** and its **mood**: Ambient (Classic, Ethereal, Dark, Meditative), Techno (Driving), House (Deep,
    Chill, Melodic) or Drum & bass (Liquid).
-3. Set the **seed**. Same seed = same music. **New seed** rolls a number.
+3. Set the **seed**, the take number: the style sets the rules and the seed picks one version of them. Same style and
+   seed = the same music back; another seed = other melodies and rhythms in the same key and tempo. **New seed** rolls a
+   number. The window explains it under the seed box.
 4. Choose whether the scenes **chain** variations and (Ambient only) whether time divisions are **slow**.
 5. Press **Generate into this project**.
 
