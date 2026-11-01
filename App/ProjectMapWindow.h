@@ -47,6 +47,8 @@ public:
     std::function<void (int, const ksp::model::Scene&)> onEditScene;
     std::function<void (int)> onClearScene;
     std::function<void()> onUndo;
+    /** A scene number was clicked: the scene (1..16) and the pattern each track plays first in it (0 = none), for the editor to follow. */
+    std::function<void (int, std::array<int, 4>)> onSelectScene;
 
     void setCanUndo (bool can) { undoButton.setEnabled (can); }
 
@@ -155,6 +157,15 @@ private:
                     {
                         scene = h.second.scene;
                         hover = {};
+                        if (onSelectScene)
+                        {
+                            const auto& sc = map.scenes[static_cast<std::size_t> (scene - 1)];
+                            std::array<int, 4> pats {};
+                            if (sc.valid)
+                                for (std::size_t t = 0; t < 4; ++t)
+                                    pats[t] = sc.pattern[t];
+                            onSelectScene (scene, pats);
+                        }
                         repaint();
                     }
                     return;
