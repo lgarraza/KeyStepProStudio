@@ -83,6 +83,14 @@ inline const Arrangement& arrangementFor (const Style& s)
 /** The pattern (1-12) of tracks 2-4 for an energy level (0-3) and a chord (0-2); a negative level is the empty pattern 16. */
 inline int rolePatternIndex (int level, int chord) { return level < 0 ? kDummy : level * kChords + chord % kChords + 1; }
 
+inline bool hasNotes (const model::Pattern& pt)
+{
+    for (const auto& st : pt.steps)
+        if (st.on && ! st.notes.empty())
+            return true;
+    return false;
+}
+
 /** The role at an energy level: its density (melody, bells) or its pulses (bass, stabs) scaled, the style's own at level 2. */
 inline RoleSpec levelSpec (const RoleSpec& s, int level)
 {
@@ -148,7 +156,13 @@ inline std::string applyArrangement (ProjectData& project, const Style& s, const
             {
                 const int index = rolePatternIndex (level, chord);
                 const auto base = model::readPattern (project, t, index);
-                auto pt = makeRolePattern (p, levelSpec (ts.spec, level), chord, base.defaults);
+                auto spec = levelSpec (ts.spec, level);
+                auto pt = makeRolePattern (p, spec, chord, base.defaults);
+                for (int tries = 0; tries < 10 && ! hasNotes (pt); ++tries)   // a sparse pattern must not come out silent
+                {
+                    spec.density = std::min (100, roleDensity (spec) + 10);
+                    pt = makeRolePattern (p, spec, chord, base.defaults);
+                }
                 pt.config = base.config;
                 model::setDivision (pt, ts.division);
                 model::setPoly (pt, ts.poly);

@@ -273,6 +273,8 @@ int main()
             {
                 CHECK (8, check (readPattern (pr, t, gen::rolePatternIndex (0, chord))).empty());
                 sparse += count (t, gen::rolePatternIndex (0, chord));
+                for (int level = 0; level < gen::kLevels; ++level)
+                    CHECK (8, count (t, gen::rolePatternIndex (level, chord)) > 0);   // no silent pattern
                 peak += count (t, gen::rolePatternIndex (3, chord));
             }
             CHECK (8, sparse > 0 && peak >= sparse);
