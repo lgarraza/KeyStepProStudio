@@ -2723,10 +2723,12 @@ private:
         return device != nullptr;
     }
 
-    ksp::Progress progressTo (const juce::String& what)
+    /** The popup bar for a step that covers [from, to] of the whole operation (default: all of it). */
+    ksp::Progress progressTo (const juce::String& what, double from = 0.0, double to = 1.0)
     {
-        return [this, what] (double x) {
-            post ([what, x] (MainComponent& m) { m.busyOverlay.update (what, x); });   // the bar shows the %; the status line stays quiet meanwhile
+        return [this, what, from, to] (double x) {
+            const double overall = from + (to - from) * juce::jlimit (0.0, 1.0, x);
+            post ([what, overall] (MainComponent& m) { m.busyOverlay.update (what, overall); });   // the bar shows the %; the status line stays quiet meanwhile
             return true;
         };
     }
@@ -2768,7 +2770,11 @@ private:
             if (! connect())
                 return;
             juce::File pre;
-            auto r = device->backupSlot (slot, progressTo ("Backing up slot " + juce::String (slot)), pre);
+            // one bar for the whole write, weighted by the number of KeyStep requests of each step (the commit counts as ~3 s of
+            // requests). The write size is only known after the backup, so the backup takes its share assuming a small write.
+            const double nRead = static_cast<double> (ksp::plan::expandPlan().size());
+            const double b1 = nRead / (2.0 * nRead + 750.0);
+            auto r = device->backupSlot (slot, progressTo ("Backing up slot " + juce::String (slot) + " (1 of 3)", 0.0, b1), pre);
             if (r.failed())
             {
                 post ([r] (MainComponent& m) { m.say ("Nothing was written: " + r.getErrorMessage()); });
@@ -2776,16 +2782,16 @@ private:
             }
             // only what differs from the slot as just read (and the states): much less than the whole project
             const auto plan = ksp::writePlan (written, &device->slotBefore());
+            const double b2 = b1 + (1.0 - b1) * (static_cast<double> (plan.requests.size()) + 750.0)
+                                       / (static_cast<double> (plan.requests.size()) + 750.0 + nRead);
             post ([] (MainComponent& m) { m.say ("Writing..."); });
-            r = device->writeSlot (plan, slot, [this] (double x) {
-                post ([x] (MainComponent& m) { m.say ("Writing " + juce::String (static_cast<int> (x * 100)) + " %"); });
-            });
+            r = device->writeSlot (plan, slot, progressTo ("Writing slot " + juce::String (slot) + " (2 of 3)", b1, b2));
             if (r.failed())
             {
                 post ([r] (MainComponent& m) { m.say (r.getErrorMessage()); });
                 return;
             }
-            auto after = device->readSlot (slot, progressTo ("Reading back"));
+            auto after = device->readSlot (slot, progressTo ("Reading back (3 of 3)", b2, 1.0));
             juce::String msg;
             if (! after.project)
                 msg = "Written, but the read-back failed: " + juce::String (after.error);
