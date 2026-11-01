@@ -17,7 +17,7 @@ namespace ksp::ui
 class GeneratorPanel : public juce::Component
 {
 public:
-    std::function<void (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool musical)> onGenerate;
+    std::function<void (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool musical, int key, int scale)> onGenerate;
     std::function<void()> onUndo;
 
     GeneratorPanel()
@@ -27,7 +27,8 @@ public:
                                     static_cast<juce::Component*> (&moodInfo), static_cast<juce::Component*> (&seedLabel),
                                     static_cast<juce::Component*> (&seedBox), static_cast<juce::Component*> (&diceButton),
                                     static_cast<juce::Component*> (&chainsToggle), static_cast<juce::Component*> (&slowToggle),
-                                    static_cast<juce::Component*> (&musicalToggle), static_cast<juce::Component*> (&seedHelp),
+                                    static_cast<juce::Component*> (&musicalToggle), static_cast<juce::Component*> (&seedHelp), static_cast<juce::Component*> (&keyBox),
+                                    static_cast<juce::Component*> (&keyLabel), static_cast<juce::Component*> (&scaleBox), static_cast<juce::Component*> (&scaleLabel),
                                     static_cast<juce::Component*> (&generateButton), static_cast<juce::Component*> (&undoButton),
                                     static_cast<juce::Component*> (&note) })
             addAndMakeVisible (*c);
@@ -44,6 +45,20 @@ public:
         styleBox.onChange = [this] { fillMoods (1); showMoodInfo(); };
         moodLabel.setText ("Mood", juce::dontSendNotification);
         seedLabel.setText ("Seed", juce::dontSendNotification);
+        keyLabel.setText ("Key", juce::dontSendNotification);
+        scaleLabel.setText ("Scale", juce::dontSendNotification);
+        keyBox.addItem ("Auto (the style's)", 1);
+        for (int pc = 0; pc < 12; ++pc)
+            keyBox.addItem (ksp::pitchClassName (pc), pc + 2);
+        scaleBox.addItem ("Auto (the style's)", 1);
+        for (int sc = 1; sc <= 5; ++sc)
+            scaleBox.addItem (ksp::scaleName (sc), sc + 1);
+        keyBox.onChange = [this] { showMoodInfo(); };
+        scaleBox.onChange = [this] { showMoodInfo(); };
+        keyBox.setSelectedId (1, juce::dontSendNotification);
+        scaleBox.setSelectedId (1, juce::dontSendNotification);
+        keyBox.setTooltip ("Auto uses the key of the style and mood (shown below); a key here puts all four tracks in it.");
+        scaleBox.setTooltip ("Auto uses the scale of the style and mood; a scale here is used by all four tracks.");
         fillMoods (2);
         moodBox.onChange = [this] { showMoodInfo(); };
         seedBox.setInputRestrictions (9, "0123456789");
@@ -63,7 +78,8 @@ public:
         generateButton.onClick = [this] {
             if (onGenerate)
                 onGenerate (styleName(), moodName(), static_cast<unsigned> (juce::jmax (1, seedBox.getText().getIntValue())), chainsToggle.getToggleState(),
-                            slowToggle.getToggleState(), musicalToggle.getToggleState());
+                            slowToggle.getToggleState(), musicalToggle.getToggleState(), keyBox.getSelectedId() - 2,
+                            scaleBox.getSelectedId() - 1);
         };
         undoButton.onClick = [this] { if (onUndo) onUndo(); };
         seedHelp.setText ("Seed: the number the generator \"rolls the dice\" with. The same style and seed always give the same music, so note "
@@ -77,10 +93,10 @@ public:
         note.setFont (juce::FontOptions (11.0f));
         note.setColour (juce::Label::textColourId, juce::Colours::grey);
         showMoodInfo();
-        setSize (560, 476);
+        setSize (560, 528);
     }
 
-    void setState (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool musical, bool canUndo)
+    void setState (const juce::String& style, const juce::String& mood, unsigned seed, bool chains, bool slow, bool musical, int key, int scale, bool canUndo)
     {
         if (const auto* st = ksp::gen::findStyle (style.toStdString()))
         {
@@ -97,6 +113,8 @@ public:
         chainsToggle.setToggleState (chains, juce::dontSendNotification);
         slowToggle.setToggleState (slow, juce::dontSendNotification);
         musicalToggle.setToggleState (musical, juce::dontSendNotification);
+        keyBox.setSelectedId (juce::jlimit (-1, 11, key) + 2, juce::dontSendNotification);
+        scaleBox.setSelectedId (juce::jlimit (0, 5, scale) + 1, juce::dontSendNotification);
         undoButton.setEnabled (canUndo);
         showMoodInfo();
     }
@@ -118,10 +136,17 @@ public:
         seedBox.setBounds (row.removeFromLeft (110));
         row.removeFromLeft (6);
         diceButton.setBounds (row.removeFromLeft (90));
+        r.removeFromTop (6);
+        row = r.removeFromTop (28);
+        keyLabel.setBounds (row.removeFromLeft (50));
+        keyBox.setBounds (row.removeFromLeft (180));
+        row.removeFromLeft (20);
+        scaleLabel.setBounds (row.removeFromLeft (40));
+        scaleBox.setBounds (row.removeFromLeft (176));
         r.removeFromTop (4);
         seedHelp.setBounds (r.removeFromTop (44));
         r.removeFromTop (2);
-        moodInfo.setBounds (r.removeFromTop (52));
+        moodInfo.setBounds (r.removeFromTop (66));
         r.removeFromTop (10);
         chainsToggle.setBounds (r.removeFromTop (26));
         slowToggle.setBounds (r.removeFromTop (26));
@@ -191,10 +216,18 @@ private:
                                                         + ", track 3 " + ksp::gen::roleLabel (st->tracks[1].spec.role)
                                                         + ", track 4 " + ksp::gen::roleLabel (st->tracks[2].spec.role) + "."
                                                   : juce::String ("Track 1 drone, track 2 pad chords, track 3 lead melody, track 4 bells.");
-        moodInfo.setText ((st != nullptr ? juce::String (st->info) + " The project gets that tempo."
-                                         : juce::String (info[juce::jlimit (0, 3, moodBox.getSelectedId() - 1)]))
-                              + "\n" + tracks,
-                          juce::dontSendNotification);
+        // the key and scale the music will have: the choice, else the style's or the mood's own
+        const auto own = st != nullptr ? ksp::gen::styleParams (*st) : ksp::gen::moodParams (moodName().toStdString());
+        const int keyPick = keyBox.getSelectedId() - 2, scalePick = scaleBox.getSelectedId() - 1;
+        const bool chosen = keyPick >= 0 || scalePick >= 1;
+        const juce::String keyScale = juce::String (ksp::pitchClassName (keyPick >= 0 ? keyPick : own.root)) + " "
+                                      + juce::String (ksp::scaleName (scalePick >= 1 ? scalePick : own.scale)).toLowerCase();
+        juce::String text = st != nullptr ? keyScale + juce::String (st->info).fromFirstOccurrenceOf (",", true, false) + " The project gets that tempo."
+                                          : juce::String (info[juce::jlimit (0, 3, moodBox.getSelectedId() - 1)]);
+        if (chosen)
+            text += st != nullptr ? " (Your key and scale; the chords keep the style's degrees.)"
+                                  : " It will be played in " + keyScale + " (your choice; the chords keep the mood's degrees).";
+        moodInfo.setText (text + "\n" + tracks, juce::dontSendNotification);
         const bool musical = st != nullptr && musicalToggle.getToggleState();
         note.setText (musical
                           ? "Puts track 1 in drum mode and replaces its drum patterns 1-5 and 16, patterns 1-12 and 16 of tracks 2-4 (energy levels by "
@@ -211,9 +244,9 @@ private:
     }
 
     juce::StringArray families;   // "ambient" then the families of Styles.h, in the Style box's order
-    juce::ComboBox styleBox, moodBox;
+    juce::ComboBox styleBox, moodBox, keyBox, scaleBox;
     juce::TextEditor seedBox;
-    juce::Label styleLabel, moodLabel, seedLabel, seedHelp, moodInfo, note;
+    juce::Label styleLabel, moodLabel, seedLabel, keyLabel, scaleLabel, seedHelp, moodInfo, note;
     juce::ToggleButton chainsToggle, slowToggle, musicalToggle;
     juce::TextButton diceButton, generateButton, undoButton;
 };

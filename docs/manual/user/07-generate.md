@@ -8,9 +8,14 @@
 3. Set the **seed**: the number the generator "rolls the dice" with. The same style and seed always give the same music, so note
    the number of a take you like; another seed is another take of the same idea (same key, tempo and style, different notes).
    **New seed** rolls a number.
-4. Choose whether the scenes **chain** variations and (Ambient only) whether time divisions are **slow**. For a style, leave
+4. Pick the **key** and **scale**, or leave both on **Auto**: Auto uses the key of the style and mood (shown under the
+   Mood box). A key or scale you pick is used by all four tracks (drums have no key). The scales are the ones the KeyStep
+   has: Major, Minor, Dorian, Mixolydian and Harmonic minor. The chords follow the same scale degrees, so another scale
+   changes their colour (deep house's minor ninth chords become major ones in Major). The key and scale are saved with the
+   project.
+5. Choose whether the scenes **chain** variations and (Ambient only) whether time divisions are **slow**. For a style, leave
    **Musical arrangement** on (see below) or turn it off for the simple four-scene version.
-5. Press **Generate into this project**.
+6. Press **Generate into this project**.
 
 **Ambient** replaces patterns 1-4 of the four tracks and scenes 1-8 of the open project, and puts track 1 back in
 sequencer mode (a style had put it in drum mode). The arpeggiator, the drum patterns and the other patterns are left alone.
