@@ -62,6 +62,10 @@ int main (int argc, char* argv[])
         const int variations = params.variations;
         params = ksp::gen::styleParams (*style, params.seed);   // the style's key and chords (track 1 goes to drum mode)
         params.variations = variations;
+        if (args.contains ("--root"))
+            params.root = option ("--root", "2").getIntValue();   // an explicit key or scale wins over the style's
+        if (args.contains ("--scale"))
+            params.scale = option ("--scale", "3").getIntValue();
     }
     params.chains = args.contains ("--chains");
     const auto tr = option ("--tracks", "1-4");

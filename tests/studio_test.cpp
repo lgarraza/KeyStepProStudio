@@ -39,7 +39,7 @@ int main()
     //    instrument, an effect chain, unreadable values, the generator settings
     StudioProject p = fromKsp (blank(), "Lluvia en el jard\xC3\xADn \"v2\"");
     p.notes = "l\xC3\xADnea 1\nl\xC3\xADnea 2\twith \\ backslash";
-    p.generator = { "ethereal", 7, true, false, "house", true };
+    p.generator = { "ethereal", 7, true, false, "house", true, 5, 4 };
     p.tracks[0].instrument = PluginSetup { "Analog Lab V", "<PLUGIN name=\"Analog Lab V\" uid=\"1\">\n  <x a='b'/>\n</PLUGIN>", "QUJDREVGRw==", false };
     p.tracks[0].effects = { PluginSetup { "ValhallaDelay", "<PLUGIN name=\"VD\"/>", "c3RhdGU=", true }, PluginSetup { "Reverb", "<r/>", "", false } };
     p.tracks[0].volume = 0.65;
