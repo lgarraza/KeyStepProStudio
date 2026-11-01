@@ -115,11 +115,16 @@ public:
         {
             const auto& q = plan.requests[n];
             ok = send (bulkSet (slot, q.param, q.item, q.path, q.values));
-            if (progress && n % 256 == 0)
-                progress (static_cast<double> (n) / static_cast<double> (plan.requests.size()));
+            if (progress && n % 32 == 0)
+                progress (static_cast<double> (n) / static_cast<double> (plan.requests.size() + 1));   // the commit is the last unit
         }
         ok = ok && send (commit (slot));
-        juce::Thread::sleep (3000);
+        for (int t = 0; t < 10; ++t)   // the commit takes about 3 s; keep the bar moving until it ends
+        {
+            juce::Thread::sleep (300);
+            if (progress)
+                progress ((static_cast<double> (plan.requests.size()) + (t + 1) / 10.0) / static_cast<double> (plan.requests.size() + 1));
+        }
         link->setGapMs (20);
         lastRead = {};   // the slot changed: a new write needs a new backup
         return ok ? juce::Result::ok() : juce::Result::fail ("A frame was refused by the write guard.");

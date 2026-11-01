@@ -6,7 +6,7 @@
 
 Pick a project (slot) in the **Project** box and press **Read** next to it. Reading replaces the project in the editor, so write or save first. The grid fills with that project. Nothing on the device changes.
 
-While the app reads or writes the KeyStep, a popup with a progress bar blocks the whole window so nothing can be touched.
+While the app reads or writes the KeyStep, a popup with a progress bar blocks the whole window so nothing can be touched. When you write, the bar covers the whole operation (backup, write, read back) and runs from 0 % to 100 %; the popup names the current step (1 of 3, 2 of 3, 3 of 3).
 
 ![Progress popup while reading a project](img/shot-progress.png)
 
