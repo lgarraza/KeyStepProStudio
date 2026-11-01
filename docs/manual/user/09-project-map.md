@@ -12,7 +12,7 @@ Click **Project Map** in the top row. It opens a window with three views. Only t
 2. Scenes 01-16 across the top (**SAVED** or **EMPTY**), tracks T1-T4 down the side in the KeyStep colours.
 3. Each cell is the pattern that track plays in that scene, drawn as a small piano roll. The number is the pattern; `x4` means the track plays a chain of 4 patterns, shown in order on the strip at the bottom of the cell.
 4. Hatched cells play nothing. Drums are not shown yet.
-5. Hover a cell to see its pattern, length, notes and chain in the panel on the right.
+5. Hover a cell to see its pattern, length, notes and chain in the panel on the right. With no cell under the mouse, the panel shows the selected scene: each track's chain and how many bars it lasts.
 
 ### Editing scenes
 
