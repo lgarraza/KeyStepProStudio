@@ -28,6 +28,21 @@ struct RoleSpec
     int gate = -1;          // bass and stab: the gate of every note; -1 = the role's own
 };
 
+/** What the role is called for a musician (the stab is the chord track). */
+inline const char* roleLabel (Role r)
+{
+    switch (r)
+    {
+        case Role::drone:  return "drone";
+        case Role::pad:    return "pad chords";
+        case Role::melody: return "lead melody";
+        case Role::bells:  return "bells";
+        case Role::bass:   return "bass";
+        case Role::stab:   return "chord stabs";
+    }
+    return "";
+}
+
 inline int roleLow (const RoleSpec& s)
 {
     if (s.low >= 0)

@@ -2,7 +2,7 @@
     KspGen: experiment, generates ambient patterns (Source/Gen/Ambient.h) into a test slot of the KeyStep Pro.
     Without --write it only reads the slot and shows what it would write (a dry run). WRITES to the device with --write.
 
-        KspGen [--to 16] [--seed N] [--root 2] [--scale 3] [--tracks 1-4] [--variations 4] [--no-scenes] [--no-slow] [--chains] [--mood classic|ethereal|dark|meditative] [--style techno|house|house-chill|house-melodic|dnb] [--write] [--device "KeyStep Pro"]
+        KspGen [--to 16] [--seed N] [--root 2] [--scale 3] [--tracks 1-4] [--variations 4] [--no-scenes] [--no-slow] [--chains] [--mood classic|ethereal|dark|meditative] [--style techno|house|house-chill|house-melodic|dnb [--musical]] [--write] [--device "KeyStep Pro"]
 
     Any slot 1-16. Steps: read the slot and save it to Backups (ksp-pre-restore-P<n>-...), put patterns 1..variations of
     the chosen tracks over what the slot has (everything else in the slot stays), save the generated project to
@@ -13,7 +13,7 @@
 #include <iostream>
 #include <juce_core/juce_core.h>
 #include <juce_events/juce_events.h>
-#include "Gen/Styles.h"
+#include "Gen/Arrangement.h"
 #include "Ksp/Device.h"
 
 int main (int argc, char* argv[])
@@ -62,6 +62,10 @@ int main (int argc, char* argv[])
         const int variations = params.variations;
         params = ksp::gen::styleParams (*style, params.seed);   // the style's key and chords (track 1 goes to drum mode)
         params.variations = variations;
+        if (args.contains ("--root"))
+            params.root = option ("--root", "2").getIntValue();   // an explicit key or scale wins over the style's
+        if (args.contains ("--scale"))
+            params.scale = option ("--scale", "3").getIntValue();
     }
     params.chains = args.contains ("--chains");
     const auto tr = option ("--tracks", "1-4");
@@ -107,14 +111,16 @@ int main (int argc, char* argv[])
     std::cout << "Saved: " << preFile.getFullPathName() << std::endl;
 
     ksp::ProjectData project = device->slotBefore();
-    if (auto e = style != nullptr ? ksp::gen::applyStyle (project, *style, params, firstTrack, lastTrack)
+    const bool musical = style != nullptr && args.contains ("--musical");
+    if (auto e = musical ? ksp::gen::applyArrangement (project, *style, params)
+                : style != nullptr ? ksp::gen::applyStyle (project, *style, params, firstTrack, lastTrack)
                                   : ksp::gen::apply (project, params, firstTrack, lastTrack);
         ! e.empty())
     {
         std::cout << "ERROR: " << e << std::endl;
         return 1;
     }
-    if (! args.contains ("--no-scenes"))
+    if (! args.contains ("--no-scenes") && ! musical)
         if (auto e = ksp::gen::applyScenes (project, params, style == nullptr); ! e.empty())
         {
             std::cout << "ERROR: " << e << std::endl;

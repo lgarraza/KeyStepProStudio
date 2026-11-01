@@ -58,10 +58,13 @@ struct Generator
     unsigned seed = 1;
     bool chains = false, slow = true;
     std::string style = "ambient";  // ambient (with the mood) or a Gen/Styles.h preset: techno, house, dnb
+    bool musical = false;           // a style with the musical arrangement (Gen/Arrangement.h): eight scenes with an energy curve
+    int key = -1;                   // the key chosen in Generate: 0 C .. 11 B; -1 = the style's own
+    int scale = 0;                  // the scale chosen: 1 Major, 2 Minor, 3 Dorian, 4 Mixolydian, 5 Harmonic minor; 0 = the style's own
 
     bool operator== (const Generator& o) const
     {
-        return mood == o.mood && seed == o.seed && chains == o.chains && slow == o.slow && style == o.style;
+        return mood == o.mood && seed == o.seed && chains == o.chains && slow == o.slow && style == o.style && musical == o.musical && key == o.key && scale == o.scale;
     }
 };
 
@@ -152,7 +155,9 @@ inline std::string toJson (const StudioProject& p, const std::string& firmware =
                     + ",\"created\":" + esc (p.created) + ",\"modified\":" + esc (p.modified) + ",\"notes\":" + esc (p.notes)
                     + ",\"generator\":{\"mood\":" + esc (p.generator.mood) + ",\"seed\":" + std::to_string (p.generator.seed)
                     + ",\"chains\":" + (p.generator.chains ? "true" : "false") + ",\"slow\":" + (p.generator.slow ? "true" : "false")
-                    + ",\"style\":" + esc (p.generator.style) + "},\"tracks\":[";
+                    + ",\"style\":" + esc (p.generator.style) + ",\"musical\":" + (p.generator.musical ? "true" : "false")
+                    + ",\"key\":" + std::to_string (p.generator.key) + ",\"scale\":" + std::to_string (p.generator.scale)
+                    + "},\"tracks\":[";
     for (std::size_t t = 0; t < p.tracks.size(); ++t)
     {
         const auto& tr = p.tracks[t];
@@ -226,6 +231,11 @@ inline LoadResult fromJson (const std::string& textIn)
             p.generator.seed = static_cast<unsigned> (s->num);
         p.generator.chains = detail::flag (*g, "chains", false);
         p.generator.slow = detail::flag (*g, "slow", true);
+        p.generator.musical = detail::flag (*g, "musical", false);
+        if (const auto* k = g->get ("key"); k != nullptr && k->type == json::Value::number && k->num >= -1 && k->num <= 11)
+            p.generator.key = static_cast<int> (k->num);
+        if (const auto* sc = g->get ("scale"); sc != nullptr && sc->type == json::Value::number && sc->num >= 0 && sc->num <= 5)
+            p.generator.scale = static_cast<int> (sc->num);
         if (const auto style = detail::text (*g, "style"); ! style.empty())
             p.generator.style = style;
     }

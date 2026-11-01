@@ -25,6 +25,7 @@
 - `Source/Gen/Theory.h` + `Roles.h`: the role engine. A `RoleSpec` (role drone / pad / melody / bells / bass / stab, length, density, register,
   RNG salt; for bass and stab euclidean pulses, rotation and gate) goes through `makeRolePattern`; `euclid` and `makeDrumPattern(DrumSpec)` build drum grooves (kick, backbeat snare, hats,
   ghosts, swing, fixed kick steps, offbeat open hats, a fill; GM lanes of the default drum map) for `Model/DrumPattern.h`. Ambient is the first preset (`ambientRole`); `gen_test` freezes its output with a hash.
+- `Source/Gen/Arrangement.h`: the musical arrangement of a style (`applyArrangement`): five drum patterns by energy, twelve patterns for tracks 2-4 (level x chord), pattern 16 empty, and eight scenes with four-pattern chains from a table per style family. `Generator.musical` in the Studio project.
 - `Source/Gen/Styles.h`: the style presets (techno; house deep / chill / melodic; dnb), grouped by family and mood, as data: key, progression, a `DrumSpec` for track 1 and a role, division
   and Mono/Poly for tracks 2-4. `applyStyle` puts track 1 in drum mode, writes all four and sets the project tempo (`setTempo`: item 0x78
   params 0x46-0x48 = BPM x 100 in 7-bit parts, low first); `applyScenes(..., cross = false)` the scenes.

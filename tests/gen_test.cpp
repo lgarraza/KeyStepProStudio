@@ -1,6 +1,6 @@
 // gen_test: Source/Gen (the ambient generator, the role engine and the style presets). No JUCE.
 #include <cstdio>
-#include "Gen/Styles.h"
+#include "Gen/Arrangement.h"
 
 static int failures = 0;
 
@@ -237,6 +237,102 @@ int main()
         gen::RoleSpec stab { gen::Role::stab, 16, -1, 60, 5, 4, 2, 20 };
         const auto sp = gen::makeRolePattern (gen::styleParams (house), stab, 0, Note {});
         CHECK (7, sp.steps[2].notes.size() == 5 && sp.steps[6].notes.size() == 5 && sp.steps[0].notes.empty() && sp.steps[2].notes[0].gate == 20);
+    }
+
+    // 8. The musical arrangement: levels of energy, eight scenes with their chords and chains
+    for (const auto& st : gen::styles())   // one style per family: house, techno, dnb (a project is slow to build)
+    {
+        if (st.name == "house-chill" || st.name == "house-melodic")
+            continue;
+        auto pr = blank();
+        const auto prm = gen::styleParams (st, 5);
+        CHECK (8, gen::applyArrangement (pr, st, prm).empty());
+        CHECK (8, gen::tempo (pr) == st.bpm);
+        auto count = [&] (int t, int idx) {
+            int n = 0;
+            for (const auto& step : readPattern (pr, t, idx).steps)
+                n += static_cast<int> (step.notes.size());
+            return n;
+        };
+        // drums: basic < full, the breakdown has no kick, the full level adds a fill
+        const auto d0 = readDrumPattern (pr, 1), d1 = readDrumPattern (pr, 2), d2 = readDrumPattern (pr, 3), d3 = readDrumPattern (pr, 4),
+                   d4 = readDrumPattern (pr, 5), dummy1 = readDrumPattern (pr, 16);
+        int kicks3 = 0, kicks1 = 0;
+        for (const auto& h : d4.hits)
+            kicks3 += h.lane == st.drums.kickLane;
+        for (const auto& h : d1.hits)
+            kicks1 += h.lane == st.drums.kickLane;
+        CHECK (8, d0.valid && d4.valid && ! d0.hits.empty() && ! d4.hits.empty() && dummy1.valid && dummy1.hits.empty());
+        CHECK (8, kicks3 == 0 && kicks1 > 0);
+        CHECK (8, d3.hits.size() > d2.hits.size() && d2.hits.size() >= d1.hits.size() && d1.hits.size() >= d0.hits.size());
+        // tracks 2-4: every level and chord is a valid pattern, the peak bank is not thinner than the sparse one
+        for (int t = 2; t <= 4; ++t)
+        {
+            int sparse = 0, peak = 0;
+            for (int chord = 0; chord < gen::kChords; ++chord)
+            {
+                CHECK (8, check (readPattern (pr, t, gen::rolePatternIndex (0, chord))).empty());
+                sparse += count (t, gen::rolePatternIndex (0, chord));
+                peak += count (t, gen::rolePatternIndex (3, chord));
+            }
+            CHECK (8, sparse > 0 && peak >= sparse);
+            CHECK (8, check (readPattern (pr, t, gen::kDummy)).empty() && count (t, gen::kDummy) == 0);
+        }
+        // scenes: the chord is the same on tracks 2-4, the chains have four entries, the breakdown has no kick, the peak is the peak bank
+        const auto& arr = gen::arrangementFor (st);
+        for (int n = 0; n < gen::kArrangementScenes; ++n)
+        {
+            const auto sc = readScene (pr, n + 1);
+            CHECK (8, sc.valid);
+            for (int t = 0; t < 4; ++t)
+            {
+                CHECK (8, sc.chain[static_cast<std::size_t> (t)].size() == 4);
+                CHECK (8, sc.pattern[static_cast<std::size_t> (t)] == sc.chain[static_cast<std::size_t> (t)].front());
+                for (int idx : sc.chain[static_cast<std::size_t> (t)])
+                    CHECK (8, t == 0 ? idx >= 1 && idx <= 5 : idx == gen::kDummy || (idx - 1) % gen::kChords == arr.rows[n].chord);
+            }
+        }
+        const auto breakdown = readScene (pr, 5);
+        CHECK (8, breakdown.chain[0] == std::vector<int> ({ 5, 5, 5, 5 }));
+        const auto outro = readScene (pr, 8);
+        CHECK (8, outro.chain[3].back() == gen::kDummy);
+        // the same seed gives the same arrangement
+        if (st.name == "house")
+        {
+            auto again = blank();
+            CHECK (8, gen::applyArrangement (again, st, prm).empty());
+            CHECK (8, gen::preview (readPattern (pr, 2, 7)) == gen::preview (readPattern (again, 2, 7)));
+        }
+    }
+
+    // 9. Ambient after a style: track 1 goes back to sequencer mode, so its notes show
+    {
+        auto pr = blank();
+        const auto& house = *gen::findStyle ("house");
+        CHECK (9, gen::applyStyle (pr, house, gen::styleParams (house, 3), 1, 1).empty() && isDrumMode (pr));
+        CHECK (9, gen::apply (pr, params, 1, 1).empty() && ! isDrumMode (pr));
+        CHECK (9, gen::applyStyle (pr, house, gen::styleParams (house, 3), 1, 1).empty() && gen::apply (pr, params, 2, 4).empty() && isDrumMode (pr));
+    }
+
+    // 10. A key and a scale chosen by the user replace the style's: every note of the four tracks is in it
+    {
+        const auto& st = *gen::findStyle ("house");
+        auto prm = gen::styleParams (st, 4);
+        prm.root = 7;    // G
+        prm.scale = 1;   // major
+        auto pr = blank();
+        CHECK (10, gen::applyStyle (pr, st, prm).empty());
+        const auto& major = gen::intervals (1);
+        int notes = 0;
+        for (int t = 2; t <= 4; ++t)
+            for (int v = 1; v <= 4; ++v)
+                for (const auto& step : readPattern (pr, t, v).steps)
+                    for (const auto& n : step.notes)
+                    {
+                        ++notes;
+                        CHECK (10, std::find (major.begin(), major.end(), ((n.pitch - 7) % 12 + 12) % 12) != major.end());
+                    }
+        CHECK (10, notes > 0 && readPattern (pr, 2, 1).root == 7 && readPattern (pr, 2, 1).scale == 1);
     }
 
     std::printf ("track 3 pattern 1: %s\n", gen::preview (a).c_str());
