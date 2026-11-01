@@ -58,10 +58,11 @@ struct Generator
     unsigned seed = 1;
     bool chains = false, slow = true;
     std::string style = "ambient";  // ambient (with the mood) or a Gen/Styles.h preset: techno, house, dnb
+    bool musical = false;           // a style with the musical arrangement (Gen/Arrangement.h): eight scenes with an energy curve
 
     bool operator== (const Generator& o) const
     {
-        return mood == o.mood && seed == o.seed && chains == o.chains && slow == o.slow && style == o.style;
+        return mood == o.mood && seed == o.seed && chains == o.chains && slow == o.slow && style == o.style && musical == o.musical;
     }
 };
 
@@ -152,7 +153,8 @@ inline std::string toJson (const StudioProject& p, const std::string& firmware =
                     + ",\"created\":" + esc (p.created) + ",\"modified\":" + esc (p.modified) + ",\"notes\":" + esc (p.notes)
                     + ",\"generator\":{\"mood\":" + esc (p.generator.mood) + ",\"seed\":" + std::to_string (p.generator.seed)
                     + ",\"chains\":" + (p.generator.chains ? "true" : "false") + ",\"slow\":" + (p.generator.slow ? "true" : "false")
-                    + ",\"style\":" + esc (p.generator.style) + "},\"tracks\":[";
+                    + ",\"style\":" + esc (p.generator.style) + ",\"musical\":" + (p.generator.musical ? "true" : "false")
+                    + "},\"tracks\":[";
     for (std::size_t t = 0; t < p.tracks.size(); ++t)
     {
         const auto& tr = p.tracks[t];
@@ -226,6 +228,7 @@ inline LoadResult fromJson (const std::string& textIn)
             p.generator.seed = static_cast<unsigned> (s->num);
         p.generator.chains = detail::flag (*g, "chains", false);
         p.generator.slow = detail::flag (*g, "slow", true);
+        p.generator.musical = detail::flag (*g, "musical", false);
         if (const auto style = detail::text (*g, "style"); ! style.empty())
             p.generator.style = style;
     }
