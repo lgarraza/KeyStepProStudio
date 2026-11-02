@@ -9,6 +9,7 @@
 
 #include "KspStyle.h"
 #include "../Source/Model/ProjectMap.h"
+#include "../Source/Model/ChainEdit.h"
 #include "../Source/Ksp/Protocol.h"
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -193,18 +194,64 @@ private:
             const bool cur = sc.valid && sc.chain[static_cast<std::size_t> (t)].empty() && sc.pattern[static_cast<std::size_t> (t)] == k;
             m.addItem (k, "Pattern " + juce::String (k) + (p == nullptr ? "  (empty)" : "  (" + juce::String (p->length) + " steps)"), true, cur);
         }
-        if (sc.valid && ! sc.chain[static_cast<std::size_t> (t)].empty())
+        const auto& chain = sc.chain[static_cast<std::size_t> (t)];
+        const int base = sc.pattern[static_cast<std::size_t> (t)];
+        m.addSeparator();
+        {
+            juce::PopupMenu add;
+            for (int k = 1; k <= ksp::model::kPatterns; ++k)
+                add.addItem (200 + k, "Pattern " + juce::String (k), static_cast<int> (chain.size()) < ksp::model::sp::chainLength);
+            m.addSubMenu (chain.empty() ? "Make a chain (starts with pattern " + juce::String (base) + "), add" : "Chain: add at the end", add);
+        }
+        for (int i = 0; i < static_cast<int> (chain.size()); ++i)
+        {
+            juce::PopupMenu pos;
+            const bool full = static_cast<int> (chain.size()) >= ksp::model::sp::chainLength;
+            pos.addItem (300 + i * 10, "Move earlier", i > 0);
+            pos.addItem (300 + i * 10 + 1, "Move later", i + 1 < static_cast<int> (chain.size()));
+            pos.addItem (300 + i * 10 + 2, "Repeat (duplicate)", ! full);
+            pos.addItem (300 + i * 10 + 3, "Remove from the chain");
+            juce::PopupMenu change;
+            for (int k = 1; k <= ksp::model::kPatterns; ++k)
+                change.addItem (1000 + i * 100 + k, "Pattern " + juce::String (k), true, chain[static_cast<std::size_t> (i)] == k);
+            pos.addSubMenu ("Change to", change);
+            m.addSubMenu (juce::String (i + 1) + ": pattern " + juce::String (chain[static_cast<std::size_t> (i)]), pos);
+        }
+        if (! chain.empty())
         {
             m.addSeparator();
-            m.addItem (100, "Remove the chain (keep pattern " + juce::String (sc.pattern[static_cast<std::size_t> (t)]) + ")");
+            m.addItem (100, "Remove the chain (keep pattern " + juce::String (base) + ")");
         }
-        m.showMenuAsync (juce::PopupMenu::Options(), [this, s, t, sc] (int r) {
+        m.showMenuAsync (juce::PopupMenu::Options(), [this, s, t, sc, base, chain] (int r) {
             if (r == 0)
                 return;
+            namespace ce = ksp::model::chainedit;
             auto n = sc;
-            if (r <= 99)
+            auto& nc = n.chain[static_cast<std::size_t> (t)];
+            if (r <= 16)
+            {
                 n.pattern[static_cast<std::size_t> (t)] = r;
-            n.chain[static_cast<std::size_t> (t)].clear();
+                nc.clear();
+            }
+            else if (r == 100)
+                nc.clear();
+            else if (r > 200 && r <= 216)
+                nc = ce::append (chain, base, r - 200);
+            else if (r >= 1000)
+                nc = ce::setAt (chain, (r - 1000) / 100, (r - 1000) % 100);
+            else if (r >= 300)
+            {
+                const int i = (r - 300) / 10;
+                switch ((r - 300) % 10)
+                {
+                    case 0: nc = ce::moveAt (chain, i, -1); break;
+                    case 1: nc = ce::moveAt (chain, i, 1); break;
+                    case 2: nc = ce::duplicateAt (chain, i); break;
+                    default: nc = ce::removeAt (chain, i); break;
+                }
+            }
+            if (! nc.empty())
+                n.pattern[static_cast<std::size_t> (t)] = nc.front();
             onEditScene (s, n);
         });
     }

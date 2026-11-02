@@ -1,6 +1,7 @@
 // scene_test: Source/Model/Scene.h (read / write a scene inside a ProjectData) and the generator's scenes. No JUCE.
 #include <cstdio>
 #include "Gen/Ambient.h"
+#include "Model/ChainEdit.h"
 
 static int failures = 0;
 
@@ -81,6 +82,23 @@ int main()
     // 4. The scenes go through the restore plan (scene states are sent with the other states, last)
     const auto w = writePlan (p);
     CHECK (4, ! w.requests.empty());
+
+    // 5. Chain editing helpers
+    {
+        namespace ce = ksp::model::chainedit;
+        auto c = ce::append ({}, 3, 5);
+        CHECK (5, c == (ce::Chain { 3, 5 }));
+        c = ce::duplicateAt (c, 1);
+        CHECK (5, c == (ce::Chain { 3, 5, 5 }));
+        c = ce::moveAt (c, 0, 1);
+        CHECK (5, c == (ce::Chain { 5, 3, 5 }));
+        CHECK (5, ce::moveAt (c, 0, -1) == c);
+        c = ce::setAt (c, 1, 16);
+        CHECK (5, c == (ce::Chain { 5, 16, 5 }));
+        CHECK (5, ce::removeAt (ce::removeAt (c, 0), 0).empty());   // one pattern left = no chain
+        ce::Chain full (16, 1);
+        CHECK (5, ce::append (full, 1, 2) == full && ce::duplicateAt (full, 0) == full);
+    }
 
     std::printf (failures == 0 ? "scene_test: OK\n" : "scene_test: %d FAIL\n", failures);
     return failures == 0 ? 0 : 1;

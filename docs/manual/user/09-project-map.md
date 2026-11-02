@@ -22,7 +22,14 @@ Click **Project Map** in the top row. It opens a window with three views. Only t
 - **Right-click a scene number** for **Copy**, **Paste** and **Clear** (back to an empty scene).
 - **Undo edit** (top right) takes back the last change.
 
-Edits are not saved and not on the KeyStep yet: use **Save** and **Write** as usual. Editing chains (adding, removing, reordering patterns) is not here yet.
+### Editing chains
+
+The same cell menu edits the chain of that track in that scene (up to 16 patterns; the same pattern may appear more than once, and an empty pattern, e.g. 16, makes a silent bar):
+
+- **Make a chain / Chain: add at the end** appends a pattern. With no chain yet, the chain starts with the pattern the cell already plays.
+- **Each position** (`1: pattern 3`) opens a small menu: *Move earlier*, *Move later*, *Repeat (duplicate)*, *Remove from the chain* and *Change to* another pattern. A chain left with one pattern becomes a plain pattern.
+
+Edits are not saved and not on the KeyStep yet: use **Save** and **Write** as usual.
 
 ## Chain timeline
 
