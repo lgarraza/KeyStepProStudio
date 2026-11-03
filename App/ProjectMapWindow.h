@@ -212,6 +212,13 @@ private:
                 add.addItem (200 + k, "Pattern " + juce::String (k), static_cast<int> (chain.size()) < ksp::model::sp::chainLength);
             m.addSubMenu (chain.empty() ? "Make a chain (starts with pattern " + juce::String (base) + "), add" : "Chain: add at the end", add);
         }
+        {
+            juce::PopupMenu rep;   // the pattern the cell plays (the chain's first one), repeated n times as a chain
+            const int what = chain.empty() ? base : chain.front();
+            for (int n : { 2, 3, 4, 8, 16 })
+                rep.addItem (400 + n, "x" + juce::String (n));
+            m.addSubMenu ("Chain: repeat pattern " + juce::String (what) + " ...", rep);
+        }
         for (int i = 0; i < static_cast<int> (chain.size()); ++i)
         {
             juce::PopupMenu pos;
@@ -246,6 +253,8 @@ private:
                 nc.clear();
             else if (r > 200 && r <= 216)
                 nc = ce::append (chain, base, r - 200);
+            else if (r > 400 && r <= 416)
+                nc = ce::Chain (static_cast<std::size_t> (r - 400), chain.empty() ? base : chain.front());
             else if (r >= 1000)
                 nc = ce::setAt (chain, (r - 1000) / 100, (r - 1000) % 100);
             else if (r >= 300)
