@@ -9,6 +9,7 @@
 
 #include "KspStyle.h"
 #include "../Source/Model/ProjectMap.h"
+#include "../Source/Model/ChainEdit.h"
 #include "../Source/Ksp/Protocol.h"
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -55,8 +56,16 @@ public:
     void setProject (const ksp::model::ProjectMap& m, const juce::String& name)
     {
         map = m;
-        title = name;
         hover = {};
+        // the map is rebuilt after every edit and after picking a scene (that changes the editor's pattern): keep the scene the
+        // user picked, and go back to the first saved one only for another project
+        if (name == title && scenePicked)
+        {
+            repaint();
+            return;
+        }
+        title = name;
+        scenePicked = false;
         int first = 1;
         for (int s = 1; s <= ksp::model::kScenes; ++s)
             if (map.scenes[static_cast<std::size_t> (s - 1)].valid)
@@ -117,17 +126,59 @@ public:
         setMouseCursor (clickable ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
         pick (e.getPosition(), false);
     }
-    void mouseDown (const juce::MouseEvent& e) override { pick (e.getPosition(), true); }
+    void mouseDown (const juce::MouseEvent& e) override
+    {
+        if (view == 0 && maxScrollX > 0 && scrollTrack.contains (e.getPosition()))
+        {
+            if (! scrollThumb.contains (e.getPosition()))   // click on the track: centre the thumb there
+            {
+                const int room = juce::jmax (1, scrollTrack.getWidth() - scrollThumb.getWidth());
+                scrollX = juce::jlimit (0, maxScrollX, (e.x - scrollTrack.getX() - scrollThumb.getWidth() / 2) * maxScrollX / room);
+            }
+            draggingBar = true;
+            dragStartX = e.x;
+            dragStartScroll = scrollX;
+            hits.clear();
+            repaint();
+            return;
+        }
+        pick (e.getPosition(), true);
+    }
+    void mouseDrag (const juce::MouseEvent& e) override
+    {
+        if (! draggingBar)
+            return;
+        const int room = juce::jmax (1, scrollTrack.getWidth() - scrollThumb.getWidth());
+        scrollX = juce::jlimit (0, maxScrollX, dragStartScroll + (e.x - dragStartX) * maxScrollX / room);
+        repaint();
+    }
+    void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& w) override
+    {
+        if (view != 0 || maxScrollX <= 0)
+            return;
+        const float d = std::abs (w.deltaX) > std::abs (w.deltaY) ? w.deltaX : w.deltaY;
+        scrollX = juce::jlimit (0, maxScrollX, scrollX - static_cast<int> (d * 400.0f));
+        hits.clear();
+        repaint();
+    }
     void mouseExit (const juce::MouseEvent&) override { setMouseCursor (juce::MouseCursor::NormalCursor); }
 
     void mouseUp (const juce::MouseEvent& e) override
     {
+        if (draggingBar)
+        {
+            draggingBar = false;
+            repaint();
+            return;
+        }
         if (view != 0)
             return;
         for (const auto& h : hits)
             if (h.first.contains (e.getPosition()))
             {
-                if (h.second.sceneButton && e.mods.isPopupMenu())
+                if (h.second.delta != 0)
+                    stepChain (h.second.scene, h.second.track, h.second.delta);
+                else if (h.second.sceneButton && e.mods.isPopupMenu())
                     sceneMenu (h.second.scene);
                 else if (! h.second.sceneButton && h.second.scene > 0 && h.second.track >= 0)
                     cellMenu (h.second.scene, h.second.track);
@@ -143,7 +194,8 @@ private:
         int pat = 0;          // 1..16
         int index = -1;       // position inside a chain
         bool sceneButton = false;
-        bool operator== (const Hit& o) const { return scene == o.scene && track == o.track && pat == o.pat && index == o.index && sceneButton == o.sceneButton; }
+        int delta = 0;        // -1 / +1: the arrows beside a cell's "xN" (shorter / longer chain), 0 = the cell itself
+        bool operator== (const Hit& o) const { return scene == o.scene && track == o.track && pat == o.pat && index == o.index && sceneButton == o.sceneButton && delta == o.delta; }
     };
 
     void pick (juce::Point<int> pos, bool click)
@@ -156,6 +208,7 @@ private:
                     if (click)   // selects the scene (empty ones too: the timeline says it is not saved)
                     {
                         scene = h.second.scene;
+                        scenePicked = true;
                         hover = {};
                         if (onSelectScene)
                         {
@@ -179,6 +232,47 @@ private:
             }
     }
 
+    /** A scene that was not saved yet gets, on every track, a pattern to play: the first one nothing was recorded in (silence),
+        or pattern 1 when all 16 are used, instead of the device default (pattern 1 everywhere). */
+    void silentFill (ksp::model::Scene& n) const
+    {
+        if (n.valid)
+            return;
+        for (int t = 0; t < 4; ++t)
+        {
+            int pick = 1;
+            for (int k = 1; k <= ksp::model::kPatterns; ++k)
+                if (patternAt (t, k) == nullptr)
+                {
+                    pick = k;
+                    break;
+                }
+            n.pattern[static_cast<std::size_t> (t)] = pick;
+        }
+    }
+
+    /** The small arrows beside "xN": one pattern more (a copy of the last one) or one less at the end of the chain. */
+    void stepChain (int s, int t, int delta)
+    {
+        if (! onEditScene)
+            return;
+        namespace ce = ksp::model::chainedit;
+        auto n = map.scenes[static_cast<std::size_t> (s - 1)];
+        if (! n.valid)
+            return;
+        auto& c = n.chain[static_cast<std::size_t> (t)];
+        const int base = n.pattern[static_cast<std::size_t> (t)];
+        if (delta > 0)
+            c = c.empty() ? ce::append ({}, base, base) : ce::duplicateAt (c, static_cast<int> (c.size()) - 1);
+        else if (! c.empty())
+            c = ce::removeAt (c, static_cast<int> (c.size()) - 1);
+        if (c == map.scenes[static_cast<std::size_t> (s - 1)].chain[static_cast<std::size_t> (t)])
+            return;
+        if (! c.empty())
+            n.pattern[static_cast<std::size_t> (t)] = c.front();
+        onEditScene (s, n);
+    }
+
     /** Pick the pattern a track plays in a scene (drops that cell's chain; the scene becomes a saved scene). */
     void cellMenu (int s, int t)
     {
@@ -193,18 +287,65 @@ private:
             const bool cur = sc.valid && sc.chain[static_cast<std::size_t> (t)].empty() && sc.pattern[static_cast<std::size_t> (t)] == k;
             m.addItem (k, "Pattern " + juce::String (k) + (p == nullptr ? "  (empty)" : "  (" + juce::String (p->length) + " steps)"), true, cur);
         }
-        if (sc.valid && ! sc.chain[static_cast<std::size_t> (t)].empty())
+        const auto& chain = sc.chain[static_cast<std::size_t> (t)];
+        const int base = sc.pattern[static_cast<std::size_t> (t)];
+        m.addSeparator();
+        {
+            juce::PopupMenu add;
+            for (int k = 1; k <= ksp::model::kPatterns; ++k)
+                add.addItem (200 + k, "Pattern " + juce::String (k), static_cast<int> (chain.size()) < ksp::model::sp::chainLength);
+            m.addSubMenu (chain.empty() ? "Make a chain (starts with pattern " + juce::String (base) + "), add" : "Chain: add at the end", add);
+        }
+        for (int i = 0; i < static_cast<int> (chain.size()); ++i)
+        {
+            juce::PopupMenu pos;
+            const bool full = static_cast<int> (chain.size()) >= ksp::model::sp::chainLength;
+            pos.addItem (300 + i * 10, "Move earlier", i > 0);
+            pos.addItem (300 + i * 10 + 1, "Move later", i + 1 < static_cast<int> (chain.size()));
+            pos.addItem (300 + i * 10 + 2, "Repeat (duplicate)", ! full);
+            pos.addItem (300 + i * 10 + 3, "Remove from the chain");
+            juce::PopupMenu change;
+            for (int k = 1; k <= ksp::model::kPatterns; ++k)
+                change.addItem (1000 + i * 100 + k, "Pattern " + juce::String (k), true, chain[static_cast<std::size_t> (i)] == k);
+            pos.addSubMenu ("Change to", change);
+            m.addSubMenu (juce::String (i + 1) + ": pattern " + juce::String (chain[static_cast<std::size_t> (i)]), pos);
+        }
+        if (! chain.empty())
         {
             m.addSeparator();
-            m.addItem (100, "Remove the chain (keep pattern " + juce::String (sc.pattern[static_cast<std::size_t> (t)]) + ")");
+            m.addItem (100, "Remove the chain (keep pattern " + juce::String (base) + ")");
         }
-        m.showMenuAsync (juce::PopupMenu::Options(), [this, s, t, sc] (int r) {
+        m.showMenuAsync (juce::PopupMenu::Options(), [this, s, t, sc, base, chain] (int r) {
             if (r == 0)
                 return;
+            namespace ce = ksp::model::chainedit;
             auto n = sc;
-            if (r <= 99)
+            silentFill (n);
+            auto& nc = n.chain[static_cast<std::size_t> (t)];
+            if (r <= 16)
+            {
                 n.pattern[static_cast<std::size_t> (t)] = r;
-            n.chain[static_cast<std::size_t> (t)].clear();
+                nc.clear();
+            }
+            else if (r == 100)
+                nc.clear();
+            else if (r > 200 && r <= 216)
+                nc = ce::append (chain, base, r - 200);
+            else if (r >= 1000)
+                nc = ce::setAt (chain, (r - 1000) / 100, (r - 1000) % 100);
+            else if (r >= 300)
+            {
+                const int i = (r - 300) / 10;
+                switch ((r - 300) % 10)
+                {
+                    case 0: nc = ce::moveAt (chain, i, -1); break;
+                    case 1: nc = ce::moveAt (chain, i, 1); break;
+                    case 2: nc = ce::duplicateAt (chain, i); break;
+                    default: nc = ce::removeAt (chain, i); break;
+                }
+            }
+            if (! nc.empty())
+                n.pattern[static_cast<std::size_t> (t)] = nc.front();
             onEditScene (s, n);
         });
     }
@@ -392,27 +533,37 @@ private:
     {
         using namespace ksp::model;
         const int labelW = 36, headH = 36, gap = 3;
-        const int cw = (r.getWidth() - labelW - gap * kScenes) / kScenes;
+        const int minCell = 60;   // narrower than this the window scrolls sideways (wheel, or Shift + wheel)
+        const int cw = juce::jmax (minCell, (r.getWidth() - labelW - gap * kScenes) / kScenes);
+        const int contentW = labelW + kScenes * (cw + gap);
+        maxScrollX = juce::jmax (0, contentW - r.getWidth());
+        scrollX = juce::jlimit (0, maxScrollX, scrollX);
+        const int ox = r.getX() - scrollX;
+        const auto viewArea = r.withTrimmedLeft (labelW);
         const int ch = juce::jmax (40, juce::jmin (96, (r.getHeight() - headH - 40 - gap * 4) / 4));
+        g.saveState();
+        g.reduceClipRegion (viewArea);
         {   // the selected scene (click its number) keeps a column band
             g.setColour (palette::lit.withAlpha (0.24f));
-            g.fillRect (r.getX() + labelW + (scene - 1) * (cw + gap) - 2, r.getY(), cw + 4, headH + 4 * (ch + gap));
+            g.fillRect (ox + labelW + (scene - 1) * (cw + gap) - 2, r.getY(), cw + 4, headH + 4 * (ch + gap));
         }
         if (hover.scene > 0)   // the scene's column and the track's row stand out
         {
             g.setColour (palette::lit.withAlpha (0.16f));
-            g.fillRect (r.getX() + labelW + (hover.scene - 1) * (cw + gap) - 2, r.getY(), cw + 4, headH + 4 * (ch + gap));
+            g.fillRect (ox + labelW + (hover.scene - 1) * (cw + gap) - 2, r.getY(), cw + 4, headH + 4 * (ch + gap));
         }
         g.setColour (palette::blue);
         g.setFont (juce::FontOptions (9.0f).withStyle ("Bold"));
         g.drawText ("SCENE", r.getX(), r.getY(), labelW - 4, headH - 4, juce::Justification::centred);
         for (int s = 1; s <= kScenes; ++s)
         {
-            const int x = r.getX() + labelW + (s - 1) * (cw + gap);
+            const int x = ox + labelW + (s - 1) * (cw + gap);
             const juce::Rectangle<int> head { x, r.getY(), cw, headH - 4 };
             sceneHeader (g, head, s, s == hover.scene || s == scene);
-            hits.push_back ({ head, { s, -1, 0, -1, true } });
+            if (const auto vis = head.getIntersection (viewArea); ! vis.isEmpty())
+                hits.push_back ({ vis, { s, -1, 0, -1, true } });
         }
+        g.restoreState();
         for (int t = 0; t < 4; ++t)
         {
             const int y = r.getY() + headH + t * (ch + gap);
@@ -421,14 +572,26 @@ private:
                 g.setColour (palette::trackColour (t).withAlpha (0.22f));
                 g.fillRect (r.getX(), y - 2, r.getWidth(), ch + 4);
             }
-            trackHeader (g, { r.getX(), y, labelW - 4, ch }, t);
+            g.saveState();
+            g.reduceClipRegion (viewArea);
             for (int s = 1; s <= kScenes; ++s)
             {
-                const juce::Rectangle<int> cell { r.getX() + labelW + (s - 1) * (cw + gap), y, cw, ch };
+                const juce::Rectangle<int> cell { ox + labelW + (s - 1) * (cw + gap), y, cw, ch };
+                if (! cell.intersects (viewArea))
+                    continue;
                 const auto& sc = map.scenes[static_cast<std::size_t> (s - 1)];
                 const int pn = sc.pattern[static_cast<std::size_t> (t)];
                 const auto* p = sc.valid ? patternAt (t, pn) : nullptr;
-                hits.push_back ({ cell, { s, t, p != nullptr ? pn : 0, -1, false } });
+                const int stripH = 9;
+                const bool stepper = p != nullptr && cw >= 44;
+                const int boxW = juce::jmin (50, cw - 4);
+                const juce::Rectangle<int> countBox { cell.getRight() - boxW - 2, cell.getBottom() - stripH - 19, boxW, 17 };
+                if (stepper)   // before the cell's own hit: the first rectangle that contains the mouse wins
+                {
+                    hits.push_back ({ countBox.withWidth (12).getIntersection (viewArea), { s, t, pn, -1, false, -1 } });
+                    hits.push_back ({ countBox.withTrimmedLeft (countBox.getWidth() - 12).getIntersection (viewArea), { s, t, pn, -1, false, 1 } });
+                }
+                hits.push_back ({ cell.getIntersection (viewArea), { s, t, p != nullptr ? pn : 0, -1, false } });
                 const bool on = hover.scene == s && hover.track == t;
                 if (p == nullptr)
                 {
@@ -444,7 +607,6 @@ private:
                     const auto order = playOrder (map, s, t);
                     const int total = juce::jmax (1, loopSteps (map, s, t));
                     float x = static_cast<float> (cell.getX());
-                    const int stripH = 9;
                     g.setColour (palette::panelDark);
                     g.fillRect (cell.getX(), cell.getBottom() - stripH, cell.getWidth(), stripH);
                     for (std::size_t i = 0; i < order.size(); ++i)
@@ -455,18 +617,58 @@ private:
                         g.fillRect (x + 1.0f, static_cast<float> (cell.getBottom() - stripH + 1), juce::jmax (1.0f, w - 2.0f), static_cast<float> (stripH - 2));
                         x += w;
                     }
-                    badge (g, { cell.getRight() - 31, cell.getBottom() - stripH - 14, 29, 13 }, juce::String (juce::CharPointer_UTF8 ("\xc3\x97")) + juce::String (static_cast<int> (c.size())), palette::lit,
-                           palette::panelDark);
+                }
+                if (stepper)   // [<] xN [>]: the arrows shorten / lengthen the chain
+                {
+                    const int n = c.empty() ? 1 : static_cast<int> (c.size());
+                    auto box = countBox;
+                    const auto left = box.removeFromLeft (12), right = box.removeFromRight (12);
+                    g.setColour (palette::panelDark.withAlpha (0.85f));
+                    g.fillRoundedRectangle (countBox.toFloat(), 3.0f);
+                    auto arrow = [&] (juce::Rectangle<int> a, bool forward, bool enabled) {
+                        juce::Path tri;
+                        const auto f = a.toFloat().reduced (2.5f, 4.0f);
+                        if (forward)
+                            tri.addTriangle (f.getX(), f.getY(), f.getX(), f.getBottom(), f.getRight(), f.getCentreY());
+                        else
+                            tri.addTriangle (f.getRight(), f.getY(), f.getRight(), f.getBottom(), f.getX(), f.getCentreY());
+                        g.setColour (enabled ? palette::lit : palette::inkSoft.withAlpha (0.5f));
+                        g.fillPath (tri);
+                    };
+                    arrow (left, false, n > 1);
+                    arrow (right, true, n < sp::chainLength);
+                    g.setColour (n > 1 ? palette::lit : palette::inkSoft);
+                    g.setFont (juce::FontOptions (12.0f).withStyle ("Bold"));
+                    g.drawText (juce::String (juce::CharPointer_UTF8 ("\xc3\x97")) + juce::String (n), box, juce::Justification::centred);
                 }
                 outline (g, cell, on);
                 badge (g, { cell.getX() + 2, cell.getY() + 2, 18, 13 }, juce::String (pn), palette::panelDark, palette::segOn);
             }
+            g.restoreState();
+            // the track label stays put while the scenes scroll
+            g.setColour (palette::chassis);
+            g.fillRect (r.getX(), y, labelW, ch);
+            trackHeader (g, { r.getX(), y, labelW - 4, ch }, t);
         }
-        auto note = r.withTop (r.getY() + headH + 4 * (ch + gap) + 6);
+        scrollTrack = {};
+        if (maxScrollX > 0)   // scroll bar: drag the thumb, or click the track to jump
+        {
+            const float frac = static_cast<float> (r.getWidth()) / static_cast<float> (contentW);
+            const int barW = juce::jmax (30, static_cast<int> (frac * static_cast<float> (viewArea.getWidth())));
+            const int barX = viewArea.getX() + static_cast<int> (static_cast<float> (scrollX) / static_cast<float> (maxScrollX) * static_cast<float> (viewArea.getWidth() - barW));
+            const int barY = r.getY() + headH + 4 * (ch + gap) + 1;
+            scrollTrack = { viewArea.getX(), barY - 2, viewArea.getWidth(), 12 };
+            scrollThumb = { barX, barY, barW, 8 };
+            g.setColour (palette::inkSoft.withAlpha (0.12f));
+            g.fillRoundedRectangle (scrollTrack.toFloat().withTrimmedTop (2).withHeight (8), 4.0f);
+            g.setColour (palette::inkSoft.withAlpha (draggingBar ? 0.85f : 0.55f));
+            g.fillRoundedRectangle (scrollThumb.toFloat(), 4.0f);
+        }
+        auto note = r.withTop (r.getY() + headH + 4 * (ch + gap) + 14);
         g.setColour (palette::inkSoft);
         g.setFont (juce::FontOptions (11.5f));
         g.drawFittedText ("Each cell is the pattern that track plays in that scene, drawn as its own piano roll. The number is the pattern, x n means the track plays "
-                          "a chain of n patterns; the strip at the bottom of the cell shows that chain in order, to scale. Hatched: nothing to play. Click a cell to pick its pattern; click a scene number to select that scene (the Chain timeline shows it), right-click it to copy, paste or clear it. Drums are not shown yet.",
+                          "a chain of n patterns; the strip at the bottom of the cell shows that chain in order, to scale. Hatched: nothing to play. Click a cell to pick its pattern (the arrows beside x n change the chain); with a narrow window the scenes scroll sideways (mouse wheel); click a scene number to select that scene (the Chain timeline shows it), right-click it to copy, paste or clear it. Drums are not shown yet.",
                           note, juce::Justification::topLeft, 3);
     }
 
@@ -731,6 +933,10 @@ private:
     ksp::model::ProjectMap map;
     juce::String title { "Project" };
     int view = 0, scene = 1;
+    bool scenePicked = false;
+    int scrollX = 0, maxScrollX = 0, dragStartX = 0, dragStartScroll = 0;
+    bool draggingBar = false;
+    juce::Rectangle<int> scrollTrack, scrollThumb;
     Hit hover;
     std::vector<std::pair<juce::Rectangle<int>, Hit>> hits;
 };

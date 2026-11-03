@@ -14,6 +14,8 @@ Click **Project Map** in the top row. It opens a window with three views. Only t
 4. Hatched cells play nothing. Drums are not shown yet.
 5. Hover a cell to see its pattern, length, notes and chain in the panel on the right. With no cell under the mouse, the panel shows the selected scene: each track's chain and how many bars it lasts.
 
+When the window is too narrow for 16 scenes, the matrix scrolls sideways (mouse wheel, or Shift + wheel); the track names stay in place and the bar at the bottom shows where you are (drag it, or click on its track to jump).
+
 ### Editing scenes
 
 - **Click a cell** and pick the pattern (1-16) that track plays in that scene. This removes that cell's chain; the menu also has *Remove the chain* to keep the pattern and drop the chain. Picking a pattern in an empty scene makes it a saved scene.
@@ -22,7 +24,17 @@ Click **Project Map** in the top row. It opens a window with three views. Only t
 - **Right-click a scene number** for **Copy**, **Paste** and **Clear** (back to an empty scene).
 - **Undo edit** (top right) takes back the last change.
 
-Edits are not saved and not on the KeyStep yet: use **Save** and **Write** as usual. Editing chains (adding, removing, reordering patterns) is not here yet.
+Picking a pattern in a scene that was empty saves the scene: the other three tracks get the first pattern with nothing recorded (silence), or pattern 1 if every pattern is used. Tracks may have chains of different lengths; they just loop against each other.
+
+### Editing chains
+
+The same cell menu edits the chain of that track in that scene (up to 16 patterns; the same pattern may appear more than once, and an empty pattern, e.g. 16, makes a silent bar):
+
+- **Make a chain / Chain: add at the end** appends a pattern. With no chain yet, the chain starts with the pattern the cell already plays.
+- **The arrows beside `xN`** (bottom right of each cell, `◀ x4 ▶`): `▶` adds one more copy of the chain's last pattern at the end, `◀` removes the last one. On a plain pattern (`x1`), `▶` makes it `x2`. This is the quick way to play a pattern 4 times.
+- **Each position** (`1: pattern 3`) opens a small menu: *Move earlier*, *Move later*, *Repeat (duplicate)*, *Remove from the chain* and *Change to* another pattern. A chain left with one pattern becomes a plain pattern.
+
+Edits are not saved and not on the KeyStep yet: use **Save** and **Write** as usual.
 
 ## Chain timeline
 
