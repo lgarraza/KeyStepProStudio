@@ -27,7 +27,7 @@ class ProjectMapPanel : public juce::Component
 public:
     ProjectMapPanel()
     {
-        const char* names[] { "Scene matrix", "Chain timeline", "Pattern bank" };
+        const char* names[] { "(overview)", "Scene Matrix", "Pattern bank" };   // the old overview grid (view 0) has no tab any more
         for (int v = 0; v < 3; ++v)
         {
             auto& b = tabs[static_cast<std::size_t> (v)];
@@ -35,7 +35,8 @@ public:
             b.setClickingTogglesState (true);
             b.setRadioGroupId (1);
             b.onClick = [this, v] { view = v; hover = {}; repaint(); };
-            addAndMakeVisible (b);
+            if (v > 0)
+                addAndMakeVisible (b);
         }
         tabs[1].setToggleState (true, juce::dontSendNotification);   // the timeline is the main view
         undoButton.setButtonText ("Undo edit");
@@ -83,9 +84,9 @@ public:
         auto r = getLocalBounds().reduced (12, 10);
         auto top = r.removeFromTop (28);
         top.removeFromLeft (4);
-        for (auto& b : tabs)
+        for (std::size_t v = 1; v < tabs.size(); ++v)
         {
-            b.setBounds (top.removeFromLeft (130));
+            tabs[v].setBounds (top.removeFromLeft (130));
             top.removeFromLeft (6);
         }
         undoButton.setBounds (top.removeFromRight (100));
@@ -102,7 +103,7 @@ public:
         auto top = r.removeFromTop (28);
         g.setColour (inkSoft);
         g.setFont (juce::FontOptions (12.0f));
-        g.drawText ("Structure of the KeyStep Pro project:  " + title + "   (tracks, patterns, scenes, chains)", top.withTrimmedLeft (3 * 136 + 8).withTrimmedRight (108),
+        g.drawText ("Structure of the KeyStep Pro project:  " + title + "   (tracks, patterns, scenes, chains)", top.withTrimmedLeft (2 * 136 + 8).withTrimmedRight (108),
                     juce::Justification::centredLeft);
         r.removeFromTop (8);
         paintSummary (g, r.removeFromTop (48));
@@ -211,7 +212,9 @@ public:
         for (const auto& h : hits)
             if (h.first.contains (e.getPosition()))
             {
-                if (view == 1 && ! h.second.sceneButton && h.second.index >= 0)
+                if (view == 1 && ! h.second.sceneButton && h.second.index == -2)
+                    laneMenu (h.second.scene, h.second.track);
+                else if (view == 1 && ! h.second.sceneButton && h.second.index >= 0)
                     blockMenu (h.second.scene, h.second.track, h.second.index);
                 else if (view == 1 && ! h.second.sceneButton)
                     return;
@@ -340,8 +343,31 @@ private:
     {
         for (const auto& h : hits)
             if (h.first.contains (pos))
-                return ! h.second.sceneButton && h.second.index >= 0;
+                return ! h.second.sceneButton && h.second.index >= -2 && h.second.index != -1;
         return false;
+    }
+
+    /** Menu of an empty lane of an empty scene: pick the pattern the track plays (or silence) to start it. */
+    void laneMenu (int s, int t)
+    {
+        if (! onEditScene)
+            return;
+        juce::PopupMenu m;
+        m.addSectionHeader ("Scene " + juce::String (s) + ", track " + juce::String (t + 1) + ": start with");
+        const int silence = silenceFor (t);
+        if (silence > 0)
+            m.addItem (500, "Silence (pattern " + juce::String (silence) + ", nothing recorded)");
+        m.addSeparator();
+        for (int k = 1; k <= ksp::model::kPatterns; ++k)
+        {
+            const auto* p = patternAt (t, k);
+            m.addItem (k, "Pattern " + juce::String (k) + (p == nullptr ? "  (empty)" : "  (" + juce::String (p->length) + " steps)"));
+        }
+        m.showMenuAsync (juce::PopupMenu::Options(), [this, s, t, silence] (int r) {
+            if (r == 0)
+                return;
+            commitList (s, t, { r == 500 ? silence : r });
+        });
     }
 
     /** Menu of one block of the timeline (position `i` of the track's list in scene `s`). */
@@ -837,11 +863,26 @@ private:
         int maxLoop = 0;
         for (int t = 0; t < 4; ++t)
             maxLoop = juce::jmax (maxLoop, loopSteps (map, scene, t));
-        if (maxLoop == 0)
-        {
+        if (maxLoop == 0 || ! map.scenes[static_cast<std::size_t> (scene - 1)].valid)
+        {   // an empty scene: the four tracks as empty lanes; click one to put a pattern (or silence) in it
             g.setColour (palette::inkSoft);
             g.setFont (juce::FontOptions (13.0f));
-            g.drawText ("This scene is not saved. Pick one with SAVED under its number.", r.removeFromTop (40), juce::Justification::centredLeft);
+            g.drawText ("Scene " + juce::String (scene) + " is empty. Click a track (or right-click) to choose what it plays.",
+                        r.removeFromTop (26), juce::Justification::centredLeft);
+            const int lw = 36, lh = 72, lgap = 10;
+            for (int t = 0; t < 4; ++t)
+            {
+                const int y = r.getY() + t * (lh + lgap);
+                trackHeader (g, { r.getX(), y, lw - 4, lh }, t);
+                const juce::Rectangle<int> lane { r.getX() + lw, y, r.getWidth() - lw, lh };
+                drawEmpty (g, lane);
+                const bool on = hover.scene == scene && hover.track == t && hover.index == -2;
+                outline (g, lane, on);
+                g.setColour (palette::inkSoft);
+                g.setFont (juce::FontOptions (12.0f));
+                g.drawText ("empty: click to add a pattern", lane, juce::Justification::centred);
+                hits.push_back ({ lane, { scene, t, 0, -2, false } });
+            }
             return;
         }
 
