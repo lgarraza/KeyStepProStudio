@@ -1837,7 +1837,7 @@ private:
             dbLabel[i].setJustificationType (juce::Justification::centredRight);
             dbLabel[i].setFont (juce::FontOptions (12.0f));
             dbLabel[i].setInterceptsMouseClicks (false, false);
-            editButton[i].setButtonText ("Edit");
+            editButton[i].setButtonText ("VST");
             muteToggle[i].setButtonText ("M");
             soloToggle[i].setButtonText ("S");
             volSlider[i].setSliderStyle (juce::Slider::LinearHorizontal);

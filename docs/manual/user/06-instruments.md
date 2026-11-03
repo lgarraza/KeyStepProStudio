@@ -31,7 +31,7 @@ others are dimmed. Click anywhere on a card (its controls too) to select its tra
 
 - a dot with the track number and the instrument list,
 - a volume slider with its level in dB,
-- **Edit**, which opens the plugin's own window,
+- **VST**, which opens the plugin's own window,
 - **M**, which mutes (lights red), and **S**, which solos (lights blue): while any track is soloed only the soloed tracks sound (you can solo
   several).
 
