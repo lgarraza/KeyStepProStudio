@@ -12,7 +12,7 @@ namespace ksp::model
 
 namespace prs
 {
-    inline constexpr std::uint8_t tempo0 = 0x46, swing = 0x4A;
+    inline constexpr std::uint8_t tempo0 = 0x46, swing = 0x4A, channel = 123;
     inline constexpr double kTempoMin = 30.0, kTempoMax = 300.0;
     inline constexpr int kSwingMin = 50, kSwingMax = 75;
 }
@@ -22,6 +22,7 @@ struct ProjectSettings
     bool valid = false;
     double tempo = 120.0;
     int swing = 50;
+    int channel[4] { 0, 0, 0, 0 };   // MIDI channel override per track: 0 = use the global channel, 1..16 = that channel
 };
 
 inline ProjectSettings readSettings (ProjectData& p)
@@ -38,6 +39,11 @@ inline ProjectSettings readSettings (ProjectData& p)
     s.tempo = static_cast<double> (part[0] | (part[1] << 7) | (part[2] << 14)) / 100.0;
     const int* sw = cell (p, item::project, prs::swing, { 1 });
     s.swing = sw != nullptr && *sw != kUnreadable ? std::clamp (*sw, prs::kSwingMin, prs::kSwingMax) : 50;
+    for (int t = 0; t < 4; ++t)
+    {
+        const int* ch = cell (p, item::project, prs::channel, { static_cast<std::uint8_t> (t + 1) });
+        s.channel[t] = ch != nullptr && *ch != kUnreadable ? std::clamp (*ch, 0, 16) : 0;
+    }
     s.valid = true;
     return s;
 }
@@ -56,6 +62,19 @@ inline bool writeSettings (ProjectData& p, double tempo, int swing)
     for (int k = 0; k < 3; ++k)
         *c[k] = (bpm100 >> (7 * k)) & 0x7F;
     *sw = std::clamp (swing, prs::kSwingMin, prs::kSwingMax);
+    return true;
+}
+
+/** Sets the MIDI channel override of a track (track 0..3; channel 0 = global, 1..16). Item 0x78 param 123 [track 1..4]: seen on the device
+    as 7 for a track set to channel 7, 1 for channel 1. Returns false when the project lacks the value. */
+inline bool writeChannel (ProjectData& p, int track, int channel)
+{
+    if (track < 0 || track > 3)
+        return false;
+    int* c = cell (p, item::project, prs::channel, { static_cast<std::uint8_t> (track + 1) });
+    if (c == nullptr)
+        return false;
+    *c = std::clamp (channel, 0, 16);
     return true;
 }
 

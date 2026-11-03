@@ -115,6 +115,14 @@ int main()
         CHECK (10, writeSettings (q, 999.0, 99));   // clamped
         st = readSettings (q);
         CHECK (10, st.tempo == 300.0 && st.swing == 75);
+        // per-track MIDI channel: T3 = 7, T2 = 1 as read on the device (0 = global)
+        *cell (q, ksp::item::project, prs::channel, { 2 }) = 1;
+        *cell (q, ksp::item::project, prs::channel, { 3 }) = 7;
+        st = readSettings (q);
+        CHECK (10, st.channel[0] == 0 && st.channel[1] == 1 && st.channel[2] == 7 && st.channel[3] == 0);
+        CHECK (10, writeChannel (q, 3, 12) && readSettings (q).channel[3] == 12);
+        CHECK (10, writeChannel (q, 0, 99) && readSettings (q).channel[0] == 16);
+        CHECK (10, ! writeChannel (q, 4, 1));
     }
 
     std::printf (failures == 0 ? "projectmap_test OK\n" : "projectmap_test FAILED\n");
