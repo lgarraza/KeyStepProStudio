@@ -53,14 +53,14 @@ open hat 46 ...). Click a cell to add or remove a hit and drag to paint more; th
 velocity (darker = louder); click a lane name to hear it. END and the length box work as for notes. Root, scale,
 octave, the knobs, Rec and Copy do not apply to drums. The KeyStep holds up to 192 hits per pattern.
 
-The **Drums** button on card 1 switches track 1 between drum and sequencer mode (lit = drums). Both kinds of patterns
+The **Drum** key on card 1 (and **Seq** for the sequencer) switches track 1 between drum and sequencer mode (lit = drums). Both kinds of patterns
 stay stored, so switching back loses nothing. **Clear** (left of *Copy to*) empties the pattern you are looking at,
 notes or drum hits. **Ops** (next to Clear) works on a note pattern as a whole: **Nudge** one step left or right (the steps
 wrap around inside the pattern length), **Reverse** (plays it backwards) and **Invert pitches** (mirrors the notes around the
 middle of their range). Each one is undone by itself: nudge the other way, or run Reverse or Invert again. Like every edit, they
 reach the KeyStep when you **Write**.
 
-On tracks 2-4 the track card has an **Arp** button (lit = the track plays its arpeggiator instead of its sequencer) and, once the arp is on, a row of arp settings: **mode** (Up, Down, Exclu, Inclu, Rand, Order, Poly) and **octave** (-1 to +3) for the pattern shown on the selected track, and the **time division** (1/4 to 1/32, T = triplet) and **swing** (50-75 %) of the track.
+On tracks 2-4 the track card has **Seq** and **Arp** keys (the one that is on is lit; click **Arp** and the track plays its arpeggiator instead of its sequencer) and, once the arp is on, a row of arp settings: **mode** (Up, Down, Exclu, Inclu, Rand, Order, Poly) and **octave** (-1 to +3) for the pattern shown on the selected track, and the **time division** (1/4 to 1/32, T = triplet) and **swing** (50-75 %) of the track.
 
 ## Hover card
 

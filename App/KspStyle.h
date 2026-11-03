@@ -245,6 +245,19 @@ public:
 
     void drawLinearSlider (juce::Graphics& g, int x, int y, int w, int h, float pos, float, float, juce::Slider::SliderStyle style, juce::Slider& s) override
     {
+        if (style == juce::Slider::LinearVertical)   // the track volume on the cards: groove, filled from the bottom, round cap
+        {
+            const float cx = x + w * 0.5f;
+            g.setColour (palette::buttonLo);
+            g.fillRoundedRectangle (cx - 2.0f, (float) y, 4.0f, (float) h, 2.0f);
+            g.setColour (palette::blue);
+            g.fillRoundedRectangle (cx - 2.0f, pos, 4.0f, y + h - pos, 2.0f);
+            g.setColour (palette::ink);
+            g.fillEllipse (cx - 7.0f, pos - 7.0f, 14.0f, 14.0f);
+            g.setColour (juce::Colours::white);
+            g.fillEllipse (cx - 1.5f, pos - 5.5f, 3.0f, 3.0f);
+            return;
+        }
         if (style != juce::Slider::LinearHorizontal)
             return LookAndFeel_V4::drawLinearSlider (g, x, y, w, h, pos, 0, 0, style, s);
         const float cy = y + h * 0.5f;
@@ -303,6 +316,26 @@ public:
         g.setColour (findColour (textColourOffId));
         g.setFont (lf.getTextButtonFont (*this, getHeight()));
         g.drawText (getButtonText(), r, juce::Justification::centredLeft);
+    }
+};
+
+/** A key with three little faders drawn on it: opens the plugin's own window (the track card's edit key). */
+class EditIconButton : public juce::TextButton
+{
+public:
+    void paintButton (juce::Graphics& g, bool over, bool down) override
+    {
+        getLookAndFeel().drawButtonBackground (g, *this, findColour (buttonColourId), over, down);
+        const auto r = getLocalBounds().toFloat().reduced (juce::jmax (6.0f, getWidth() * 0.22f), juce::jmax (6.0f, getHeight() * 0.18f));
+        const float knobs[3] { 0.30f, 0.65f, 0.45f };
+        for (int k = 0; k < 3; ++k)
+        {
+            const float x = r.getX() + r.getWidth() * (0.18f + 0.32f * static_cast<float> (k));
+            g.setColour (palette::ink.withAlpha (isEnabled() ? 1.0f : 0.4f));
+            g.drawLine (x, r.getY(), x, r.getBottom(), 2.0f);
+            const float y = r.getY() + r.getHeight() * knobs[k];
+            g.fillRoundedRectangle (x - 5.0f, y - 3.0f, 10.0f, 6.0f, 2.0f);
+        }
     }
 };
 
