@@ -2098,6 +2098,7 @@ private:
         panel.onEditScene = [self] (int sc, const ksp::model::Scene& n) { if (self != nullptr) self->editScene (sc, &n); };
         panel.onClearScene = [self] (int sc) { if (self != nullptr) self->editScene (sc, nullptr); };
         panel.onUndo = [self] { if (self != nullptr) self->undoMapEdit(); };
+        panel.onEditChannel = [self] (int t, int ch) { if (self != nullptr) self->editChannel (t, ch); };
         panel.onEditSettings = [self] (double bpm, int swing) { if (self != nullptr) self->editSettings (bpm, swing); };
         // selecting a scene shows, in the editor, the pattern the selected track plays in it
         panel.onSelectScene = [self] (int, std::array<int, 4> pats) {
@@ -2154,6 +2155,28 @@ private:
         if (mapWindow != nullptr)
             mapWindow->content().setCanUndo (true);
         say ("Tempo " + juce::String (bpm, 1) + " BPM, swing " + juce::String (swing) + " % (not saved, not on the KeyStep yet).");
+    }
+    /** Project Map: MIDI channel of one track (0 = the KeyStep's global channel), kept in the project like a scene edit. */
+    void editChannel (int track, int channel)
+    {
+        if (! haveProject)
+            return;
+        stopRecording();
+        commitPattern();
+        const auto before = project;
+        if (! ksp::model::writeChannel (project, track, channel))
+        {
+            project = before;
+            say ("Could not change the MIDI channel of this project's track.");
+            return;
+        }
+        beforeMapEdit = before;
+        noteChanged();
+        refreshMap();
+        if (mapWindow != nullptr)
+            mapWindow->content().setCanUndo (true);
+        say ("Track " + juce::String (track + 1) + (channel == 0 ? " MIDI channel: Auto" : " MIDI channel " + juce::String (channel))
+             + " (not saved, not on the KeyStep yet).");
     }
     void undoMapEdit()
     {

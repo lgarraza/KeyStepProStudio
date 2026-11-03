@@ -61,6 +61,18 @@ public:
         swingSlider.setTooltip ("Global swing: 50 % is straight, up to 75 %");
         tempoSlider.onDragEnd = swingSlider.onDragEnd = [this] { sendSettings(); };
         tempoSlider.onValueChange = swingSlider.onValueChange = [this] { if (! settingUp && ! tempoSlider.isMouseButtonDown() && ! swingSlider.isMouseButtonDown()) sendSettings(); };
+        // MIDI channel of each track (kept in the project): Auto = the KeyStep's global channel for that track
+        for (int t = 0; t < 4; ++t)
+        {
+            auto& cb = channelBox[static_cast<std::size_t> (t)];
+            cb.addItem ("T" + juce::String (t + 1) + " Auto", 1);
+            for (int c = 1; c <= 16; ++c)
+                cb.addItem ("T" + juce::String (t + 1) + " ch " + juce::String (c), c + 1);
+            cb.setSelectedId (1, juce::dontSendNotification);
+            cb.setTooltip ("MIDI channel of track " + juce::String (t + 1) + ": Auto uses the KeyStep's own setting");
+            cb.onChange = [this, t] { if (! settingUp && onEditChannel) onEditChannel (t, channelBox[static_cast<std::size_t> (t)].getSelectedId() - 1); };
+            addAndMakeVisible (cb);
+        }
         setSize (1120, 640);
     }
 
@@ -74,6 +86,9 @@ public:
     /** Tempo (BPM) and global swing (%) edited in the top bar: applied when the drag ends (or a value is typed). */
     std::function<void (double, int)> onEditSettings;
 
+    /** A track's MIDI channel picked in the top bar: track 0..3, channel 0 (Auto) or 1..16. */
+    std::function<void (int, int)> onEditChannel;
+
     void setCanUndo (bool can) { undoButton.setEnabled (can); }
 
     void setProject (const ksp::model::ProjectMap& m, const juce::String& name)
@@ -85,6 +100,11 @@ public:
         swingSlider.setEnabled (m.settings.valid);
         tempoSlider.setValue (m.settings.tempo, juce::dontSendNotification);
         swingSlider.setValue (m.settings.swing, juce::dontSendNotification);
+        for (int t = 0; t < 4; ++t)
+        {
+            channelBox[static_cast<std::size_t> (t)].setEnabled (m.settings.valid);
+            channelBox[static_cast<std::size_t> (t)].setSelectedId (m.settings.channel[t] + 1, juce::dontSendNotification);
+        }
         settingUp = false;
         // the map is rebuilt after every edit and after picking a scene (that changes the editor's pattern): keep the scene the
         // user picked, and go back to the first saved one only for another project
@@ -121,6 +141,12 @@ public:
         swingSlider.setBounds (top.removeFromRight (110));
         top.removeFromRight (6);
         tempoSlider.setBounds (top.removeFromRight (100));
+        top.removeFromRight (6);
+        for (int t = 3; t >= 0; --t)
+        {
+            channelBox[static_cast<std::size_t> (t)].setBounds (top.removeFromRight (84));
+            top.removeFromRight (4);
+        }
     }
 
     void paint (juce::Graphics& g) override
@@ -134,7 +160,7 @@ public:
         auto top = r.removeFromTop (28);
         g.setColour (inkSoft);
         g.setFont (juce::FontOptions (12.0f));
-        g.drawText (title + "   |   " + juce::String (map.savedScenes) + "/16 scenes saved, " + juce::String (map.usedPatterns) + " of 64 patterns recorded", top.withTrimmedLeft (2 * 136 + 8).withTrimmedRight (330),
+        g.drawText (title + "   |   " + juce::String (map.savedScenes) + "/16 scenes saved, " + juce::String (map.usedPatterns) + " of 64 patterns recorded", top.withTrimmedLeft (2 * 136 + 8).withTrimmedRight (670),
                     juce::Justification::centredLeft);
         r.removeFromTop (8);
         r.removeFromTop (4);
@@ -1275,6 +1301,7 @@ private:
     }
 
     juce::Slider tempoSlider, swingSlider;
+    std::array<juce::ComboBox, 4> channelBox;
     bool settingUp = false;
     juce::TextButton undoButton;
     std::optional<ksp::model::Scene> clipboard;

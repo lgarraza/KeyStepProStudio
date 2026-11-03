@@ -8,6 +8,8 @@ Click **Project Map** in the top row. It opens a window with two views: the Scen
 
 The top bar of the Project Map has two small boxes: the project **tempo** (30-300 BPM) and the **global swing** (50 % = straight, up to 75 %). Drag one, or double-click to type a value. They are stored in the project, so **Save** and **Write** send them to the KeyStep; **Undo edit** takes the last change back.
 
+The four boxes next to them set the **MIDI channel of each track** (T1-T4): **Auto** keeps the channel set in the KeyStep's own MIDI settings, 1-16 overrides it for this project. They are saved with the project like tempo and swing.
+
 ## Scene Matrix (the main view)
 
 ![Scene Matrix: each track's chain drawn to scale in steps](img/shot-project-map-timeline.png)
