@@ -2,7 +2,7 @@
     ProjectMapWindow.h
     "Project Map": the open project as one picture. Three views of the same ProjectMap (Source/Model/ProjectMap.h): the scene matrix (scenes x tracks,
     a thumbnail of the pattern each track plays), the chain timeline of one scene (patterns to scale in steps), and the pattern bank (16 per track and
-    the scenes that use each). Hover or click a cell for the detail on the right. Read only. JUCE, message thread.
+    the scenes that use each). Hover a block for the detail on the right. JUCE, message thread.
 */
 
 #pragma once
@@ -1012,9 +1012,8 @@ private:
         }
         g.setColour (palette::inkSoft);
         g.setFont (juce::FontOptions (11.5f));
-        g.drawFittedText ("Blocks are to scale, in steps. Drag the grip at the right edge of a block to repeat it more or fewer times; click a block for its menu "
-                          "(repeat, insert silence, move, remove, change); right-click a scene number to copy, paste or clear it. Tracks with "
-                          "different lengths drift against each other.",
+        g.drawFittedText ("Drag the grip on a block's right edge: repeats.   Click a block: its menu.   Click the free space: add a pattern.   "
+                          "Right-click a scene number: copy, paste, clear.   Blocks are to scale, in steps.",
                           r.withTop (r.getY() + 4 * (laneH + gap) + 2), juce::Justification::topLeft, 3);
     }
 
@@ -1086,7 +1085,7 @@ private:
                 return;
             }
             g.setColour (palette::inkSoft);
-            g.drawFittedText ("Hover or click a cell to see the pattern, its length, notes and chain.", r, juce::Justification::topLeft, 4);
+            g.drawFittedText ("Hover a block to see its pattern, length, notes and chain.", r, juce::Justification::topLeft, 4);
             return;
         }
         const auto* p = patternAt (hover.track, hover.pat);
@@ -1195,7 +1194,7 @@ private:
             steps = juce::jmax (steps, loopSteps (map, scene, t));
         g.setColour (palette::inkSoft);
         g.setFont (juce::FontOptions (12.0f));
-        g.drawFittedText ("Plays its chains for " + juce::String (steps / 16.0, 1) + " bars before it repeats. Hover a cell for its pattern; right-click the number to copy, paste or clear.",
+        g.drawFittedText ("Plays its chains for " + juce::String (steps / 16.0, 1) + " bars before it repeats. Hover a block for its pattern.",
                           r, juce::Justification::topLeft, 4);
     }
 
