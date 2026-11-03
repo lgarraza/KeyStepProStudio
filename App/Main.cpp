@@ -2098,6 +2098,7 @@ private:
         panel.onEditScene = [self] (int sc, const ksp::model::Scene& n) { if (self != nullptr) self->editScene (sc, &n); };
         panel.onClearScene = [self] (int sc) { if (self != nullptr) self->editScene (sc, nullptr); };
         panel.onUndo = [self] { if (self != nullptr) self->undoMapEdit(); };
+        panel.onEditSettings = [self] (double bpm, int swing) { if (self != nullptr) self->editSettings (bpm, swing); };
         // selecting a scene shows, in the editor, the pattern the selected track plays in it
         panel.onSelectScene = [self] (int, std::array<int, 4> pats) {
             if (self == nullptr)
@@ -2133,6 +2134,27 @@ private:
         say ("Scene " + juce::String (sc) + (n != nullptr ? " edited" : " cleared") + " (not saved, not on the KeyStep yet).");
     }
 
+    /** Project Map: tempo and global swing, kept in the project like a scene edit (Undo edit takes it back). */
+    void editSettings (double bpm, int swing)
+    {
+        if (! haveProject)
+            return;
+        stopRecording();
+        commitPattern();
+        const auto before = project;
+        if (! ksp::model::writeSettings (project, bpm, swing))
+        {
+            project = before;
+            say ("Could not change the tempo and swing of this project.");
+            return;
+        }
+        beforeMapEdit = before;
+        noteChanged();
+        refreshMap();
+        if (mapWindow != nullptr)
+            mapWindow->content().setCanUndo (true);
+        say ("Tempo " + juce::String (bpm, 1) + " BPM, swing " + juce::String (swing) + " % (not saved, not on the KeyStep yet).");
+    }
     void undoMapEdit()
     {
         if (! beforeMapEdit.has_value())

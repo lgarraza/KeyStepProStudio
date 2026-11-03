@@ -13,6 +13,7 @@
 #include <vector>
 #include "DrumPattern.h"
 #include "Pattern.h"
+#include "ProjectSettings.h"
 #include "Scene.h"
 
 namespace ksp::model
@@ -24,6 +25,7 @@ struct ProjectMap
 {
     std::array<Scene, kScenes> scenes {};                                  // index 0 = scene 1
     std::array<std::array<Pattern, kPatterns>, 4> patterns {};             // [track 0..3][pattern 0..15]
+    ProjectSettings settings;                                              // tempo and global swing
     bool drumMode = false;                                                 // track 1 holds drum patterns (pitch = lane)
     int savedScenes = 0;
     int usedPatterns = 0;
@@ -39,6 +41,7 @@ inline ProjectMap buildMap (ProjectData& p)
             ++m.savedScenes;
     }
     m.drumMode = isDrumMode (p);
+    m.settings = readSettings (p);
     for (int t = 1; t <= 4; ++t)
         for (int k = 1; k <= kPatterns; ++k)
         {
