@@ -2,7 +2,7 @@
 
 **You will:** see the whole structure of the project at a glance: which pattern each track plays in each scene, how the chains run, and the pattern bank.
 
-Click **Project Map** in the top row. It opens a window with three views. Only the Scene matrix edits the project (see below); the other two just show it.
+Click **Project Map** in the top row. It opens a window with three views: the Chain timeline (main, editable), the Scene matrix (all 16 scenes at a glance, also editable) and the read-only Pattern bank.
 
 ## Scene matrix
 
@@ -36,11 +36,19 @@ The same cell menu edits the chain of that track in that scene (up to 16 pattern
 
 Edits are not saved and not on the KeyStep yet: use **Save** and **Write** as usual.
 
-## Chain timeline
+## Chain timeline (the main view)
 
 ![Chain timeline: each track's chain drawn to scale in steps](img/shot-project-map-timeline.png)
 
-Pick a scene and see each track's chain with its blocks drawn to scale in steps. Tracks with different lengths drift against each other, which is how a loop of 13 and a loop of 19 keep changing.
+The Project Map opens here. The row of scene numbers on top picks the scene (right-click a number to copy, paste or clear it); below it each track's chain is drawn with its blocks to scale in steps. Tracks with different lengths drift against each other, which is how a loop of 13 and a loop of 19 keep changing.
+
+Edit it directly:
+
+- **Drag the grip** at the right edge of a block (the cursor turns into a left-right arrow) to repeat that pattern more or fewer times in a row. A green frame and the `xN` show the result; it is applied when you let go.
+- **Click a block** for its menu: *Repeat (duplicate)*, *Insert silence before / after* (uses the first pattern of that track with nothing recorded), *Move earlier / later*, *Remove from the chain*, *Change to* another pattern and *Add at the end*.
+- A chain of one pattern is a plain pattern. A chain holds up to 16 patterns.
+
+Edits are not on the KeyStep until you **Save** and **Write**; **Undo edit** takes back the last one.
 
 ## Pattern bank
 
