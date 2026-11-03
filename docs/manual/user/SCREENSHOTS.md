@@ -18,7 +18,6 @@ Save as PNG in `img/`, named as below. Add numbered red callouts (1, 2, 3...) ma
 | `shot-generate.png` | 7 (done) | Generate... window |
 | `shot-library.png` | 8 (done) | Library window with a few projects |
 | `shot-close-warning.png` | 8 (done) | The Save / Discard / Cancel dialog |
-| `shot-project-map.png` | 9 (outdated: the old overview grid was removed) | Project Map, old Scene matrix; retake as the new Scene Matrix |
-| `shot-project-map-timeline.png` | 9 (done) | Project Map, Scene Matrix (was Chain timeline; retake) |
+| `shot-project-map-timeline.png` | 9 (done, 0.6.0) | Project Map, Scene Matrix |
 | `../../../images/fx-window.png` | README (done) | Effects window |
 | `../../../images/main-window.png` | README (done) | Main window, refreshed for each release |
