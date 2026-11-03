@@ -16,7 +16,7 @@ An empty scene shows the four tracks as empty lanes: click a lane (or right-clic
 - **Click the free space** after a track's chain (`+ add a pattern`) to add a pattern, or silence, at the end.
 - **Drag the grip** at the right edge of a block (the cursor turns into a left-right arrow) to repeat that pattern more or fewer times in a row. A green frame and the `xN` show the result; it is applied when you let go.
 - **Click a block** for its menu: *Repeat (duplicate)*, *Insert silence before / after* (uses the first pattern of that track with nothing recorded), *Move earlier / later*, *Remove from the chain*, *Change to* another pattern and *Add at the end*.
-- A track that the scene starts muted shows a faded lane with **MUTED in this scene** (read from the KeyStep; setting it from the app is not here yet).
+- A track that the scene starts muted shows a faded lane with **MUTED in this scene**. Click the small **M** under a track's name to mute or unmute that track in that scene; **Save** and **Write** as usual to send it to the KeyStep.
 - A chain of one pattern is a plain pattern. A chain holds up to 16 patterns.
 
 Edits are not on the KeyStep until you **Save** and **Write**; **Undo edit** takes back the last one.

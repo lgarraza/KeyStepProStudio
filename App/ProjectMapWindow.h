@@ -211,7 +211,9 @@ public:
         for (const auto& h : hits)
             if (h.first.contains (e.getPosition()))
             {
-                if (view == 1 && ! h.second.sceneButton && h.second.index == -2)
+                if (view == 1 && ! h.second.sceneButton && h.second.index == -4)
+                    toggleMute (h.second.scene, h.second.track);
+                else if (view == 1 && ! h.second.sceneButton && h.second.index == -2)
                     laneMenu (h.second.scene, h.second.track);
                 else if (view == 1 && ! h.second.sceneButton && h.second.index == -3)
                     tailMenu (h.second.scene, h.second.track);
@@ -346,6 +348,18 @@ private:
             if (h.first.contains (pos))
                 return ! h.second.sceneButton && h.second.index != -1;
         return false;
+    }
+
+    /** The M button of a track in a scene: the scene starts with that track muted or not (param 77, bit per track). */
+    void toggleMute (int s, int t)
+    {
+        if (! onEditScene)
+            return;
+        auto n = map.scenes[static_cast<std::size_t> (s - 1)];
+        if (! n.valid)
+            return;
+        n.muteRaw ^= (1 << t);
+        onEditScene (s, n);
     }
 
     /** Menu of an empty lane of an empty scene: pick the pattern the track plays (or silence) to start it. */
@@ -932,6 +946,17 @@ private:
         {
             const int y = r.getY() + t * (laneH + gap);
             trackHeader (g, { r.getX(), y, labelW - 4, laneH }, t);
+            if (map.scenes[static_cast<std::size_t> (scene - 1)].valid)
+            {   // M: the scene starts with this track muted (click to toggle)
+                const juce::Rectangle<int> mb { r.getX() + 3, y + laneH - 20, labelW - 10, 16 };
+                const bool on = map.scenes[static_cast<std::size_t> (scene - 1)].muted (t);
+                g.setColour (on ? palette::rec : palette::panelDark.withAlpha (0.45f));
+                g.fillRoundedRectangle (mb.toFloat(), 3.0f);
+                g.setColour (palette::segOn);
+                g.setFont (juce::FontOptions (11.0f).withStyle ("Bold"));
+                g.drawText ("M", mb, juce::Justification::centred);
+                hits.push_back ({ mb, { scene, t, 0, -4, false } });
+            }
             const auto order = playOrder (map, scene, t);
             float x = static_cast<float> (r.getX() + labelW);
             for (std::size_t i = 0; i < order.size();)
@@ -1016,7 +1041,7 @@ private:
                 g.fillRect (lane);
                 g.setColour (palette::rec);
                 g.setFont (juce::FontOptions (12.0f).withStyle ("Bold"));
-                g.drawText ("MUTED in this scene", lane.reduced (8, 4), juce::Justification::topRight);
+                g.drawText ("MUTED in this scene (click M to change)", lane.reduced (8, 4), juce::Justification::topRight);
             }
         }
         g.setColour (palette::inkSoft);

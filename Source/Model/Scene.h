@@ -13,9 +13,9 @@
                        (one observation, taken as "chain active")
       param 0x54 (84)  [scene, track 1..4, 1..16] = the track's pattern chain: patterns 0-based in order, 127 = unused
                        (chain 1-2-3-4 on track 1 of scene 1 read 0 1 2 3 then 127)
-      param 77 (77)    [scene] = the tracks muted in the scene: 0 with nothing muted, 1 with T1 muted (Leo, 2026-11-03, project 1 scene 1).
-                       Taken as a bitmask, bit 0 = T1 ... bit 3 = T4: one observation, to confirm with another track. Kept raw (muteRaw) so a
-                       scene copied or rewritten keeps whatever the device had.
+      param 77 (77)    [scene] = the tracks muted in the scene, one bit per track (bit 0 = T1 ... bit 3 = T4): 1 with T1 muted
+                       (project 1 scene 1), 6 with T2 + T3 muted (scene 2), Leo 2026-11-03. T4 = bit 3 follows the pattern, not
+                       observed yet. Kept raw (muteRaw) so a scene copied or rewritten keeps whatever the device had.
     Not touched: params 78-82 (solo / drum mutes, 0 in every saved scene read so far). Project item 0x78 param 75 is the current
     scene. A pattern chain made on the device and not saved inside a scene is live state: it is lost at power off.
 */
