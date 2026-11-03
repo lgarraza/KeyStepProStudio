@@ -123,6 +123,9 @@ int main()
         CHECK (10, writeChannel (q, 3, 12) && readSettings (q).channel[3] == 12);
         CHECK (10, writeChannel (q, 0, 99) && readSettings (q).channel[0] == 16);
         CHECK (10, ! writeChannel (q, 4, 1));
+        // the channel an instrument listens on: the override, else the default (track + 1); drums on 10
+        CHECK (10, effectiveChannel (q, 0, false) == 16 && effectiveChannel (q, 0, true) == 10 && effectiveChannel (q, 2, false) == 7);
+        CHECK (10, writeChannel (q, 3, 0) && effectiveChannel (q, 3, false) == 4);
     }
 
     std::printf (failures == 0 ? "projectmap_test OK\n" : "projectmap_test FAILED\n");

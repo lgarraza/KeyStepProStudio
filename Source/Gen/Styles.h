@@ -231,6 +231,8 @@ inline std::string applyStyle (ProjectData& project, const Style& s, const Param
         if (t == 1)
             if (auto e = clearTrack1Sequencer (project, p); ! e.empty())
                 return e;
+        if (t >= 2)
+            model::setArpOn (project, t, false);   // the style's patterns play on the sequencer
         for (int v = 0; v < p.variations; ++v)
         {
             std::string e;

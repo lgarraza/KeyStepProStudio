@@ -1145,7 +1145,7 @@ public:
         octUp.onClick = [this] { lowPitch = std::min (96, lowPitch + 12); showPattern(); };
         projectBox.onChange = [this] { selectProject(); };
         trackTabs.onSelect = [this] (int t) { trackBox.setSelectedId (t, juce::sendNotification); };
-        trackBox.onChange = [this] { trackTabs.setSelected (trackBox.getSelectedId(), false); grid.setTrack (track() - 1); refreshCards(); recChannelBox.setSelectedId (track(), juce::dontSendNotification); loadPattern(); };
+        trackBox.onChange = [this] { trackTabs.setSelected (trackBox.getSelectedId(), false); grid.setTrack (track() - 1); refreshCards(); loadPattern(); recChannelBox.setSelectedId (engine.channel (track() - 1), juce::dontSendNotification); };
         patternBox.onChange = [this] { loadPattern(); };
         lengthBox.onChange = [this] {
             const int n = lengthBox.getSelectedId();
@@ -1548,10 +1548,18 @@ private:
         }
     }
 
+    /** Each instrument listens on the channel its KeyStep track sends on: the project's channel when it sets one, else the default
+        (1-4; in drum mode track 1 plays on the drum channel, 10). */
+    void applyChannels()
+    {
+        const bool drums = haveProject && ksp::model::isDrumMode (project);
+        for (int t = 0; t < 4; ++t)
+            engine.setChannel (t, haveProject ? ksp::model::effectiveChannel (project, t, drums) : (t == 0 && drums ? 10 : t + 1));
+    }
+
     void loadPattern()
     {
-        // in drum mode the KeyStep plays track 1 on the drum channel (Drum output, 10 by default), not on the track's own
-        engine.setChannel (0, haveProject && ksp::model::isDrumMode (project) ? 10 : 1);
+        applyChannels();
         stopRecording();
         haveTake = false;
         undoTakeButton.setEnabled (false);
@@ -2273,6 +2281,7 @@ private:
         beforeMapEdit = before;
         noteChanged();
         refreshMap();
+        applyChannels();
         if (mapWindow != nullptr)
             mapWindow->content().setCanUndo (true);
         say ("Track " + juce::String (track + 1) + (channel == 0 ? " MIDI channel: Auto" : " MIDI channel " + juce::String (channel))
@@ -2286,6 +2295,7 @@ private:
         beforeMapEdit.reset();
         noteChanged();
         refreshMap();
+        applyChannels();
         if (mapWindow != nullptr)
             mapWindow->content().setCanUndo (false);
         say ("Map edit undone.");

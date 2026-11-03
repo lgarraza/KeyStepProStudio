@@ -345,6 +345,39 @@ int main()
         CHECK (10, notes > 0 && readPattern (pr, 2, 1).root == 7 && readPattern (pr, 2, 1).scale == 1);
     }
 
+    // 11. Generated tracks 2-4 play on the sequencer: a track left on its arpeggiator goes back to Seq (its arp settings stay),
+    //     and the scenes written lose their mutes
+    {
+        auto armed = [] (ProjectData& pr) {
+            for (int t = 2; t <= 4; ++t)
+            {
+                setArpOn (pr, t, true);
+                *cell (pr, item::track (t), ap::config, { 1 }) = 20;   // Exclu, octave 0
+            }
+            *cell (pr, item::scene, sp::mute, { 1 }) = 6;
+        };
+        auto seq = [] (ProjectData& pr) {
+            bool ok = true;
+            for (int t = 2; t <= 4; ++t)
+                ok = ok && ! readArp (pr, t, 1).on && readArp (pr, t, 1).mode == 2;
+            return ok;
+        };
+        const auto& house = *gen::findStyle ("house");
+        auto a1 = blank();
+        armed (a1);
+        CHECK (11, readArp (a1, 3, 1).on);
+        CHECK (11, gen::apply (a1, params).empty() && gen::applyScenes (a1, params).empty() && seq (a1) && readScene (a1, 1).muteRaw == 0);
+        auto a2 = blank();
+        armed (a2);
+        CHECK (11, gen::applyStyle (a2, house, gen::styleParams (house, 4)).empty() && seq (a2));
+        auto a3 = blank();
+        armed (a3);
+        CHECK (11, gen::applyArrangement (a3, house, gen::styleParams (house, 4)).empty() && seq (a3) && readScene (a3, 1).muteRaw == 0);
+        auto a4 = blank();   // only track 1: the other tracks keep their arpeggiator
+        armed (a4);
+        CHECK (11, gen::applyStyle (a4, house, gen::styleParams (house, 4), 1, 1).empty() && readArp (a4, 2, 1).on);
+    }
+
     std::printf ("track 3 pattern 1: %s\n", gen::preview (a).c_str());
     std::printf (failures == 0 ? "gen_test: OK\n" : "gen_test: %d FAIL\n", failures);
     return failures == 0 ? 0 : 1;
