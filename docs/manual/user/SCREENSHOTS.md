@@ -13,7 +13,7 @@ Save as PNG in `img/`, named as below. Add numbered red callouts (1, 2, 3...) ma
 | `shot-grid.png` | 5 (done) | Grid with a few notes, one selected, knobs lit, note names on keys and notes, in-scale rows tinted (callouts as in `img/grid.svg`) |
 | `shot-hover-card.png` | 5 (done) | Hover card beside a step |
 | `shot-end-drag.png` | 5 | END grip on the line, hovered (lit, white outline) with the dimmed area after it |
-| `shot-instruments.png` | 6 (use the main-window shot until a closer one exists) | Four track cards (color per track, one selected, others dimmed) with plugins loaded |
+| `shot-instruments.png` | 6 (done, 0.6.0) | Four track cards (color per track, one selected, others dimmed) with plugins loaded |
 | `shot-plugins.png` | 6 (done) | Plugins... window (Hide column) |
 | `shot-generate.png` | 7 (done) | Generate... window |
 | `shot-library.png` | 8 (done) | Library window with a few projects |
