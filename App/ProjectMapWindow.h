@@ -56,8 +56,16 @@ public:
     void setProject (const ksp::model::ProjectMap& m, const juce::String& name)
     {
         map = m;
-        title = name;
         hover = {};
+        // the map is rebuilt after every edit and after picking a scene (that changes the editor's pattern): keep the scene the
+        // user picked, and go back to the first saved one only for another project
+        if (name == title && scenePicked)
+        {
+            repaint();
+            return;
+        }
+        title = name;
+        scenePicked = false;
         int first = 1;
         for (int s = 1; s <= ksp::model::kScenes; ++s)
             if (map.scenes[static_cast<std::size_t> (s - 1)].valid)
@@ -157,6 +165,7 @@ private:
                     if (click)   // selects the scene (empty ones too: the timeline says it is not saved)
                     {
                         scene = h.second.scene;
+                        scenePicked = true;
                         hover = {};
                         if (onSelectScene)
                         {
@@ -778,6 +787,7 @@ private:
     ksp::model::ProjectMap map;
     juce::String title { "Project" };
     int view = 0, scene = 1;
+    bool scenePicked = false;
     Hit hover;
     std::vector<std::pair<juce::Rectangle<int>, Hit>> hits;
 };
