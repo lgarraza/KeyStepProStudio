@@ -232,14 +232,15 @@ private:
         note.setText (musical
                           ? "Puts track 1 in drum mode and replaces its drum patterns 1-5 and 16, patterns 1-12 and 16 of tracks 2-4 (energy levels by "
                             "chord; 16 is empty) and scenes 1-8: intro, groove, drop, drop variation, breakdown, build, peak, outro. Each scene chains four "
-                            "patterns per track. The KeyStep does not change scenes by itself: you play them live. Drums use the default drum map "
+                            "patterns per track. Tracks 2-4 go to the sequencer (Seq) and the scene mutes are cleared. The KeyStep does not change scenes by itself: "
+                            "you play them live. Drums use the default drum map "
                             "and reach the track 1 instrument on the drum channel (10). Nothing reaches the KeyStep until you load it (Write to slot)."
                       : st != nullptr
                           ? "Puts track 1 in drum mode and replaces its drum patterns 1-4, patterns 1-4 of tracks 2-4 (bass, chords, lead; their time "
-                            "division and Mono/Poly too) and scenes 1-4. Drums use the default drum map (kick 36, snare 38, clap 39, hats 42 and 46) and "
+                            "division and Mono/Poly too) and scenes 1-4; tracks 2-4 go to the sequencer (Seq) and those scenes lose their mutes. Drums use the default drum map (kick 36, snare 38, clap 39, hats 42 and 46) and "
                             "reach the track 1 instrument on the drum channel (10). Nothing reaches the KeyStep until you load it (Write to slot)."
-                          : "Replaces patterns 1-4 of the four tracks and scenes 1-8 of the project shown (and the playback settings of those patterns). It does "
-                            "not touch drums, the arpeggiator or other patterns. Nothing reaches the KeyStep until you load it (Write to slot).",
+                          : "Replaces patterns 1-4 of the four tracks and scenes 1-8 of the project shown (and the playback settings of those patterns), puts the "
+                            "tracks in the sequencer (Seq, not Arp or Drum) and clears the mutes of those scenes. Other patterns are left alone. Nothing reaches the KeyStep until you load it (Write to slot).",
                       juce::dontSendNotification);
     }
 

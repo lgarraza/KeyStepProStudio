@@ -36,7 +36,8 @@ others are dimmed. Click anywhere on a card (its controls too) to select its tra
 - **M**, which mutes (lights red), and **S**, which solos (lights blue): while any track is soloed only the soloed tracks sound (you can solo
   several).
 
-Notes arrive on the track's MIDI channel (T1 = 1 ... T4 = 4, the KeyStep defaults). **Audio...** picks the output
+Notes arrive on the track's MIDI channel (T1 = 1 ... T4 = 4, the KeyStep defaults; drums on 10). When the project sets its own
+channel for a track (**Project Map**, the T1-T4 channel boxes), the instrument listens on that one. **Audio...** picks the output
 device; **Test note** plays a C3 on every loaded instrument without the KeyStep.
 
 **FX...** opens four insert slots per track and a master chain of four; each has **Edit** and **Byp** (bypass). A master

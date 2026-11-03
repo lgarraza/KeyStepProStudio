@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include "Roles.h"
+#include "../Model/ArpSettings.h"
 #include "../Model/Scene.h"
 
 namespace ksp::gen
@@ -78,6 +79,8 @@ inline std::string apply (ProjectData& project, const Params& p, int firstTrack 
         return "variations must be 1-16";
     if (firstTrack <= 1 && lastTrack >= 1)
         model::setDrumMode (project, false);   // track 1 plays notes here: a project left in drum mode by a style would hide them
+    for (int t = std::max (2, firstTrack); t <= lastTrack; ++t)
+        model::setArpOn (project, t, false);   // a track left on its arpeggiator would arpeggiate the patterns instead of playing them
     for (int t = firstTrack; t <= lastTrack; ++t)
         for (int v = 0; v < p.variations; ++v)
         {

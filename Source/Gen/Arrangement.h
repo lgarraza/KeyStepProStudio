@@ -152,6 +152,7 @@ inline std::string applyArrangement (ProjectData& project, const Style& s, const
             return "track 1 pattern " + std::to_string (level + 1) + ": " + e;
     for (int t = 2; t <= 4; ++t)
     {
+        model::setArpOn (project, t, false);   // the patterns play on the sequencer
         const auto& ts = s.tracks[t - 2];
         for (int level = 0; level < kLevels; ++level)
             for (int chord = 0; chord < kChords; ++chord)

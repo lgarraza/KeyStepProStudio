@@ -71,6 +71,18 @@ inline ArpSettings readArp (ProjectData& p, int track, int pat)
     return a;
 }
 
+/** Turns the arpeggiator of track 2..4 on or off (off = the track plays its sequencer patterns). False when the project lacks the value. */
+inline bool setArpOn (ProjectData& p, int track, bool on)
+{
+    if (track < 2 || track > 4)
+        return false;
+    int* m = cell (p, item::track (track), ap::mode, { 1 });
+    if (m == nullptr || *m == kUnreadable)
+        return false;
+    *m = on ? (*m | ap::kArpOnBit) : (*m & ~ap::kArpOnBit);
+    return true;
+}
+
 /** Writes mode and octave of the pattern and the swing, division and arp on/off of the track. Returns false when the project lacks those values. */
 inline bool writeArp (ProjectData& p, int track, int pat, const ArpSettings& a)
 {

@@ -65,6 +65,16 @@ inline bool writeSettings (ProjectData& p, double tempo, int swing)
     return true;
 }
 
+/** The MIDI channel (1..16) the KeyStep plays track 0..3 on: the project's override when set, else the default global channel
+    (track + 1). Track 1 in drum mode plays on the drum channel (10; a per-project drum channel is not decoded yet). */
+inline int effectiveChannel (ProjectData& p, int track, bool drumMode)
+{
+    if (track == 0 && drumMode)
+        return 10;
+    const int* c = cell (p, item::project, prs::channel, { static_cast<std::uint8_t> (track + 1) });
+    return c != nullptr && *c != kUnreadable && *c >= 1 && *c <= 16 ? *c : track + 1;
+}
+
 /** Sets the MIDI channel override of a track (track 0..3; channel 0 = global, 1..16). Item 0x78 param 123 [track 1..4]: seen on the device
     as 7 for a track set to channel 7, 1 for channel 1. Returns false when the project lacks the value. */
 inline bool writeChannel (ProjectData& p, int track, int channel)

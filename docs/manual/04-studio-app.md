@@ -105,8 +105,9 @@ Icon: the white chassis, black display strip and the four track colours, drawn b
   **mood** (Ambient: Classic, Ethereal, Dark, Meditative; House: Deep, Chill, Melodic; one each for Techno and Drum & bass), a **seed** (New seed rolls a
   number; the same seed gives the same music), whether the scenes **chain** the variations and whether the time divisions are **slow**, and
   **Generate into this project**: patterns 1-4 of the four tracks and scenes 1-8 of the project that is open are replaced (drums, the arpeggiator
-  and other patterns are left alone). A style instead puts track 1 in drum mode, writes drum patterns 1-4 there (default drum map, GM notes),
+  settings and other patterns are left alone; tracks 2-4 are switched to the sequencer, `setArpOn (t, false)`, and the scenes written lose their mutes). A style instead puts track 1 in drum mode, writes drum patterns 1-4 there (default drum map, GM notes),
   patterns 1-4 of tracks 2-4 (bass, chords, lead, with their division and Mono/Poly) and scenes 1-4; and the project's tempo (techno 130, house 118-128, dnb 174 BPM). While
-  track 1 is in drum mode its instrument listens on channel 10 (the KeyStep's default Drum output). Then play it through the instruments with the KeyStep, hear it, edit it, **Save** it to the library and load it into
+  track 1 is in drum mode its instrument listens on channel 10 (the KeyStep's default Drum output); the other instruments listen on the project's
+  channel of the track when it sets one (`effectiveChannel`: item 0x78 p123, else 1-4). Then play it through the instruments with the KeyStep, hear it, edit it, **Save** it to the library and load it into
   a slot with **Write to slot**. **Undo** brings the project back as it was before the last generation. The settings used are saved with the project
   (the library file keeps the style, the mood and the seed). It needs a project open (a library project, a backup or one read from the KeyStep).

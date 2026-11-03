@@ -18,12 +18,13 @@
 6. Press **Generate into this project**.
 
 **Ambient** replaces patterns 1-4 of the four tracks and scenes 1-8 of the open project, and puts track 1 back in
-sequencer mode (a style had put it in drum mode). The arpeggiator, the drum patterns and the other patterns are left alone.
+sequencer mode (a style had put it in drum mode). Tracks 2-4 are switched to **Seq** too: a track left on **Arp** would
+arpeggiate the generated notes instead of playing them. The drum patterns, the arpeggiator settings and the other patterns are left alone.
 
 **Techno, House and Drum & bass** put track 1 in drum mode and write its drum patterns 1-4 (the last one ends with a
 fill), plus patterns 1-4 of track 2 (bass), track 3 (chords) and track 4 (lead), and scenes 1-4. The drums use the
 KeyStep's default drum map (kick 36, snare 38, clap 39, closed hat 42, open hat 46), so load a General MIDI style kit on
-track 1; the app sends track 1 to its instrument on the drum channel (10). The project also gets the style's tempo
+track 1; the app sends track 1 to its instrument on the drum channel (10). Tracks 2-4 are switched to **Seq** (not **Arp**). The project also gets the style's tempo
 (techno 130; house deep 128, chill 118, melodic 124; drum & bass 174 BPM); change it on the KeyStep if you like. Track 1 then shows the drum grid (see *The grid*).
 
 **Musical arrangement** (Techno, House, Drum & bass; on by default) writes eight scenes with an energy curve instead of the
@@ -33,6 +34,9 @@ tracks 2-4 get twelve patterns (four energy levels for each of three chords: 1-3
 and pattern 16 of every track is empty, to silence a track. Each scene chains four patterns per track (four bars) that move
 between levels, and all four tracks play the same chord in a scene. The KeyStep does not change scenes by itself: you play
 them live, so think of the eight scenes as a map. The Mood and seed still change the notes.
+
+Every generator clears the track mutes of the scenes it writes, so no generated track starts silenced by a mute left from
+the project's old scenes. Mute tracks again in the **Project Map** if you want.
 
 The window and the message after generating say which track plays what, so you know which instrument to load on each: styles
 put the **drums on track 1**, then bass (track 2), chords (track 3) and a lead melody or bells (track 4); Ambient puts a drone on
