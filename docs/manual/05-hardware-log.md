@@ -84,3 +84,5 @@
 - 2026-10-31, generator styles (first drum pattern write): KspGen --style techno --to 16 --seed 3 --write backed slot 16 up, sent 335 bulk SETs
   (track 1 in drum mode with the groove, tracks 2-4 sequencer patterns, 8 scenes), committed and read back: every value, drums included, read
   back as written. Not yet listened to by Leo.
+
+- 2026-11-03, drums in scenes (read-only, project 1, firmware 2.5.20): a scene stores the drum pattern as track 1's own value (item 0x79 param 83 / chain param 84 for track 1, like the other tracks); track index 5 stays 0 in all 16 scenes and its chain is empty. Drum pattern 3 (hits on steps 1, 5, 9, 13, 14 in lane 6) read as DrumPattern.h describes. So no new decoding: the Project Map reads track 1 as drum patterns when drum mode is on (Source/Model/ProjectMap.h).

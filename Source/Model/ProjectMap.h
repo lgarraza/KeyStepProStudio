@@ -1,7 +1,8 @@
 /*
     ProjectMap.h
     The whole structure of a project in one value, for the Project Map window: the 16 scenes (a pattern or a chain per track) and the 16 patterns of
-    each of the 4 sequencer tracks, read from a ProjectData without touching the device. Drums are not part of Pattern.h yet, so they are not here.
+    each of the 4 tracks, read from a ProjectData without touching the device. When track 1 is in drum mode its 16 patterns are the drum patterns, shown as a
+    Pattern whose "pitch" is the drum lane (0..23): the scene already stores a drum pattern as the track-1 pattern, there is no separate drum field.
     C++17 + std, no JUCE.
 */
 
@@ -10,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <vector>
+#include "DrumPattern.h"
 #include "Pattern.h"
 #include "Scene.h"
 
@@ -22,6 +24,7 @@ struct ProjectMap
 {
     std::array<Scene, kScenes> scenes {};                                  // index 0 = scene 1
     std::array<std::array<Pattern, kPatterns>, 4> patterns {};             // [track 0..3][pattern 0..15]
+    bool drumMode = false;                                                 // track 1 holds drum patterns (pitch = lane)
     int savedScenes = 0;
     int usedPatterns = 0;
 };
@@ -35,10 +38,27 @@ inline ProjectMap buildMap (ProjectData& p)
         if (m.scenes[static_cast<std::size_t> (s - 1)].valid)
             ++m.savedScenes;
     }
+    m.drumMode = isDrumMode (p);
     for (int t = 1; t <= 4; ++t)
         for (int k = 1; k <= kPatterns; ++k)
         {
             auto& pt = m.patterns[static_cast<std::size_t> (t - 1)][static_cast<std::size_t> (k - 1)];
+            if (t == 1 && m.drumMode)
+            {
+                const auto d = readDrumPattern (p, k);
+                pt.valid = d.valid;
+                pt.length = d.length;
+                for (const auto& h : d.hits)
+                    if (h.step >= 0 && h.step < kSteps)
+                    {
+                        auto& st = pt.steps[static_cast<std::size_t> (h.step)];
+                        st.on = true;
+                        st.notes.push_back (Note { h.lane, h.gate, h.velocity, h.shift, h.random });
+                    }
+                if (pt.valid)
+                    ++m.usedPatterns;
+                continue;
+            }
             pt = readPattern (p, t, k);
             if (pt.valid)
                 ++m.usedPatterns;
