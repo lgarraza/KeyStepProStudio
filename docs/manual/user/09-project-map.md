@@ -27,7 +27,7 @@ Click **Project Map** in the top row. It opens a window with three views. Only t
 The same cell menu edits the chain of that track in that scene (up to 16 patterns; the same pattern may appear more than once, and an empty pattern, e.g. 16, makes a silent bar):
 
 - **Make a chain / Chain: add at the end** appends a pattern. With no chain yet, the chain starts with the pattern the cell already plays.
-- **Chain: repeat pattern N ...** replaces the chain with that pattern repeated 2, 3, 4, 8 or 16 times (a cell showing `x4` with pattern 4 is this).
+- **The arrows beside `xN`** (bottom right of each cell, `◀ x4 ▶`): `▶` adds one more copy of the chain's last pattern at the end, `◀` removes the last one. On a plain pattern (`x1`), `▶` makes it `x2`. This is the quick way to play a pattern 4 times.
 - **Each position** (`1: pattern 3`) opens a small menu: *Move earlier*, *Move later*, *Repeat (duplicate)*, *Remove from the chain* and *Change to* another pattern. A chain left with one pattern becomes a plain pattern.
 
 Edits are not saved and not on the KeyStep yet: use **Save** and **Write** as usual.
