@@ -939,8 +939,11 @@ private:
                 std::size_t end = i;
                 while (end + 1 < order.size() && order[end + 1] == order[i])
                     ++end;
-                const int count = static_cast<int> (end - i) + 1;
+                const int actual = static_cast<int> (end - i) + 1;
                 const int runStart = static_cast<int> (i);
+                // while the grip is dragged the block is drawn with the new count (and what follows shifts): a live preview
+                const bool dragged = drag.active && drag.scene == scene && drag.track == t && drag.runStart == runStart;
+                const int count = dragged ? drag.count : actual;
                 const auto* p = patternAt (t, order[i]);
                 const int len = p != nullptr ? p->length : 16;
                 const float oneW = static_cast<float> (len) * perStep;
@@ -970,7 +973,7 @@ private:
                     ed.scene = scene;
                     ed.track = t;
                     ed.runStart = runStart;
-                    ed.runCount = count;
+                    ed.runCount = actual;
                     ed.listSize = static_cast<int> (order.size());
                     ed.runLeft = static_cast<int> (runLeft);
                     ed.blockW = static_cast<float> (juce::jmax (1, static_cast<int> (oneW)));
