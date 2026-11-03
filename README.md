@@ -27,6 +27,9 @@ Windows (tested) and macOS (builds from the same code, not tested lately). Not a
   [KSCON](https://github.com/canadianblaken/keystep-con), so backups open in either tool).
 - **Project Map.** The Scene Matrix (each scene as four track lanes with chains drawn to scale, editable) and the pattern bank.
   Click a cell to pick the pattern a track plays in that scene; copy, paste and clear scenes, with Undo.
+- **Tempo, swing and MIDI channels.** Project tempo and swing, plus a MIDI channel (or Auto) for each track, in the Project Map.
+- **Arpeggiator** (tracks 2-4): on/off, mode, octave, swing and division per track, next to the Seq / Arp / Drum keys of each track card.
+- **Pattern ops** (Ops): nudge, reverse and invert a pattern.
 - **MIDI monitor** to see what each control of the KeyStep sends.
 
 ![The effects window: four inserts per track and the master chain](docs/images/fx-window.png)
@@ -112,8 +115,8 @@ To build the Windows installer, see [installer/README.md](installer/README.md).
 
 ## Status and limits
 
-Working and used live: pattern editing, the library, the VST3 host, recording and the generator. Not done yet: the
-arpeggiator, editing chains and plugin latency compensation. Only VST3 plugins are hosted (no AU, no VST2).
+Working and used live: pattern editing, the library, the VST3 host, recording and the generator. Not done yet: plugin
+latency compensation. Only VST3 plugins are hosted (no AU, no VST2).
 
 ## Credits and license
 
