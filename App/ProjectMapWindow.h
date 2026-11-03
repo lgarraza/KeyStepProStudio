@@ -1009,6 +1009,15 @@ private:
                 g.drawText ("+ add a pattern", tail, juce::Justification::centred);
                 hits.push_back ({ tail, { scene, t, 0, -3, false } });
             }
+            if (map.scenes[static_cast<std::size_t> (scene - 1)].muted (t))
+            {   // the scene starts with this track muted
+                const juce::Rectangle<int> lane { r.getX() + labelW, y, r.getWidth() - labelW, laneH };
+                g.setColour (palette::chassis.withAlpha (0.55f));
+                g.fillRect (lane);
+                g.setColour (palette::rec);
+                g.setFont (juce::FontOptions (12.0f).withStyle ("Bold"));
+                g.drawText ("MUTED in this scene", lane.reduced (8, 4), juce::Justification::topRight);
+            }
         }
         g.setColour (palette::inkSoft);
         g.setFont (juce::FontOptions (11.5f));

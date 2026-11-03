@@ -86,3 +86,4 @@
   back as written. Not yet listened to by Leo.
 
 - 2026-11-03, drums in scenes (read-only, project 1, firmware 2.5.20): a scene stores the drum pattern as track 1's own value (item 0x79 param 83 / chain param 84 for track 1, like the other tracks); track index 5 stays 0 in all 16 scenes and its chain is empty. Drum pattern 3 (hits on steps 1, 5, 9, 13, 14 in lane 6) read as DrumPattern.h describes. So no new decoding: the Project Map reads track 1 as drum patterns when drum mode is on (Source/Model/ProjectMap.h).
+- 2026-11-03, scene mute: Leo muted T1 in project 1 scene 1 and saved; a fresh read differed in item 0x79 param 77 [1] 0 -> 1 only (params 76 and 78-82 stayed 0). Taken as a bitmask (bit 0 = T1); to confirm with another track. Scene.h keeps it raw (`muteRaw`) so copies keep it.

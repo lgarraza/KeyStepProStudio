@@ -100,6 +100,20 @@ int main()
         CHECK (5, ce::append (full, 1, 2) == full && ce::duplicateAt (full, 0) == full);
     }
 
+    // 6. Scene mute (param 77, bit 0 = T1): read, written back, kept by a copy, cleared by clearScene
+    {
+        auto q = blank();
+        Scene m;
+        m.valid = true;
+        m.muteRaw = 1;
+        CHECK (6, writeScene (q, 1, m).empty());
+        CHECK (6, *cell (q, item::scene, sp::mute, { 1 }) == 1);
+        const auto rm = readScene (q, 1);
+        CHECK (6, rm.muted (0) && ! rm.muted (1) && rm.muteRaw == 1);
+        CHECK (6, writeScene (q, 2, rm).empty() && readScene (q, 2).muted (0));
+        CHECK (6, clearScene (q, 1).empty() && ! readScene (q, 1).muted (0));
+    }
+
     std::printf (failures == 0 ? "scene_test: OK\n" : "scene_test: %d FAIL\n", failures);
     return failures == 0 ? 0 : 1;
 }
