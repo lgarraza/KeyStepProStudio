@@ -906,37 +906,46 @@ private:
             trackHeader (g, { r.getX(), y, labelW - 4, laneH }, t);
             const auto order = playOrder (map, scene, t);
             float x = static_cast<float> (r.getX() + labelW);
-            int runStart = 0;
-            float runLeft = x;
-            for (std::size_t i = 0; i < order.size(); ++i)
-            {
-                if (i > 0 && order[i] != order[i - 1])
-                {
-                    runStart = static_cast<int> (i);
-                    runLeft = x;
-                }
+            for (std::size_t i = 0; i < order.size();)
+            {   // a run of equal patterns in a row is drawn as one block with its repeat count
+                std::size_t end = i;
+                while (end + 1 < order.size() && order[end + 1] == order[i])
+                    ++end;
+                const int count = static_cast<int> (end - i) + 1;
+                const int runStart = static_cast<int> (i);
                 const auto* p = patternAt (t, order[i]);
                 const int len = p != nullptr ? p->length : 16;
-                const int w = juce::jmax (8, static_cast<int> (static_cast<float> (len) * perStep) - 2);
-                const juce::Rectangle<int> blk { static_cast<int> (x), y, w, laneH };
-                x += static_cast<float> (len) * perStep;
-                hits.push_back ({ blk, { scene, t, order[i], static_cast<int> (i), false } });
-                if (p == nullptr)
-                    drawEmpty (g, blk);
-                else
-                    drawThumb (g, *p, blk, palette::trackColour (t), false);
-                outline (g, blk, hover.scene == scene && hover.track == t && hover.index == static_cast<int> (i));
-                if (map.scenes[static_cast<std::size_t> (scene - 1)].valid && (i + 1 == order.size() || order[i + 1] != order[i]))
-                {   // the end of a run of equal patterns: a grip to drag it longer or shorter
+                const float oneW = static_cast<float> (len) * perStep;
+                const float runLeft = x;
+                const juce::Rectangle<int> blk { static_cast<int> (x), y, juce::jmax (8, static_cast<int> (oneW * static_cast<float> (count)) - 2), laneH };
+                x += oneW * static_cast<float> (count);
+                hits.push_back ({ blk, { scene, t, order[i], runStart, false } });
+                for (int c = 0; c < count; ++c)
+                {
+                    const juce::Rectangle<int> one { static_cast<int> (runLeft + oneW * static_cast<float> (c)), y,
+                                                     juce::jmax (4, static_cast<int> (oneW) - (c + 1 == count ? 2 : 0)), laneH };
+                    if (p == nullptr)
+                        drawEmpty (g, one);
+                    else
+                        drawThumb (g, *p, one, palette::trackColour (t), false);
+                    if (c > 0)   // a thin divider between the repeats
+                    {
+                        g.setColour (palette::panelDark.withAlpha (0.35f));
+                        g.drawVerticalLine (one.getX(), static_cast<float> (y), static_cast<float> (y + laneH));
+                    }
+                }
+                outline (g, blk, hover.scene == scene && hover.track == t && hover.index == runStart);
+                if (map.scenes[static_cast<std::size_t> (scene - 1)].valid)
+                {   // the end of the run: a grip to drag it longer or shorter
                     Edge ed;
                     ed.grip = { blk.getRight() - 7, blk.getY() + 8, 9, blk.getHeight() - 16 };
                     ed.scene = scene;
                     ed.track = t;
                     ed.runStart = runStart;
-                    ed.runCount = static_cast<int> (i) - runStart + 1;
+                    ed.runCount = count;
                     ed.listSize = static_cast<int> (order.size());
                     ed.runLeft = static_cast<int> (runLeft);
-                    ed.blockW = static_cast<float> (juce::jmax (1, static_cast<int> (static_cast<float> (len) * perStep)));
+                    ed.blockW = static_cast<float> (juce::jmax (1, static_cast<int> (oneW)));
                     edges.push_back (ed);
                     g.setColour (palette::panelDark.withAlpha (0.55f));
                     g.fillRoundedRectangle (ed.grip.toFloat().reduced (2.0f, 0.0f), 2.0f);
@@ -950,9 +959,12 @@ private:
                     }
                 }
                 badge (g, { blk.getX() + 2, blk.getY() + 2, 18, 13 }, juce::String (order[i]), palette::panelDark, palette::segOn);
+                if (count > 1)
+                    badge (g, { blk.getX() + 22, blk.getY() + 2, 26, 13 }, juce::String (juce::CharPointer_UTF8 ("\xc3\x97")) + juce::String (count), palette::lit, palette::panelDark);
                 g.setColour (palette::inkSoft);
                 g.setFont (juce::FontOptions (10.0f));
-                g.drawText (juce::String (len), blk.reduced (3, 1), juce::Justification::bottomRight);
+                g.drawText (juce::String (len) + (count > 1 ? " x " + juce::String (count) : juce::String()), blk.reduced (3, 1), juce::Justification::bottomRight);
+                i = end + 1;
             }
         }
         g.setColour (palette::inkSoft);
