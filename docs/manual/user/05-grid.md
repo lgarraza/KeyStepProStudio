@@ -55,12 +55,12 @@ octave, the knobs, Rec and Copy do not apply to drums. The KeyStep holds up to 1
 
 The **Drums** button on card 1 switches track 1 between drum and sequencer mode (lit = drums). Both kinds of patterns
 stay stored, so switching back loses nothing. **Clear** (left of *Copy to*) empties the pattern you are looking at,
-notes or drum hits. **Edit** (next to Clear) works on a note pattern as a whole: **Nudge** one step left or right (the steps
+notes or drum hits. **Ops** (next to Clear) works on a note pattern as a whole: **Nudge** one step left or right (the steps
 wrap around inside the pattern length), **Reverse** (plays it backwards) and **Invert pitches** (mirrors the notes around the
 middle of their range). Each one is undone by itself: nudge the other way, or run Reverse or Invert again. Like every edit, they
 reach the KeyStep when you **Write**.
 
-On tracks 2-4 the same **Edit** menu also holds the **arpeggiator**: **Arp on** (the track plays its arpeggiator instead of its sequencer), **Arp mode** (Up, Down, Exclu, Inclu, Rand, Order, Poly) and **Arp octave** (-1 to +3) for the pattern shown, and **Arp swing** (50-75 %) and **Arp time division** (1/4 to 1/32, each with its triplet) for the track.
+On tracks 2-4 the track card has an **Arp** button (lit = the track plays its arpeggiator instead of its sequencer) and, once the arp is on, a row of arp settings: **mode** (Up, Down, Exclu, Inclu, Rand, Order, Poly) and **octave** (-1 to +3) for the pattern shown on the selected track, and the **time division** (1/4 to 1/32, T = triplet) and **swing** (50-75 %) of the track.
 
 ## Hover card
 

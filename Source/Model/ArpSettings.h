@@ -27,6 +27,7 @@ namespace ap
     inline constexpr int kArpOnBit = 0x40;
     inline constexpr int kDivisions = 8;   // 1/4 1/4T 1/8 1/8T 1/16 1/16T 1/32 1/32T
     inline constexpr const char* divisionNames[kDivisions] { "1/4", "1/4 triplet", "1/8", "1/8 triplet", "1/16", "1/16 triplet", "1/32", "1/32 triplet" };
+    inline constexpr const char* divisionShortNames[kDivisions] { "1/4", "1/4T", "1/8", "1/8T", "1/16", "1/16T", "1/32", "1/32T" };
     inline constexpr int kModes = 7, kOctaveMin = -1, kOctaveMax = 3, kSwingMin = 50, kSwingMax = 75;
     inline constexpr const char* modeNames[kModes] { "Up", "Down", "Exclu", "Inclu", "Rand", "Order", "Poly" };
 }
