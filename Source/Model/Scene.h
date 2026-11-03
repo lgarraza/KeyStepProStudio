@@ -13,7 +13,10 @@
                        (one observation, taken as "chain active")
       param 0x54 (84)  [scene, track 1..4, 1..16] = the track's pattern chain: patterns 0-based in order, 127 = unused
                        (chain 1-2-3-4 on track 1 of scene 1 read 0 1 2 3 then 127)
-    Not touched: params 77-82 (scene mute / solo / drum mutes, 0 in saved scenes). Project item 0x78 param 75 is the current
+      param 77 (77)    [scene] = the tracks muted in the scene, one bit per track (bit 0 = T1 ... bit 3 = T4): 1 with T1 muted
+                       (project 1 scene 1), 6 with T2 + T3 muted (scene 2), Leo 2026-11-03. T4 = bit 3 follows the pattern, not
+                       observed yet. Kept raw (muteRaw) so a scene copied or rewritten keeps whatever the device had.
+    Not touched: params 78-82 (solo / drum mutes, 0 in every saved scene read so far). Project item 0x78 param 75 is the current
     scene. A pattern chain made on the device and not saved inside a scene is live state: it is lost at power off.
 */
 
@@ -28,7 +31,7 @@ namespace ksp::model
 
 namespace sp   // scene params
 {
-    inline constexpr std::uint8_t state = 0x26, flag = 0x4C, pattern = 0x53, chain = 0x54;
+    inline constexpr std::uint8_t state = 0x26, flag = 0x4C, pattern = 0x53, chain = 0x54, mute = 0x4D;
     inline constexpr int chainFlag = 32, chainLength = 16;
 }
 
@@ -39,6 +42,9 @@ struct Scene
     bool valid = false;
     std::array<int, 4> pattern { 1, 1, 1, 1 };   // 1..16 per track
     std::array<std::vector<int>, 4> chain {};    // per track: patterns 1..16 played in order (up to 16); empty = no chain
+    int muteRaw = 0;                             // param 77 as stored; bit t = track t+1 muted in the scene (see the header)
+
+    bool muted (int track0) const { return track0 >= 0 && track0 < 4 && ((muteRaw >> track0) & 1) != 0; }
 };
 
 /** scene 1..16. */
@@ -51,6 +57,7 @@ inline Scene readScene (ProjectData& p, int scene)
     };
     Scene out;
     out.valid = get (sp::state, { s }, 0) == 3;
+    out.muteRaw = get (sp::mute, { s }, 0) & 0x0F;
     for (int t = 1; t <= 4; ++t)
     {
         out.pattern[static_cast<std::size_t> (t - 1)] = (get (sp::pattern, { s, static_cast<std::uint8_t> (t) }, 0) & 0x1F) + 1;
@@ -98,6 +105,7 @@ inline std::string writeScene (ProjectData& p, int scene, const Scene& sc)
     };
     put (sp::state, { s }, 3);
     put (sp::flag, { s }, 0);
+    put (sp::mute, { s }, sc.muteRaw & 0x0F);
     for (int t = 1; t <= 4; ++t)
     {
         const auto& c = sc.chain[static_cast<std::size_t> (t - 1)];
