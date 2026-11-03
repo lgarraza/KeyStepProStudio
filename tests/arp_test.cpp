@@ -27,12 +27,31 @@ int main()
     *ksp::cell (p, ksp::item::project, ap::swing, { 2 }) = 5;
     CHECK (readArp (p, 2, 1).swing == 53 && readArp (p, 3, 1).swing == 55);
 
-    ArpSettings a { true, 4, -1, 60 };
+    // division as read on the device: p68 = div(T2) + 16 * div(T3), p69 = div(T4)
+    *ksp::cell (p, ksp::item::project, ap::division, { 1 }) = 116;       // T2 1/16 (4), T3 1/32 triplet (7)
+    *ksp::cell (p, ksp::item::project, ap::division + 1, { 1 }) = 2;     // T4 1/8
+    CHECK (readArp (p, 2, 1).division == 4 && readArp (p, 3, 1).division == 7 && readArp (p, 4, 1).division == 2);
+    ArpSettings t3 = readArp (p, 3, 1);
+    t3.division = 3;   // 1/8 triplet: p68 becomes 52 as on the device
+    CHECK (writeArp (p, 3, 1, t3));
+    CHECK (*ksp::cell (p, ksp::item::project, ap::division, { 1 }) == 52 && readArp (p, 2, 1).division == 4);
+    ArpSettings t4 = readArp (p, 4, 1);
+    t4.division = 6;
+    CHECK (writeArp (p, 4, 1, t4) && *ksp::cell (p, ksp::item::project, ap::division + 1, { 1 }) == 6);
+
+    // arp on: bit 0x40 of the track item param 86 (66 = arp, 2 = sequencer)
+    *ksp::cell (p, ksp::item::track (3), ap::mode, { 1 }) = 66;
+    CHECK (readArp (p, 3, 1).on && ! readArp (p, 2, 1).on);
+    ArpSettings off = readArp (p, 3, 1);
+    off.on = false;
+    CHECK (writeArp (p, 3, 1, off) && *ksp::cell (p, ksp::item::track (3), ap::mode, { 1 }) == 2);
+
+    ArpSettings a { true, 4, -1, 60, 4, false };
     CHECK (writeArp (p, 2, 3, a));
     const auto b = readArp (p, 2, 3);
     CHECK (b.mode == 4 && b.octave == -1 && b.swing == 60);
     CHECK (*ksp::cell (p, ksp::item::track (2), ap::config, { 3 }) == 8);   // 16 * 0 + 2 * 4
-    CHECK (writeArp (p, 4, 1, { true, 99, 99, 99 }));   // clamped
+    CHECK (writeArp (p, 4, 1, { true, 99, 99, 99, 99, true }));   // clamped
     const auto d = readArp (p, 4, 1);
     CHECK (d.mode == 6 && d.octave == 3 && d.swing == 75);
 

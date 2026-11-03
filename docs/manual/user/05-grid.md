@@ -60,7 +60,7 @@ wrap around inside the pattern length), **Reverse** (plays it backwards) and **I
 middle of their range). Each one is undone by itself: nudge the other way, or run Reverse or Invert again. Like every edit, they
 reach the KeyStep when you **Write**.
 
-On tracks 2-4 the same **Edit** menu also holds the **arpeggiator**: **Arp mode** (Up, Down, Exclu, Inclu, Rand, Order, Poly) and **Arp octave** (-1 to +3) for the pattern shown, and **Arp swing** (50-75 %) for the track. The time division of the arp and switching the arp on are not editable yet; use the KeyStep for those.
+On tracks 2-4 the same **Edit** menu also holds the **arpeggiator**: **Arp on** (the track plays its arpeggiator instead of its sequencer), **Arp mode** (Up, Down, Exclu, Inclu, Rand, Order, Poly) and **Arp octave** (-1 to +3) for the pattern shown, and **Arp swing** (50-75 %) and **Arp time division** (1/4 to 1/32, each with its triplet) for the track.
 
 ## Hover card
 

@@ -2673,16 +2673,20 @@ private:
         if (arp.valid)
         {
             m.addSeparator();
-            juce::PopupMenu modes, octaves, swings;
+            m.addItem (500, "Arp on (this track)", true, arp.on);
+            juce::PopupMenu modes, octaves, swings, divisions;
             for (int i = 0; i < ksp::model::ap::kModes; ++i)
                 modes.addItem (100 + i, ksp::model::ap::modeNames[i], true, arp.mode == i);
             for (int o = ksp::model::ap::kOctaveMin; o <= ksp::model::ap::kOctaveMax; ++o)
                 octaves.addItem (200 + o + 1, (o > 0 ? "+" : "") + juce::String (o), true, arp.octave == o);
             for (int sw = ksp::model::ap::kSwingMin; sw <= ksp::model::ap::kSwingMax; sw += 5)
                 swings.addItem (300 + sw, juce::String (sw) + " %", true, arp.swing == sw);
+            for (int d = 0; d < ksp::model::ap::kDivisions; ++d)
+                divisions.addItem (400 + d, ksp::model::ap::divisionNames[d], true, arp.division == d);
             m.addSubMenu ("Arp mode (this pattern)", modes);
             m.addSubMenu ("Arp octave (this pattern)", octaves);
             m.addSubMenu ("Arp swing (this track)", swings);
+            m.addSubMenu ("Arp time division (this track)", divisions);
         }
         m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&opsButton), [this, arp] (int r)
         {
@@ -2694,7 +2698,9 @@ private:
                 auto a = arp;
                 if (r < 200) a.mode = r - 100;
                 else if (r < 300) a.octave = r - 200 - 1;
-                else a.swing = r - 300;
+                else if (r < 400) a.swing = r - 300;
+                else if (r < 500) a.division = r - 400;
+                else a.on = ! a.on;
                 if (! ksp::model::writeArp (project, track(), patNo(), a))
                 {
                     say ("Could not change the arpeggiator of this track.");
