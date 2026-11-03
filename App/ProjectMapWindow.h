@@ -126,7 +126,32 @@ public:
         setMouseCursor (clickable ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
         pick (e.getPosition(), false);
     }
-    void mouseDown (const juce::MouseEvent& e) override { pick (e.getPosition(), true); }
+    void mouseDown (const juce::MouseEvent& e) override
+    {
+        if (view == 0 && maxScrollX > 0 && scrollTrack.contains (e.getPosition()))
+        {
+            if (! scrollThumb.contains (e.getPosition()))   // click on the track: centre the thumb there
+            {
+                const int room = juce::jmax (1, scrollTrack.getWidth() - scrollThumb.getWidth());
+                scrollX = juce::jlimit (0, maxScrollX, (e.x - scrollTrack.getX() - scrollThumb.getWidth() / 2) * maxScrollX / room);
+            }
+            draggingBar = true;
+            dragStartX = e.x;
+            dragStartScroll = scrollX;
+            hits.clear();
+            repaint();
+            return;
+        }
+        pick (e.getPosition(), true);
+    }
+    void mouseDrag (const juce::MouseEvent& e) override
+    {
+        if (! draggingBar)
+            return;
+        const int room = juce::jmax (1, scrollTrack.getWidth() - scrollThumb.getWidth());
+        scrollX = juce::jlimit (0, maxScrollX, dragStartScroll + (e.x - dragStartX) * maxScrollX / room);
+        repaint();
+    }
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& w) override
     {
         if (view != 0 || maxScrollX <= 0)
@@ -140,6 +165,12 @@ public:
 
     void mouseUp (const juce::MouseEvent& e) override
     {
+        if (draggingBar)
+        {
+            draggingBar = false;
+            repaint();
+            return;
+        }
         if (view != 0)
             return;
         for (const auto& h : hits)
@@ -199,6 +230,25 @@ private:
                 }
                 return;
             }
+    }
+
+    /** A scene that was not saved yet gets, on every track, a pattern to play: the first one nothing was recorded in (silence),
+        or pattern 1 when all 16 are used, instead of the device default (pattern 1 everywhere). */
+    void silentFill (ksp::model::Scene& n) const
+    {
+        if (n.valid)
+            return;
+        for (int t = 0; t < 4; ++t)
+        {
+            int pick = 1;
+            for (int k = 1; k <= ksp::model::kPatterns; ++k)
+                if (patternAt (t, k) == nullptr)
+                {
+                    pick = k;
+                    break;
+                }
+            n.pattern[static_cast<std::size_t> (t)] = pick;
+        }
     }
 
     /** The small arrows beside "xN": one pattern more (a copy of the last one) or one less at the end of the chain. */
@@ -270,6 +320,7 @@ private:
                 return;
             namespace ce = ksp::model::chainedit;
             auto n = sc;
+            silentFill (n);
             auto& nc = n.chain[static_cast<std::size_t> (t)];
             if (r <= 16)
             {
@@ -599,16 +650,21 @@ private:
             g.fillRect (r.getX(), y, labelW, ch);
             trackHeader (g, { r.getX(), y, labelW - 4, ch }, t);
         }
-        if (maxScrollX > 0)   // scroll bar
+        scrollTrack = {};
+        if (maxScrollX > 0)   // scroll bar: drag the thumb, or click the track to jump
         {
             const float frac = static_cast<float> (r.getWidth()) / static_cast<float> (contentW);
             const int barW = juce::jmax (30, static_cast<int> (frac * static_cast<float> (viewArea.getWidth())));
             const int barX = viewArea.getX() + static_cast<int> (static_cast<float> (scrollX) / static_cast<float> (maxScrollX) * static_cast<float> (viewArea.getWidth() - barW));
             const int barY = r.getY() + headH + 4 * (ch + gap) + 1;
-            g.setColour (palette::inkSoft.withAlpha (0.45f));
-            g.fillRoundedRectangle (static_cast<float> (barX), static_cast<float> (barY), static_cast<float> (barW), 4.0f, 2.0f);
+            scrollTrack = { viewArea.getX(), barY - 2, viewArea.getWidth(), 12 };
+            scrollThumb = { barX, barY, barW, 8 };
+            g.setColour (palette::inkSoft.withAlpha (0.12f));
+            g.fillRoundedRectangle (scrollTrack.toFloat().withTrimmedTop (2).withHeight (8), 4.0f);
+            g.setColour (palette::inkSoft.withAlpha (draggingBar ? 0.85f : 0.55f));
+            g.fillRoundedRectangle (scrollThumb.toFloat(), 4.0f);
         }
-        auto note = r.withTop (r.getY() + headH + 4 * (ch + gap) + 10);
+        auto note = r.withTop (r.getY() + headH + 4 * (ch + gap) + 14);
         g.setColour (palette::inkSoft);
         g.setFont (juce::FontOptions (11.5f));
         g.drawFittedText ("Each cell is the pattern that track plays in that scene, drawn as its own piano roll. The number is the pattern, x n means the track plays "
@@ -878,7 +934,9 @@ private:
     juce::String title { "Project" };
     int view = 0, scene = 1;
     bool scenePicked = false;
-    int scrollX = 0, maxScrollX = 0;
+    int scrollX = 0, maxScrollX = 0, dragStartX = 0, dragStartScroll = 0;
+    bool draggingBar = false;
+    juce::Rectangle<int> scrollTrack, scrollThumb;
     Hit hover;
     std::vector<std::pair<juce::Rectangle<int>, Hit>> hits;
 };
