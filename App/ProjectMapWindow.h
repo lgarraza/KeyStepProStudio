@@ -103,11 +103,10 @@ public:
         auto top = r.removeFromTop (28);
         g.setColour (inkSoft);
         g.setFont (juce::FontOptions (12.0f));
-        g.drawText ("Structure of the KeyStep Pro project:  " + title + "   (tracks, patterns, scenes, chains)", top.withTrimmedLeft (2 * 136 + 8).withTrimmedRight (108),
+        g.drawText (title + "   |   " + juce::String (map.savedScenes) + "/16 scenes saved, " + juce::String (map.usedPatterns) + " of 64 patterns recorded", top.withTrimmedLeft (2 * 136 + 8).withTrimmedRight (108),
                     juce::Justification::centredLeft);
         r.removeFromTop (8);
-        paintSummary (g, r.removeFromTop (48));
-        r.removeFromTop (12);
+        r.removeFromTop (4);
 
         auto detail = r.removeFromRight (270);
         r.removeFromRight (12);
