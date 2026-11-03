@@ -13,6 +13,7 @@ The Project Map opens here. The row of scene numbers on top picks the scene (**c
 An empty scene shows the four tracks as empty lanes: click a lane (or right-click it) and choose the pattern it starts with, or silence. Then edit it directly:
 
 - **Repeats are one block.** A pattern played several times in a row is drawn as a single block with its count (`x3`) and thin dividers between the repeats. In the block's menu, *Repeat* and *Remove from the chain* add or take away one repeat.
+- **Click the free space** after a track's chain (`+ add a pattern`) to add a pattern, or silence, at the end.
 - **Drag the grip** at the right edge of a block (the cursor turns into a left-right arrow) to repeat that pattern more or fewer times in a row. A green frame and the `xN` show the result; it is applied when you let go.
 - **Click a block** for its menu: *Repeat (duplicate)*, *Insert silence before / after* (uses the first pattern of that track with nothing recorded), *Move earlier / later*, *Remove from the chain*, *Change to* another pattern and *Add at the end*.
 - A chain of one pattern is a plain pattern. A chain holds up to 16 patterns.

@@ -214,6 +214,8 @@ public:
             {
                 if (view == 1 && ! h.second.sceneButton && h.second.index == -2)
                     laneMenu (h.second.scene, h.second.track);
+                else if (view == 1 && ! h.second.sceneButton && h.second.index == -3)
+                    tailMenu (h.second.scene, h.second.track);
                 else if (view == 1 && ! h.second.sceneButton && h.second.index >= 0)
                     blockMenu (h.second.scene, h.second.track, h.second.index);
                 else if (view == 1 && ! h.second.sceneButton)
@@ -343,7 +345,7 @@ private:
     {
         for (const auto& h : hits)
             if (h.first.contains (pos))
-                return ! h.second.sceneButton && h.second.index >= -2 && h.second.index != -1;
+                return ! h.second.sceneButton && h.second.index != -1;
         return false;
     }
 
@@ -367,6 +369,33 @@ private:
             if (r == 0)
                 return;
             commitList (s, t, { r == 500 ? silence : r });
+        });
+    }
+
+    /** Menu of the free space after a track's chain: a pattern (or silence) to add at the end. */
+    void tailMenu (int s, int t)
+    {
+        if (! onEditScene)
+            return;
+        const auto l = listOf (s, t);
+        const bool full = static_cast<int> (l.size()) >= ksp::model::sp::chainLength;
+        const int silence = silenceFor (t);
+        juce::PopupMenu m;
+        m.addSectionHeader ("Track " + juce::String (t + 1) + ": add at the end");
+        if (silence > 0)
+            m.addItem (500, "Silence (pattern " + juce::String (silence) + ", nothing recorded)", ! full);
+        m.addSeparator();
+        for (int k = 1; k <= ksp::model::kPatterns; ++k)
+        {
+            const auto* p = patternAt (t, k);
+            m.addItem (k, "Pattern " + juce::String (k) + (p == nullptr ? "  (empty)" : "  (" + juce::String (p->length) + " steps)"), ! full);
+        }
+        m.showMenuAsync (juce::PopupMenu::Options(), [this, s, t, l, silence] (int r) {
+            if (r == 0)
+                return;
+            auto n = l;
+            n.push_back (r == 500 ? silence : r);
+            commitList (s, t, n);
         });
     }
 
@@ -965,6 +994,18 @@ private:
                 g.setFont (juce::FontOptions (10.0f));
                 g.drawText (juce::String (len) + (count > 1 ? " x " + juce::String (count) : juce::String()), blk.reduced (3, 1), juce::Justification::bottomRight);
                 i = end + 1;
+            }
+            if (map.scenes[static_cast<std::size_t> (scene - 1)].valid && static_cast<int> (r.getRight() - x) > 24)
+            {   // the free space after the chain: click it to add another pattern at the end
+                const juce::Rectangle<int> tail { static_cast<int> (x) + 2, y, r.getRight() - static_cast<int> (x) - 2, laneH };
+                const bool on = hover.scene == scene && hover.track == t && hover.index == -3;
+                g.setColour (palette::trackColour (t).withAlpha (on ? 0.20f : 0.07f));
+                g.fillRect (tail);
+                g.setColour (palette::inkSoft.withAlpha (on ? 0.9f : 0.5f));
+                g.drawRect (tail, 1);
+                g.setFont (juce::FontOptions (12.0f));
+                g.drawText ("+ add a pattern", tail, juce::Justification::centred);
+                hits.push_back ({ tail, { scene, t, 0, -3, false } });
             }
         }
         g.setColour (palette::inkSoft);
