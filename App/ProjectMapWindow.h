@@ -43,6 +43,24 @@ public:
         undoButton.setEnabled (false);
         undoButton.onClick = [this] { if (onUndo) onUndo(); };
         addAndMakeVisible (undoButton);
+        // project settings: tempo and the global swing (kept in the project, item 0x78)
+        for (auto* sl : { &tempoSlider, &swingSlider })
+        {
+            sl->setSliderStyle (juce::Slider::LinearBar);
+            sl->setColour (juce::Slider::trackColourId, palette::lit.withAlpha (0.55f));
+            sl->setColour (juce::Slider::textBoxTextColourId, palette::ink);
+            sl->setColour (juce::Slider::textBoxOutlineColourId, palette::edge);
+            sl->setPopupDisplayEnabled (false, false, this);
+            addAndMakeVisible (*sl);
+        }
+        tempoSlider.setRange (ksp::model::prs::kTempoMin, ksp::model::prs::kTempoMax, 0.5);
+        tempoSlider.setTextValueSuffix (" BPM");
+        tempoSlider.setTooltip ("Project tempo (drag, or double-click to type)");
+        swingSlider.setRange (ksp::model::prs::kSwingMin, ksp::model::prs::kSwingMax, 1.0);
+        swingSlider.setTextValueSuffix (" % swing");
+        swingSlider.setTooltip ("Global swing: 50 % is straight, up to 75 %");
+        tempoSlider.onDragEnd = swingSlider.onDragEnd = [this] { sendSettings(); };
+        tempoSlider.onValueChange = swingSlider.onValueChange = [this] { if (! settingUp && ! tempoSlider.isMouseButtonDown() && ! swingSlider.isMouseButtonDown()) sendSettings(); };
         setSize (1120, 640);
     }
 
@@ -53,12 +71,21 @@ public:
     /** A scene number was clicked: the scene (1..16) and the pattern each track plays first in it (0 = none), for the editor to follow. */
     std::function<void (int, std::array<int, 4>)> onSelectScene;
 
+    /** Tempo (BPM) and global swing (%) edited in the top bar: applied when the drag ends (or a value is typed). */
+    std::function<void (double, int)> onEditSettings;
+
     void setCanUndo (bool can) { undoButton.setEnabled (can); }
 
     void setProject (const ksp::model::ProjectMap& m, const juce::String& name)
     {
         map = m;
         hover = {};
+        settingUp = true;
+        tempoSlider.setEnabled (m.settings.valid);
+        swingSlider.setEnabled (m.settings.valid);
+        tempoSlider.setValue (m.settings.tempo, juce::dontSendNotification);
+        swingSlider.setValue (m.settings.swing, juce::dontSendNotification);
+        settingUp = false;
         // the map is rebuilt after every edit and after picking a scene (that changes the editor's pattern): keep the scene the
         // user picked, and go back to the first saved one only for another project
         if (name == title && scenePicked)
@@ -90,6 +117,10 @@ public:
             top.removeFromLeft (6);
         }
         undoButton.setBounds (top.removeFromRight (100));
+        top.removeFromRight (8);
+        swingSlider.setBounds (top.removeFromRight (110));
+        top.removeFromRight (6);
+        tempoSlider.setBounds (top.removeFromRight (100));
     }
 
     void paint (juce::Graphics& g) override
@@ -103,7 +134,7 @@ public:
         auto top = r.removeFromTop (28);
         g.setColour (inkSoft);
         g.setFont (juce::FontOptions (12.0f));
-        g.drawText (title + "   |   " + juce::String (map.savedScenes) + "/16 scenes saved, " + juce::String (map.usedPatterns) + " of 64 patterns recorded", top.withTrimmedLeft (2 * 136 + 8).withTrimmedRight (108),
+        g.drawText (title + "   |   " + juce::String (map.savedScenes) + "/16 scenes saved, " + juce::String (map.usedPatterns) + " of 64 patterns recorded", top.withTrimmedLeft (2 * 136 + 8).withTrimmedRight (330),
                     juce::Justification::centredLeft);
         r.removeFromTop (8);
         r.removeFromTop (4);
@@ -1236,6 +1267,15 @@ private:
     }
 
     std::array<juce::TextButton, 3> tabs;
+    void sendSettings()
+    {
+        if (onEditSettings && map.settings.valid
+            && (std::abs (tempoSlider.getValue() - map.settings.tempo) > 1e-6 || static_cast<int> (swingSlider.getValue()) != map.settings.swing))
+            onEditSettings (tempoSlider.getValue(), static_cast<int> (swingSlider.getValue()));
+    }
+
+    juce::Slider tempoSlider, swingSlider;
+    bool settingUp = false;
     juce::TextButton undoButton;
     std::optional<ksp::model::Scene> clipboard;
     ksp::model::ProjectMap map;

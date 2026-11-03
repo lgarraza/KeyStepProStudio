@@ -99,6 +99,24 @@ int main()
         CHECK (9, ! buildMap (plain).drumMode);
     }
 
+    // project settings: tempo 118.00 as the device stores it (24, 92, 0), swing 50
+    {
+        auto q = blank();
+        *cell (q, ksp::item::project, prs::tempo0, { 1 }) = 24;
+        *cell (q, ksp::item::project, prs::tempo0 + 1, { 1 }) = 92;
+        *cell (q, ksp::item::project, prs::tempo0 + 2, { 1 }) = 0;
+        *cell (q, ksp::item::project, prs::swing, { 1 }) = 50;
+        auto st = readSettings (q);
+        CHECK (10, st.valid && std::fabs (st.tempo - 118.0) < 1e-9 && st.swing == 50);
+        CHECK (10, writeSettings (q, 127.5, 58));
+        st = readSettings (q);
+        CHECK (10, std::fabs (st.tempo - 127.5) < 1e-9 && st.swing == 58);
+        CHECK (10, buildMap (q).settings.swing == 58);
+        CHECK (10, writeSettings (q, 999.0, 99));   // clamped
+        st = readSettings (q);
+        CHECK (10, st.tempo == 300.0 && st.swing == 75);
+    }
+
     std::printf (failures == 0 ? "projectmap_test OK\n" : "projectmap_test FAILED\n");
     return failures == 0 ? 0 : 1;
 }
