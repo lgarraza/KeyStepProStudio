@@ -510,12 +510,13 @@ private:
                 const int pn = sc.pattern[static_cast<std::size_t> (t)];
                 const auto* p = sc.valid ? patternAt (t, pn) : nullptr;
                 const int stripH = 9;
-                const bool stepper = p != nullptr && cw >= 40;
-                const juce::Rectangle<int> countBox { cell.getRight() - 33, cell.getBottom() - stripH - 14, 31, 13 };
+                const bool stepper = p != nullptr && cw >= 44;
+                const int boxW = juce::jmin (50, cw - 4);
+                const juce::Rectangle<int> countBox { cell.getRight() - boxW - 2, cell.getBottom() - stripH - 19, boxW, 17 };
                 if (stepper)   // before the cell's own hit: the first rectangle that contains the mouse wins
                 {
-                    hits.push_back ({ countBox.withWidth (10), { s, t, pn, -1, false, -1 } });
-                    hits.push_back ({ countBox.withTrimmedLeft (countBox.getWidth() - 10), { s, t, pn, -1, false, 1 } });
+                    hits.push_back ({ countBox.withWidth (12), { s, t, pn, -1, false, -1 } });
+                    hits.push_back ({ countBox.withTrimmedLeft (countBox.getWidth() - 12), { s, t, pn, -1, false, 1 } });
                 }
                 hits.push_back ({ cell, { s, t, p != nullptr ? pn : 0, -1, false } });
                 const bool on = hover.scene == s && hover.track == t;
@@ -547,12 +548,12 @@ private:
                 {
                     const int n = c.empty() ? 1 : static_cast<int> (c.size());
                     auto box = countBox;
-                    const auto left = box.removeFromLeft (10), right = box.removeFromRight (10);
+                    const auto left = box.removeFromLeft (12), right = box.removeFromRight (12);
                     g.setColour (palette::panelDark.withAlpha (0.85f));
                     g.fillRoundedRectangle (countBox.toFloat(), 3.0f);
                     auto arrow = [&] (juce::Rectangle<int> a, bool forward, bool enabled) {
                         juce::Path tri;
-                        const auto f = a.toFloat().reduced (2.5f, 3.0f);
+                        const auto f = a.toFloat().reduced (2.5f, 4.0f);
                         if (forward)
                             tri.addTriangle (f.getX(), f.getY(), f.getX(), f.getBottom(), f.getRight(), f.getCentreY());
                         else
@@ -563,7 +564,7 @@ private:
                     arrow (left, false, n > 1);
                     arrow (right, true, n < sp::chainLength);
                     g.setColour (n > 1 ? palette::lit : palette::inkSoft);
-                    g.setFont (juce::FontOptions (10.0f).withStyle ("Bold"));
+                    g.setFont (juce::FontOptions (12.0f).withStyle ("Bold"));
                     g.drawText (juce::String (juce::CharPointer_UTF8 ("\xc3\x97")) + juce::String (n), box, juce::Justification::centred);
                 }
                 outline (g, cell, on);
