@@ -1269,18 +1269,18 @@ public:
             row.removeFromLeft (6);
         }
         octDown.setBounds (row.removeFromLeft (28));
-        octLabel.setBounds (row.removeFromLeft (110));
+        octLabel.setBounds (row.removeFromLeft (90));
         octUp.setBounds (row.removeFromLeft (28));
         row.removeFromLeft (16);
-        clearButton.setBounds (row.removeFromLeft (52));
+        clearButton.setBounds (row.removeFromLeft (48));
         row.removeFromLeft (6);
-        opsButton.setBounds (row.removeFromLeft (48));
-        row.removeFromLeft (6);
-        copyButton.setBounds (row.removeFromLeft (70));
+        opsButton.setBounds (row.removeFromLeft (44));
         row.removeFromLeft (4);
-        copyTrackBox.setBounds (row.removeFromLeft (84));
+        copyButton.setBounds (row.removeFromLeft (58));
         row.removeFromLeft (4);
-        copyPatBox.setBounds (row.removeFromLeft (100));
+        copyTrackBox.setBounds (row.removeFromLeft (70));
+        row.removeFromLeft (4);
+        copyPatBox.setBounds (row.removeFromLeft (80));
         bpmDisplay.setBounds (row.removeFromRight (130));
         row.removeFromRight (8);
         lenDisplay.setBounds (row.removeFromRight (100));

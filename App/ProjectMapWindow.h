@@ -73,7 +73,7 @@ public:
             cb.onChange = [this, t] { if (! settingUp && onEditChannel) onEditChannel (t, channelBox[static_cast<std::size_t> (t)].getSelectedId() - 1); };
             addAndMakeVisible (cb);
         }
-        setSize (1120, 640);
+        setSize (1240, 640);
     }
 
     /** Edits: `onEditScene` writes a scene (scene 1..16); `onClearScene` resets one; `onUndo` takes back the last map edit. */
@@ -144,7 +144,7 @@ public:
         top.removeFromRight (6);
         for (int t = 3; t >= 0; --t)
         {
-            channelBox[static_cast<std::size_t> (t)].setBounds (top.removeFromRight (84));
+            channelBox[static_cast<std::size_t> (t)].setBounds (top.removeFromRight (76));
             top.removeFromRight (4);
         }
     }
@@ -160,7 +160,7 @@ public:
         auto top = r.removeFromTop (28);
         g.setColour (inkSoft);
         g.setFont (juce::FontOptions (12.0f));
-        g.drawText (title + "   |   " + juce::String (map.savedScenes) + "/16 scenes saved, " + juce::String (map.usedPatterns) + " of 64 patterns recorded", top.withTrimmedLeft (2 * 136 + 8).withTrimmedRight (670),
+        g.drawText (title + "   |   " + juce::String (map.savedScenes) + "/16 scenes saved, " + juce::String (map.usedPatterns) + " of 64 patterns recorded", top.withTrimmedLeft (2 * 136 + 8).withTrimmedRight (650),
                     juce::Justification::centredLeft);
         r.removeFromTop (8);
         r.removeFromTop (4);
