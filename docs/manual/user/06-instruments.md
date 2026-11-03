@@ -43,7 +43,7 @@ device; **Test note** plays a C3 on every loaded instrument without the KeyStep.
 limiter sits at the end. The label under the rows shows the output peak, limiter reduction and the BPM read from the
 KeyStep's clock.
 
-> **Screenshots pending:** `shot-instruments.png`, `shot-plugins.png`.
+![Track cards with an instrument loaded; the plugin key opens its window](img/shot-instruments.png)
 
 **Watch out:** a plugin missing on this machine shows **Missing: name** and is kept untouched in the project.
 Plugin latency is not compensated yet.
