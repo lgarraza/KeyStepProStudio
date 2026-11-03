@@ -26,6 +26,7 @@
 #include "Model/Pattern.h"
 #include "Model/NoteMove.h"
 #include "Model/PatternOps.h"
+#include "Model/ArpSettings.h"
 
 namespace
 {
@@ -1102,7 +1103,7 @@ public:
         copyButton.onClick = [this] { copyPattern(); };
         clearButton.onClick = [this] { clearPattern(); };
         opsButton.setButtonText ("Edit");
-        opsButton.setTooltip ("Nudge, reverse or invert the pattern shown");
+        opsButton.setTooltip ("Nudge, reverse or invert the pattern shown; arpeggiator settings of tracks 2-4");
         opsButton.onClick = [this] { patternOpsMenu(); };
         drumModeButton.onClick = [this] { toggleDrumMode(); };
         toolsButton.onClick = [this] { showToolsMenu(); };
@@ -2667,10 +2668,42 @@ private:
         m.addItem (2, "Nudge right one step");
         m.addItem (3, "Reverse");
         m.addItem (4, "Invert pitches");
-        m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&opsButton), [this] (int r)
+        // arpeggiator of tracks 2-4 (read from the project; mode and octave belong to the pattern, swing to the track)
+        const auto arp = track() >= 2 ? ksp::model::readArp (project, track(), patNo()) : ksp::model::ArpSettings{};
+        if (arp.valid)
+        {
+            m.addSeparator();
+            juce::PopupMenu modes, octaves, swings;
+            for (int i = 0; i < ksp::model::ap::kModes; ++i)
+                modes.addItem (100 + i, ksp::model::ap::modeNames[i], true, arp.mode == i);
+            for (int o = ksp::model::ap::kOctaveMin; o <= ksp::model::ap::kOctaveMax; ++o)
+                octaves.addItem (200 + o + 1, (o > 0 ? "+" : "") + juce::String (o), true, arp.octave == o);
+            for (int sw = ksp::model::ap::kSwingMin; sw <= ksp::model::ap::kSwingMax; sw += 5)
+                swings.addItem (300 + sw, juce::String (sw) + " %", true, arp.swing == sw);
+            m.addSubMenu ("Arp mode (this pattern)", modes);
+            m.addSubMenu ("Arp octave (this pattern)", octaves);
+            m.addSubMenu ("Arp swing (this track)", swings);
+        }
+        m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&opsButton), [this, arp] (int r)
         {
             if (r == 0)
                 return;
+            if (r >= 100)
+            {
+                commitPattern();
+                auto a = arp;
+                if (r < 200) a.mode = r - 100;
+                else if (r < 300) a.octave = r - 200 - 1;
+                else a.swing = r - 300;
+                if (! ksp::model::writeArp (project, track(), patNo(), a))
+                {
+                    say ("Could not change the arpeggiator of this track.");
+                    return;
+                }
+                noteChanged();
+                say ("Arpeggiator of track " + juce::String (track()) + " changed (not written yet; the KeyStep needs the arp on to use it).");
+                return;
+            }
             bool ok = true;
             if (r == 1) ksp::model::nudgePattern (pattern, -1);
             else if (r == 2) ksp::model::nudgePattern (pattern, 1);

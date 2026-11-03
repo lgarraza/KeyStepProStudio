@@ -51,6 +51,9 @@ add_test(NAME notemove_test COMMAND notemove_test)
 add_executable(patternops_test tests/patternops_test.cpp)
 target_link_libraries(patternops_test PRIVATE ksp_core)
 add_test(NAME patternops_test COMMAND patternops_test)
+add_executable(arp_test tests/arp_test.cpp)
+target_link_libraries(arp_test PRIVATE ksp_core)
+add_test(NAME arp_test COMMAND arp_test)
 
 # Compares a project file with a read-back (no device, no JUCE).
 add_executable(KspCompare Tools/KspCompare/Main.cpp)
