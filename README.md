@@ -25,7 +25,7 @@ Windows (tested) and macOS (builds from the same code, not tested lately). Not a
 - **Drum patterns**: track 1 in drum mode gets a 24-lane drum grid (General MIDI names of the default drum map).
 - **Backups.** Full read-only backup of all 16 projects and the global settings to JSON (the same format as
   [KSCON](https://github.com/canadianblaken/keystep-con), so backups open in either tool).
-- **Project Map.** Scenes by tracks with a mini piano roll in each cell, the chain timeline and the pattern bank.
+- **Project Map.** The Scene Matrix (each scene as four track lanes with chains drawn to scale, editable) and the pattern bank.
   Click a cell to pick the pattern a track plays in that scene; copy, paste and clear scenes, with Undo.
 - **MIDI monitor** to see what each control of the KeyStep sends.
 

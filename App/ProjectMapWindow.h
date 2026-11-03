@@ -2,7 +2,7 @@
     ProjectMapWindow.h
     "Project Map": the open project as one picture. Three views of the same ProjectMap (Source/Model/ProjectMap.h): the scene matrix (scenes x tracks,
     a thumbnail of the pattern each track plays), the chain timeline of one scene (patterns to scale in steps), and the pattern bank (16 per track and
-    the scenes that use each). Hover or click a cell for the detail on the right. Read only. JUCE, message thread.
+    the scenes that use each). Hover a block for the detail on the right. JUCE, message thread.
 */
 
 #pragma once
@@ -14,6 +14,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include <algorithm>
+#include <cmath>
 #include <optional>
 #include <functional>
 #include <vector>
@@ -26,7 +27,7 @@ class ProjectMapPanel : public juce::Component
 public:
     ProjectMapPanel()
     {
-        const char* names[] { "Scene matrix", "Chain timeline", "Pattern bank" };
+        const char* names[] { "(overview)", "Scene Matrix", "Pattern bank" };   // the old overview grid (view 0) has no tab any more
         for (int v = 0; v < 3; ++v)
         {
             auto& b = tabs[static_cast<std::size_t> (v)];
@@ -34,9 +35,10 @@ public:
             b.setClickingTogglesState (true);
             b.setRadioGroupId (1);
             b.onClick = [this, v] { view = v; hover = {}; repaint(); };
-            addAndMakeVisible (b);
+            if (v > 0)
+                addAndMakeVisible (b);
         }
-        tabs[0].setToggleState (true, juce::dontSendNotification);
+        tabs[1].setToggleState (true, juce::dontSendNotification);   // the timeline is the main view
         undoButton.setButtonText ("Undo edit");
         undoButton.setEnabled (false);
         undoButton.onClick = [this] { if (onUndo) onUndo(); };
@@ -82,9 +84,9 @@ public:
         auto r = getLocalBounds().reduced (12, 10);
         auto top = r.removeFromTop (28);
         top.removeFromLeft (4);
-        for (auto& b : tabs)
+        for (std::size_t v = 1; v < tabs.size(); ++v)
         {
-            b.setBounds (top.removeFromLeft (130));
+            tabs[v].setBounds (top.removeFromLeft (130));
             top.removeFromLeft (6);
         }
         undoButton.setBounds (top.removeFromRight (100));
@@ -95,16 +97,16 @@ public:
         using namespace palette;
         g.fillAll (chassis);
         hits.clear();
+        edges.clear();
 
         auto r = getLocalBounds().reduced (12, 10);
         auto top = r.removeFromTop (28);
         g.setColour (inkSoft);
         g.setFont (juce::FontOptions (12.0f));
-        g.drawText ("Structure of the KeyStep Pro project:  " + title + "   (tracks, patterns, scenes, chains)", top.withTrimmedLeft (3 * 136 + 8).withTrimmedRight (108),
+        g.drawText (title + "   |   " + juce::String (map.savedScenes) + "/16 scenes saved, " + juce::String (map.usedPatterns) + " of 64 patterns recorded", top.withTrimmedLeft (2 * 136 + 8).withTrimmedRight (108),
                     juce::Justification::centredLeft);
         r.removeFromTop (8);
-        paintSummary (g, r.removeFromTop (48));
-        r.removeFromTop (12);
+        r.removeFromTop (4);
 
         auto detail = r.removeFromRight (270);
         r.removeFromRight (12);
@@ -123,6 +125,14 @@ public:
         for (const auto& h : hits)
             if (h.first.contains (e.getPosition()))
                 clickable = h.second.sceneButton || (view == 0 && h.second.scene > 0 && h.second.track >= 0);
+        for (const auto& ed : edges)
+            if (view == 1 && ed.grip.contains (e.getPosition()))
+            {
+                setMouseCursor (juce::MouseCursor::LeftRightResizeCursor);
+                pick (e.getPosition(), false);
+                return;
+            }
+        clickable = clickable || (view == 1 && hoverIsBlock (e.getPosition()));
         setMouseCursor (clickable ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
         pick (e.getPosition(), false);
     }
@@ -142,10 +152,26 @@ public:
             repaint();
             return;
         }
+        if (view == 1)
+            for (const auto& ed : edges)
+                if (ed.grip.contains (e.getPosition()))
+                {
+                    drag = ed;
+                    drag.active = true;
+                    drag.count = ed.runCount;
+                    return;
+                }
         pick (e.getPosition(), true);
     }
     void mouseDrag (const juce::MouseEvent& e) override
     {
+        if (drag.active)
+        {
+            const auto room = juce::jmax (1, ksp::model::sp::chainLength - (drag.listSize - drag.runCount));
+            drag.count = juce::jlimit (1, room, static_cast<int> (std::lround (static_cast<float> (e.x - drag.runLeft) / drag.blockW)));
+            repaint();
+            return;
+        }
         if (! draggingBar)
             return;
         const int room = juce::jmax (1, scrollTrack.getWidth() - scrollThumb.getWidth());
@@ -171,16 +197,33 @@ public:
             repaint();
             return;
         }
-        if (view != 0)
+        if (drag.active)   // dragging the right edge of a block: the pattern repeats that many times in a row
+        {
+            const auto d = drag;
+            drag = {};
+            if (d.count != d.runCount)
+                resizeRun (d.scene, d.track, d.runStart, d.runCount, d.count);
+            repaint();
+            return;
+        }
+        if (view == 2)
             return;
         for (const auto& h : hits)
             if (h.first.contains (e.getPosition()))
             {
-                if (h.second.delta != 0)
+                if (view == 1 && ! h.second.sceneButton && h.second.index == -2)
+                    laneMenu (h.second.scene, h.second.track);
+                else if (view == 1 && ! h.second.sceneButton && h.second.index == -3)
+                    tailMenu (h.second.scene, h.second.track);
+                else if (view == 1 && ! h.second.sceneButton && h.second.index >= 0)
+                    blockMenu (h.second.scene, h.second.track, h.second.index);
+                else if (view == 1 && ! h.second.sceneButton)
+                    return;
+                else if (h.second.delta != 0)
                     stepChain (h.second.scene, h.second.track, h.second.delta);
                 else if (h.second.sceneButton && e.mods.isPopupMenu())
                     sceneMenu (h.second.scene);
-                else if (! h.second.sceneButton && h.second.scene > 0 && h.second.track >= 0)
+                else if (view == 0 && ! h.second.sceneButton && h.second.scene > 0 && h.second.track >= 0)
                     cellMenu (h.second.scene, h.second.track);
                 return;
             }
@@ -249,6 +292,162 @@ private:
                 }
             n.pattern[static_cast<std::size_t> (t)] = pick;
         }
+    }
+
+    /** What a track plays in a scene as a list: its chain, or its single pattern. */
+    std::vector<int> listOf (int s, int t) const
+    {
+        const auto& sc = map.scenes[static_cast<std::size_t> (s - 1)];
+        if (! sc.chain[static_cast<std::size_t> (t)].empty())
+            return sc.chain[static_cast<std::size_t> (t)];
+        return { sc.pattern[static_cast<std::size_t> (t)] };
+    }
+
+    /** Writes the list back: one entry = a plain pattern, 2 or more = a chain. */
+    void commitList (int s, int t, std::vector<int> l)
+    {
+        if (! onEditScene || l.empty() || static_cast<int> (l.size()) > ksp::model::sp::chainLength)
+            return;
+        auto n = map.scenes[static_cast<std::size_t> (s - 1)];
+        silentFill (n);
+        n.pattern[static_cast<std::size_t> (t)] = l.front();
+        n.chain[static_cast<std::size_t> (t)] = l.size() < 2 ? std::vector<int> {} : l;
+        if (n.chain[static_cast<std::size_t> (t)] == map.scenes[static_cast<std::size_t> (s - 1)].chain[static_cast<std::size_t> (t)]
+            && n.pattern[static_cast<std::size_t> (t)] == map.scenes[static_cast<std::size_t> (s - 1)].pattern[static_cast<std::size_t> (t)]
+            && map.scenes[static_cast<std::size_t> (s - 1)].valid)
+            return;
+        onEditScene (s, n);
+    }
+
+    /** The first pattern of the track with nothing recorded (silence), or 0 when all 16 are used. */
+    int silenceFor (int t) const
+    {
+        for (int k = 1; k <= ksp::model::kPatterns; ++k)
+            if (patternAt (t, k) == nullptr)
+                return k;
+        return 0;
+    }
+
+    /** Drag of a block's right edge: the run of `count` equal patterns starting at `start` becomes `want` of them. */
+    void resizeRun (int s, int t, int start, int count, int want)
+    {
+        auto l = listOf (s, t);
+        if (start < 0 || start + count > static_cast<int> (l.size()))
+            return;
+        const int p = l[static_cast<std::size_t> (start)];
+        l.erase (l.begin() + start, l.begin() + start + count);
+        l.insert (l.begin() + start, static_cast<std::size_t> (want), p);
+        commitList (s, t, l);
+    }
+
+    bool hoverIsBlock (juce::Point<int> pos) const
+    {
+        for (const auto& h : hits)
+            if (h.first.contains (pos))
+                return ! h.second.sceneButton && h.second.index != -1;
+        return false;
+    }
+
+    /** Menu of an empty lane of an empty scene: pick the pattern the track plays (or silence) to start it. */
+    void laneMenu (int s, int t)
+    {
+        if (! onEditScene)
+            return;
+        juce::PopupMenu m;
+        m.addSectionHeader ("Scene " + juce::String (s) + ", track " + juce::String (t + 1) + ": start with");
+        const int silence = silenceFor (t);
+        if (silence > 0)
+            m.addItem (500, "Silence (pattern " + juce::String (silence) + ", nothing recorded)");
+        m.addSeparator();
+        for (int k = 1; k <= ksp::model::kPatterns; ++k)
+        {
+            const auto* p = patternAt (t, k);
+            m.addItem (k, "Pattern " + juce::String (k) + (p == nullptr ? "  (empty)" : "  (" + juce::String (p->length) + " steps)"));
+        }
+        m.showMenuAsync (juce::PopupMenu::Options(), [this, s, t, silence] (int r) {
+            if (r == 0)
+                return;
+            commitList (s, t, { r == 500 ? silence : r });
+        });
+    }
+
+    /** Menu of the free space after a track's chain: a pattern (or silence) to add at the end. */
+    void tailMenu (int s, int t)
+    {
+        if (! onEditScene)
+            return;
+        const auto l = listOf (s, t);
+        const bool full = static_cast<int> (l.size()) >= ksp::model::sp::chainLength;
+        const int silence = silenceFor (t);
+        juce::PopupMenu m;
+        m.addSectionHeader ("Track " + juce::String (t + 1) + ": add at the end");
+        if (silence > 0)
+            m.addItem (500, "Silence (pattern " + juce::String (silence) + ", nothing recorded)", ! full);
+        m.addSeparator();
+        for (int k = 1; k <= ksp::model::kPatterns; ++k)
+        {
+            const auto* p = patternAt (t, k);
+            m.addItem (k, "Pattern " + juce::String (k) + (p == nullptr ? "  (empty)" : "  (" + juce::String (p->length) + " steps)"), ! full);
+        }
+        m.showMenuAsync (juce::PopupMenu::Options(), [this, s, t, l, silence] (int r) {
+            if (r == 0)
+                return;
+            auto n = l;
+            n.push_back (r == 500 ? silence : r);
+            commitList (s, t, n);
+        });
+    }
+
+    /** Menu of one block of the timeline (position `i` of the track's list in scene `s`). */
+    void blockMenu (int s, int t, int i)
+    {
+        if (! onEditScene)
+            return;
+        const auto l = listOf (s, t);
+        if (i < 0 || i >= static_cast<int> (l.size()))
+            return;
+        const bool full = static_cast<int> (l.size()) >= ksp::model::sp::chainLength;
+        const int silence = silenceFor (t);
+        juce::PopupMenu m;
+        m.addSectionHeader ("Track " + juce::String (t + 1) + ", position " + juce::String (i + 1) + ": pattern " + juce::String (l[static_cast<std::size_t> (i)]));
+        m.addItem (1, "Repeat (duplicate)", ! full);
+        m.addItem (2, silence > 0 ? "Insert silence before (pattern " + juce::String (silence) + ")" : "Insert silence before (no empty pattern)", ! full && silence > 0);
+        m.addItem (3, silence > 0 ? "Insert silence after (pattern " + juce::String (silence) + ")" : "Insert silence after (no empty pattern)", ! full && silence > 0);
+        m.addItem (4, "Move earlier", i > 0);
+        m.addItem (5, "Move later", i + 1 < static_cast<int> (l.size()));
+        m.addItem (6, "Remove from the chain", l.size() > 1);
+        juce::PopupMenu change, add;
+        for (int k = 1; k <= ksp::model::kPatterns; ++k)
+        {
+            change.addItem (100 + k, "Pattern " + juce::String (k), true, l[static_cast<std::size_t> (i)] == k);
+            add.addItem (200 + k, "Pattern " + juce::String (k), ! full);
+        }
+        m.addSeparator();
+        m.addSubMenu ("Change to", change);
+        m.addSubMenu ("Add at the end", add);
+        m.showMenuAsync (juce::PopupMenu::Options(), [this, s, t, i, l, silence] (int r) {
+            if (r == 0)
+                return;
+            auto n = l;
+            const auto at = n.begin() + i;
+            if (r == 1)
+                n.insert (at, l[static_cast<std::size_t> (i)]);
+            else if (r == 2)
+                n.insert (at, silence);
+            else if (r == 3)
+                n.insert (at + 1, silence);
+            else if (r == 4)
+                std::swap (n[static_cast<std::size_t> (i)], n[static_cast<std::size_t> (i - 1)]);
+            else if (r == 5)
+                std::swap (n[static_cast<std::size_t> (i)], n[static_cast<std::size_t> (i + 1)]);
+            else if (r == 6)
+                n.erase (at);
+            else if (r > 100 && r <= 116)
+                n[static_cast<std::size_t> (i)] = r - 100;
+            else if (r > 200 && r <= 216)
+                n.push_back (r - 200);
+            commitList (s, t, n);
+        });
     }
 
     /** The small arrows beside "xN": one pattern more (a copy of the last one) or one less at the end of the chain. */
@@ -692,11 +891,26 @@ private:
         int maxLoop = 0;
         for (int t = 0; t < 4; ++t)
             maxLoop = juce::jmax (maxLoop, loopSteps (map, scene, t));
-        if (maxLoop == 0)
-        {
+        if (maxLoop == 0 || ! map.scenes[static_cast<std::size_t> (scene - 1)].valid)
+        {   // an empty scene: the four tracks as empty lanes; click one to put a pattern (or silence) in it
             g.setColour (palette::inkSoft);
             g.setFont (juce::FontOptions (13.0f));
-            g.drawText ("This scene is not saved. Pick one with SAVED under its number.", r.removeFromTop (40), juce::Justification::centredLeft);
+            g.drawText ("Scene " + juce::String (scene) + " is empty. Click a track (or right-click) to choose what it plays.",
+                        r.removeFromTop (26), juce::Justification::centredLeft);
+            const int lw = 36, lh = 72, lgap = 10;
+            for (int t = 0; t < 4; ++t)
+            {
+                const int y = r.getY() + t * (lh + lgap);
+                trackHeader (g, { r.getX(), y, lw - 4, lh }, t);
+                const juce::Rectangle<int> lane { r.getX() + lw, y, r.getWidth() - lw, lh };
+                drawEmpty (g, lane);
+                const bool on = hover.scene == scene && hover.track == t && hover.index == -2;
+                outline (g, lane, on);
+                g.setColour (palette::inkSoft);
+                g.setFont (juce::FontOptions (12.0f));
+                g.drawText ("empty: click to add a pattern", lane, juce::Justification::centred);
+                hits.push_back ({ lane, { scene, t, 0, -2, false } });
+            }
             return;
         }
 
@@ -720,29 +934,86 @@ private:
             trackHeader (g, { r.getX(), y, labelW - 4, laneH }, t);
             const auto order = playOrder (map, scene, t);
             float x = static_cast<float> (r.getX() + labelW);
-            for (std::size_t i = 0; i < order.size(); ++i)
-            {
+            for (std::size_t i = 0; i < order.size();)
+            {   // a run of equal patterns in a row is drawn as one block with its repeat count
+                std::size_t end = i;
+                while (end + 1 < order.size() && order[end + 1] == order[i])
+                    ++end;
+                const int actual = static_cast<int> (end - i) + 1;
+                const int runStart = static_cast<int> (i);
+                // while the grip is dragged the block is drawn with the new count (and what follows shifts): a live preview
+                const bool dragged = drag.active && drag.scene == scene && drag.track == t && drag.runStart == runStart;
+                const int count = dragged ? drag.count : actual;
                 const auto* p = patternAt (t, order[i]);
                 const int len = p != nullptr ? p->length : 16;
-                const int w = juce::jmax (8, static_cast<int> (static_cast<float> (len) * perStep) - 2);
-                const juce::Rectangle<int> blk { static_cast<int> (x), y, w, laneH };
-                x += static_cast<float> (len) * perStep;
-                hits.push_back ({ blk, { scene, t, order[i], static_cast<int> (i), false } });
-                if (p == nullptr)
-                    drawEmpty (g, blk);
-                else
-                    drawThumb (g, *p, blk, palette::trackColour (t), false);
-                outline (g, blk, hover.scene == scene && hover.track == t && hover.index == static_cast<int> (i));
+                const float oneW = static_cast<float> (len) * perStep;
+                const float runLeft = x;
+                const juce::Rectangle<int> blk { static_cast<int> (x), y, juce::jmax (8, static_cast<int> (oneW * static_cast<float> (count)) - 2), laneH };
+                x += oneW * static_cast<float> (count);
+                hits.push_back ({ blk, { scene, t, order[i], runStart, false } });
+                for (int c = 0; c < count; ++c)
+                {
+                    const juce::Rectangle<int> one { static_cast<int> (runLeft + oneW * static_cast<float> (c)), y,
+                                                     juce::jmax (4, static_cast<int> (oneW) - (c + 1 == count ? 2 : 0)), laneH };
+                    if (p == nullptr)
+                        drawEmpty (g, one);
+                    else
+                        drawThumb (g, *p, one, palette::trackColour (t), false);
+                    if (c > 0)   // a thin divider between the repeats
+                    {
+                        g.setColour (palette::panelDark.withAlpha (0.35f));
+                        g.drawVerticalLine (one.getX(), static_cast<float> (y), static_cast<float> (y + laneH));
+                    }
+                }
+                outline (g, blk, hover.scene == scene && hover.track == t && hover.index == runStart);
+                if (map.scenes[static_cast<std::size_t> (scene - 1)].valid)
+                {   // the end of the run: a grip to drag it longer or shorter
+                    Edge ed;
+                    ed.grip = { blk.getRight() - 7, blk.getY() + 8, 9, blk.getHeight() - 16 };
+                    ed.scene = scene;
+                    ed.track = t;
+                    ed.runStart = runStart;
+                    ed.runCount = actual;
+                    ed.listSize = static_cast<int> (order.size());
+                    ed.runLeft = static_cast<int> (runLeft);
+                    ed.blockW = static_cast<float> (juce::jmax (1, static_cast<int> (oneW)));
+                    edges.push_back (ed);
+                    g.setColour (palette::panelDark.withAlpha (0.55f));
+                    g.fillRoundedRectangle (ed.grip.toFloat().reduced (2.0f, 0.0f), 2.0f);
+                    if (drag.active && drag.scene == scene && drag.track == t && drag.runStart == runStart)
+                    {
+                        g.setColour (palette::lit);
+                        g.drawRect (juce::Rectangle<float> (runLeft, static_cast<float> (y), ed.blockW * static_cast<float> (drag.count), static_cast<float> (laneH)), 2.0f);
+                        g.setFont (juce::FontOptions (12.0f).withStyle ("Bold"));
+                        g.drawText (juce::String (juce::CharPointer_UTF8 ("\xc3\x97")) + juce::String (drag.count),
+                                    juce::Rectangle<int> (static_cast<int> (runLeft) + 24, y + 2, 40, 16), juce::Justification::centredLeft);
+                    }
+                }
                 badge (g, { blk.getX() + 2, blk.getY() + 2, 18, 13 }, juce::String (order[i]), palette::panelDark, palette::segOn);
+                if (count > 1)
+                    badge (g, { blk.getX() + 22, blk.getY() + 2, 26, 13 }, juce::String (juce::CharPointer_UTF8 ("\xc3\x97")) + juce::String (count), palette::lit, palette::panelDark);
                 g.setColour (palette::inkSoft);
                 g.setFont (juce::FontOptions (10.0f));
-                g.drawText (juce::String (len), blk.reduced (3, 1), juce::Justification::bottomRight);
+                g.drawText (juce::String (len) + (count > 1 ? " x " + juce::String (count) : juce::String()), blk.reduced (3, 1), juce::Justification::bottomRight);
+                i = end + 1;
+            }
+            if (map.scenes[static_cast<std::size_t> (scene - 1)].valid && static_cast<int> (r.getRight() - x) > 24)
+            {   // the free space after the chain: click it to add another pattern at the end
+                const juce::Rectangle<int> tail { static_cast<int> (x) + 2, y, r.getRight() - static_cast<int> (x) - 2, laneH };
+                const bool on = hover.scene == scene && hover.track == t && hover.index == -3;
+                g.setColour (palette::trackColour (t).withAlpha (on ? 0.20f : 0.07f));
+                g.fillRect (tail);
+                g.setColour (palette::inkSoft.withAlpha (on ? 0.9f : 0.5f));
+                g.drawRect (tail, 1);
+                g.setFont (juce::FontOptions (12.0f));
+                g.drawText ("+ add a pattern", tail, juce::Justification::centred);
+                hits.push_back ({ tail, { scene, t, 0, -3, false } });
             }
         }
         g.setColour (palette::inkSoft);
         g.setFont (juce::FontOptions (11.5f));
-        g.drawFittedText ("Blocks are to scale, in steps. A chain plays its patterns in order and loops; a repeat is the same pattern listed twice. Tracks with "
-                          "different lengths drift against each other.",
+        g.drawFittedText ("Drag the grip on a block's right edge: repeats.   Click a block: its menu.   Click the free space: add a pattern.   "
+                          "Right-click a scene number: copy, paste, clear.   Blocks are to scale, in steps.",
                           r.withTop (r.getY() + 4 * (laneH + gap) + 2), juce::Justification::topLeft, 3);
     }
 
@@ -814,7 +1085,7 @@ private:
                 return;
             }
             g.setColour (palette::inkSoft);
-            g.drawFittedText ("Hover or click a cell to see the pattern, its length, notes and chain.", r, juce::Justification::topLeft, 4);
+            g.drawFittedText ("Hover a block to see its pattern, length, notes and chain.", r, juce::Justification::topLeft, 4);
             return;
         }
         const auto* p = patternAt (hover.track, hover.pat);
@@ -923,7 +1194,7 @@ private:
             steps = juce::jmax (steps, loopSteps (map, scene, t));
         g.setColour (palette::inkSoft);
         g.setFont (juce::FontOptions (12.0f));
-        g.drawFittedText ("Plays its chains for " + juce::String (steps / 16.0, 1) + " bars before it repeats. Hover a cell for its pattern; right-click the number to copy, paste or clear.",
+        g.drawFittedText ("Plays its chains for " + juce::String (steps / 16.0, 1) + " bars before it repeats. Hover a block for its pattern.",
                           r, juce::Justification::topLeft, 4);
     }
 
@@ -932,8 +1203,19 @@ private:
     std::optional<ksp::model::Scene> clipboard;
     ksp::model::ProjectMap map;
     juce::String title { "Project" };
-    int view = 0, scene = 1;
+    int view = 1, scene = 1;
     bool scenePicked = false;
+    // timeline: the grips at the right edge of each run of equal patterns, and the drag in progress
+    struct Edge
+    {
+        juce::Rectangle<int> grip;
+        int scene = 0, track = 0, runStart = 0, runCount = 1, listSize = 1, runLeft = 0, count = 1;
+        float blockW = 1.0f;
+        bool active = false;
+    };
+    std::vector<Edge> edges;
+    Edge drag;
+
     int scrollX = 0, maxScrollX = 0, dragStartX = 0, dragStartScroll = 0;
     bool draggingBar = false;
     juce::Rectangle<int> scrollTrack, scrollThumb;
