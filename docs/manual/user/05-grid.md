@@ -55,7 +55,10 @@ octave, the knobs, Rec and Copy do not apply to drums. The KeyStep holds up to 1
 
 The **Drums** button on card 1 switches track 1 between drum and sequencer mode (lit = drums). Both kinds of patterns
 stay stored, so switching back loses nothing. **Clear** (left of *Copy to*) empties the pattern you are looking at,
-notes or drum hits. Like every edit, both reach the KeyStep when you **Write**.
+notes or drum hits. **Edit** (next to Clear) works on a note pattern as a whole: **Nudge** one step left or right (the steps
+wrap around inside the pattern length), **Reverse** (plays it backwards) and **Invert pitches** (mirrors the notes around the
+middle of their range). Each one is undone by itself: nudge the other way, or run Reverse or Invert again. Like every edit, they
+reach the KeyStep when you **Write**.
 
 ## Hover card
 

@@ -25,6 +25,7 @@
 #include "Model/Overdub.h"
 #include "Model/Pattern.h"
 #include "Model/NoteMove.h"
+#include "Model/PatternOps.h"
 
 namespace
 {
@@ -1034,7 +1035,7 @@ class MainComponent : public juce::Component, private juce::Timer
 public:
     MainComponent()
     {
-        for (auto* b : { &openButton, &readButton, &syncButton, &octDown, &octUp, &copyButton, &clearButton, &drumModeButton, &recButton, &undoTakeButton, &toolsButton, &libraryButton, &saveButton, &saveAsButton })
+        for (auto* b : { &openButton, &readButton, &syncButton, &octDown, &octUp, &copyButton, &clearButton, &opsButton, &drumModeButton, &recButton, &undoTakeButton, &toolsButton, &libraryButton, &saveButton, &saveAsButton })
             addAndMakeVisible (*b);
         for (auto* c : { &projectBox, &patternBox, &lengthBox, &rootBox, &scaleBox, &copyTrackBox, &copyPatBox, &recChannelBox, &stepBox })
             addAndMakeVisible (*c);
@@ -1100,6 +1101,9 @@ public:
         syncButton.onClick = [this] { if (haveProject && fwReadOnly.isEmpty()) confirmWrite(); else readFromDevice(); };
         copyButton.onClick = [this] { copyPattern(); };
         clearButton.onClick = [this] { clearPattern(); };
+        opsButton.setButtonText ("Edit");
+        opsButton.setTooltip ("Nudge, reverse or invert the pattern shown");
+        opsButton.onClick = [this] { patternOpsMenu(); };
         drumModeButton.onClick = [this] { toggleDrumMode(); };
         toolsButton.onClick = [this] { showToolsMenu(); };
         libraryButton.onClick = [this] { showLibrary(); };
@@ -1265,16 +1269,18 @@ public:
             row.removeFromLeft (6);
         }
         octDown.setBounds (row.removeFromLeft (28));
-        octLabel.setBounds (row.removeFromLeft (110));
+        octLabel.setBounds (row.removeFromLeft (90));
         octUp.setBounds (row.removeFromLeft (28));
         row.removeFromLeft (16);
-        clearButton.setBounds (row.removeFromLeft (52));
+        clearButton.setBounds (row.removeFromLeft (48));
         row.removeFromLeft (6);
-        copyButton.setBounds (row.removeFromLeft (70));
+        opsButton.setBounds (row.removeFromLeft (44));
         row.removeFromLeft (4);
-        copyTrackBox.setBounds (row.removeFromLeft (84));
+        copyButton.setBounds (row.removeFromLeft (58));
         row.removeFromLeft (4);
-        copyPatBox.setBounds (row.removeFromLeft (100));
+        copyTrackBox.setBounds (row.removeFromLeft (70));
+        row.removeFromLeft (4);
+        copyPatBox.setBounds (row.removeFromLeft (80));
         bpmDisplay.setBounds (row.removeFromRight (130));
         row.removeFromRight (8);
         lenDisplay.setBounds (row.removeFromRight (100));
@@ -1390,7 +1396,7 @@ private:
     ksp::model::Pattern takeBefore;              // the pattern before the last take, for Undo take
     bool haveTake = false;
 
-    juce::TextButton clearButton, drumModeButton;
+    juce::TextButton clearButton, opsButton, drumModeButton;
     juce::TextButton libraryButton, saveButton, saveAsButton, copyButton, openButton, readButton, syncButton, octDown, octUp, recButton, undoTakeButton;
     ksp::ui::TrackTabs trackTabs;
     ksp::ui::SevenSegDisplay lenDisplay { 2 }, bpmDisplay { 5 };
@@ -2643,6 +2649,43 @@ private:
         }
         markEdited();
         say ("Pattern cleared (not written yet).");
+    }
+
+    /** The Edit button: whole-pattern operations (Source/Model/PatternOps.h), a normal edit like Clear. Each one is its own undo
+        (nudge the other way, run reverse or invert again). */
+    void patternOpsMenu()
+    {
+        if (! haveProject)
+            return;
+        if (drumView)
+        {
+            say ("Nudge, reverse and invert work on note patterns, not on drum lanes.");
+            return;
+        }
+        juce::PopupMenu m;
+        m.addItem (1, "Nudge left one step");
+        m.addItem (2, "Nudge right one step");
+        m.addItem (3, "Reverse");
+        m.addItem (4, "Invert pitches");
+        m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&opsButton), [this] (int r)
+        {
+            if (r == 0)
+                return;
+            bool ok = true;
+            if (r == 1) ksp::model::nudgePattern (pattern, -1);
+            else if (r == 2) ksp::model::nudgePattern (pattern, 1);
+            else if (r == 3) ksp::model::reversePattern (pattern);
+            else ok = ksp::model::invertPattern (pattern);
+            if (! ok)
+            {
+                say ("The pattern has no notes.");
+                return;
+            }
+            showPattern();
+            markEdited();
+            say (juce::String (r == 1 ? "Nudged left" : r == 2 ? "Nudged right" : r == 3 ? "Reversed" : "Inverted")
+                 + " (not written yet; repeat the opposite to undo).");
+        });
     }
 
     /** Switches track 1 between drum and sequencer mode in the project. Both kinds of patterns stay stored; the grid of
