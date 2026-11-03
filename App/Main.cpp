@@ -1036,7 +1036,7 @@ class MainComponent : public juce::Component, private juce::Timer
 public:
     MainComponent()
     {
-        for (auto* b : { &openButton, &readButton, &syncButton, &octDown, &octUp, &copyButton, &clearButton, &opsButton, &drumModeButton, &recButton, &undoTakeButton, &toolsButton, &libraryButton, &saveButton, &saveAsButton })
+        for (auto* b : { &openButton, &readButton, &syncButton, &octDown, &octUp, &copyButton, &clearButton, &opsButton, &recButton, &undoTakeButton, &toolsButton, &libraryButton, &saveButton, &saveAsButton })
             addAndMakeVisible (*b);
         for (auto* c : { &projectBox, &patternBox, &lengthBox, &rootBox, &scaleBox, &copyTrackBox, &copyPatBox, &recChannelBox, &stepBox })
             addAndMakeVisible (*c);
@@ -1065,9 +1065,6 @@ public:
         copyButton.setButtonText ("Copy to");
         clearButton.setButtonText ("Clear");
         clearButton.setTooltip ("Empty the pattern shown (notes or drum hits)");
-        drumModeButton.setButtonText ("Drums");
-        drumModeButton.setClickingTogglesState (false);
-        drumModeButton.setTooltip ("Track 1 as a drum track (lit) or a sequencer track");
         toolsButton.setButtonText ("Tools");
         libraryButton.setButtonText ("Library...");
         saveButton.setButtonText ("Save");
@@ -1102,10 +1099,42 @@ public:
         syncButton.onClick = [this] { if (haveProject && fwReadOnly.isEmpty()) confirmWrite(); else readFromDevice(); };
         copyButton.onClick = [this] { copyPattern(); };
         clearButton.onClick = [this] { clearPattern(); };
-        opsButton.setButtonText ("Edit");
-        opsButton.setTooltip ("Nudge, reverse or invert the pattern shown; arpeggiator settings of tracks 2-4");
+        opsButton.setButtonText ("Ops");
+        opsButton.setTooltip ("Pattern operations: nudge, reverse or invert the pattern shown");
         opsButton.onClick = [this] { patternOpsMenu(); };
-        drumModeButton.onClick = [this] { toggleDrumMode(); };
+        for (int k = 0; k < 3; ++k)
+        {
+            const int t = k + 2;
+            const auto i = static_cast<std::size_t> (k);
+            modeToggle[i + 1].setButtonText ("Arp");
+            modeToggle[i + 1].setTooltip ("Track " + juce::String (t) + " plays its arpeggiator (lit)");
+            modeToggle[i + 1].onClick = [this, t] { editArp (t, [] (ksp::model::ArpSettings& a) { a.on = true; }); refreshCards(); };
+            seqToggle[i + 1].onClick = [this, t] { editArp (t, [] (ksp::model::ArpSettings& a) { a.on = false; }); refreshCards(); };
+            for (int m = 0; m < ksp::model::ap::kModes; ++m)
+                arpModeBox[i].addItem (ksp::model::ap::modeNames[m], m + 1);
+            for (int o = ksp::model::ap::kOctaveMin; o <= ksp::model::ap::kOctaveMax; ++o)
+                arpOctBox[i].addItem ((o > 0 ? "+" : "") + juce::String (o), o - ksp::model::ap::kOctaveMin + 1);
+            for (int d = 0; d < ksp::model::ap::kDivisions; ++d)
+                arpDivBox[i].addItem (ksp::model::ap::divisionShortNames[d], d + 1);
+            arpModeBox[i].setTooltip ("Arp mode of the pattern shown (selected track)");
+            arpOctBox[i].setTooltip ("Arp octave range of the pattern shown (selected track)");
+            arpDivBox[i].setTooltip ("Arp time division of this track (T = triplet)");
+            arpModeBox[i].onChange = [this, t, i] { if (! arpUpdating) editArp (t, [this, i] (ksp::model::ArpSettings& a) { a.mode = arpModeBox[i].getSelectedId() - 1; }); };
+            arpOctBox[i].onChange = [this, t, i] { if (! arpUpdating) editArp (t, [this, i] (ksp::model::ArpSettings& a) { a.octave = arpOctBox[i].getSelectedId() - 1 + ksp::model::ap::kOctaveMin; }); };
+            arpDivBox[i].onChange = [this, t, i] { if (! arpUpdating) editArp (t, [this, i] (ksp::model::ArpSettings& a) { a.division = arpDivBox[i].getSelectedId() - 1; }); };
+            auto& sw = arpSwingSlider[i];
+            sw.setSliderStyle (juce::Slider::LinearBar);
+            sw.setColour (juce::Slider::trackColourId, ksp::ui::palette::lit.withAlpha (0.55f));
+            sw.setColour (juce::Slider::textBoxTextColourId, ksp::ui::palette::ink);
+            sw.setColour (juce::Slider::textBoxOutlineColourId, ksp::ui::palette::edge);
+            sw.setRange (ksp::model::ap::kSwingMin, ksp::model::ap::kSwingMax, 1.0);
+            sw.setTextValueSuffix (" % sw");
+            sw.setTooltip ("Arp swing of this track: 50 % is straight");
+            sw.onValueChange = [this, t, i] { if (! arpUpdating) editArp (t, [this, i] (ksp::model::ArpSettings& a) { a.swing = static_cast<int> (arpSwingSlider[i].getValue()); }); };
+            for (juce::Component* c : { static_cast<juce::Component*> (&arpModeBox[i]), static_cast<juce::Component*> (&arpOctBox[i]),
+                                        static_cast<juce::Component*> (&arpDivBox[i]), static_cast<juce::Component*> (&arpSwingSlider[i]) })
+                addAndMakeVisible (*c);
+        }
         toolsButton.onClick = [this] { showToolsMenu(); };
         libraryButton.onClick = [this] { showLibrary(); };
         saveButton.onClick = [this] { saveToLibrary (false); };
@@ -1192,19 +1221,46 @@ public:
     /** The selected card full, the rest dimmed (the dB readouts follow the sliders). */
     void refreshCards()
     {
-        drumModeButton.setToggleState (haveProject && ksp::model::isDrumMode (project), juce::dontSendNotification);
-        drumModeButton.setEnabled (haveProject);
+        {
+            const bool drums = haveProject && ksp::model::isDrumMode (project);
+            modeToggle[0].setToggleState (drums, juce::dontSendNotification);
+            seqToggle[0].setToggleState (haveProject && ! drums, juce::dontSendNotification);
+            modeToggle[0].setEnabled (haveProject);
+            seqToggle[0].setEnabled (haveProject);
+        }
+        arpUpdating = true;
+        for (int k = 0; k < 3; ++k)
+        {
+            const auto i = static_cast<std::size_t> (k);
+            const auto a = haveProject ? ksp::model::readArp (project, k + 2, patNo()) : ksp::model::ArpSettings{};
+            const bool sel = track() == k + 2;
+            modeToggle[i + 1].setToggleState (a.valid && a.on, juce::dontSendNotification);
+            seqToggle[i + 1].setToggleState (a.valid && ! a.on, juce::dontSendNotification);
+            modeToggle[i + 1].setEnabled (a.valid);
+            seqToggle[i + 1].setEnabled (a.valid);
+            arpModeBox[i].setSelectedId (a.mode + 1, juce::dontSendNotification);
+            arpOctBox[i].setSelectedId (a.octave - ksp::model::ap::kOctaveMin + 1, juce::dontSendNotification);
+            arpDivBox[i].setSelectedId (a.division + 1, juce::dontSendNotification);
+            arpSwingSlider[i].setValue (a.swing, juce::dontSendNotification);
+            arpModeBox[i].setEnabled (a.valid && a.on && sel);   // mode and octave belong to a pattern: the selected track's pattern
+            arpOctBox[i].setEnabled (a.valid && a.on && sel);
+            arpDivBox[i].setEnabled (a.valid && a.on);
+            arpSwingSlider[i].setEnabled (a.valid && a.on);
+        }
+        arpUpdating = false;
         for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
         {
             const auto i = static_cast<std::size_t> (t);
             const float a = t == track() - 1 ? 1.0f : 0.75f;
             for (juce::Component* c : { static_cast<juce::Component*> (&instLabel[i]), static_cast<juce::Component*> (&instBox[i]),
                                         static_cast<juce::Component*> (&editButton[i]), static_cast<juce::Component*> (&muteToggle[i]), static_cast<juce::Component*> (&soloToggle[i]),
-                                        static_cast<juce::Component*> (&volSlider[i]), static_cast<juce::Component*> (&dbLabel[i]) })
+                                        static_cast<juce::Component*> (&volSlider[i]), static_cast<juce::Component*> (&dbLabel[i]),
+                                        static_cast<juce::Component*> (&seqToggle[i]), static_cast<juce::Component*> (&modeToggle[i]) })
                 c->setAlpha (a);
             volSlider[i].setColour (juce::Slider::trackColourId, ksp::ui::palette::ink);
             const double v = volSlider[i].getValue();
             dbLabel[i].setText (v <= 0.001 ? juce::String ("-inf") : juce::String (20.0 * std::log10 (v), 1) + " dB", juce::dontSendNotification);
+            volSlider[i].setTooltip ("Track volume: " + dbLabel[i].getText());
         }
         repaint();
     }
@@ -1309,20 +1365,36 @@ public:
             cell.removeFromTop (4);
             instLabel[i].setBounds (line1.removeFromLeft (26));
             line1.removeFromLeft (6);
-            if (t == 0)   // track 1 can be the drum track: its switch sits on the top line, so the volume keeps its room
-            {
-                drumModeButton.setBounds (line1.removeFromRight (60));
-                line1.removeFromRight (4);
-            }
             instBox[i].setBounds (line1);
-            soloToggle[i].setBounds (cell.removeFromRight (36));
-            cell.removeFromRight (4);
-            muteToggle[i].setBounds (cell.removeFromRight (36));
-            cell.removeFromRight (4);
-            editButton[i].setBounds (cell.removeFromRight (46));
-            cell.removeFromRight (4);
-            dbLabel[i].setBounds (cell.removeFromRight (54));
-            volSlider[i].setBounds (cell);
+            // volume as a vertical fader on the left; to its right a grid of keys of one size, like the KeyStep's: Seq and Arp (Drum on
+            // track 1) above, M and S below, and the plugin's edit key tall at the end
+            auto body = cell.removeFromTop (64);
+            volSlider[i].setBounds (body.removeFromLeft (26));
+            dbLabel[i].setBounds ({});
+            body.removeFromLeft (6);
+            const int kw = (body.getWidth() - 8) / 3;
+            auto colA = body.removeFromLeft (kw);
+            body.removeFromLeft (4);
+            auto colB = body.removeFromLeft (kw);
+            body.removeFromLeft (4);
+            editButton[i].setBounds (body);
+            seqToggle[i].setBounds (colA.removeFromTop (30));
+            modeToggle[i].setBounds (colB.removeFromTop (30));
+            muteToggle[i].setBounds (colA.removeFromBottom (30));
+            soloToggle[i].setBounds (colB.removeFromBottom (30));
+            if (t > 0)
+            {
+                cell.removeFromTop (6);
+                auto line3 = cell.removeFromTop (26);
+                const auto k = i - 1;
+                arpModeBox[k].setBounds (line3.removeFromLeft (66));
+                line3.removeFromLeft (4);
+                arpOctBox[k].setBounds (line3.removeFromLeft (54));
+                line3.removeFromLeft (4);
+                arpDivBox[k].setBounds (line3.removeFromLeft (66));
+                line3.removeFromLeft (4);
+                arpSwingSlider[k].setBounds (line3);
+            }
         }
         r.removeFromBottom (6);
         auto recRow = r.removeFromBottom (28);
@@ -1362,12 +1434,16 @@ private:
     std::vector<juce::PluginDescription> instChoices;   // what the boxes offer: ids 2.. are indexes + 2
     std::array<juce::Label, 4> instLabel;
     std::array<juce::ComboBox, 4> instBox;
-    std::array<juce::TextButton, 4> editButton;
+    std::array<ksp::ui::EditIconButton, 4> editButton;
     std::array<juce::ToggleButton, 4> muteToggle, soloToggle;
     std::array<juce::Slider, 4> volSlider;
+    // arpeggiator of tracks 2-4 (index track - 2): on/off, mode and octave of the pattern shown, division and swing of the track
+    std::array<juce::ToggleButton, 4> seqToggle, modeToggle;   // Seq and Arp (Drum on track 1): the track mode, lit when on
+    std::array<juce::ComboBox, 3> arpModeBox, arpOctBox, arpDivBox;
+    std::array<juce::Slider, 3> arpSwingSlider;
     std::array<juce::Label, 4> dbLabel;
     std::array<juce::Rectangle<int>, 4> cardRect;
-    static constexpr int cardHeight = 78;
+    static constexpr int cardHeight = 140;
     std::array<juce::String, 4> missingName;             // a plugin of the project that is not on this machine: kept untouched
     juce::TextButton toolsButton, mapButton, fxButton;   // FX is also in Tools; on the bar so the effects are easy to find
     ksp::ui::WandButton generateButton;   // a magic wand on it: the way to new music
@@ -1397,7 +1473,7 @@ private:
     ksp::model::Pattern takeBefore;              // the pattern before the last take, for Undo take
     bool haveTake = false;
 
-    juce::TextButton clearButton, opsButton, drumModeButton;
+    juce::TextButton clearButton, opsButton;
     juce::TextButton libraryButton, saveButton, saveAsButton, copyButton, openButton, readButton, syncButton, octDown, octUp, recButton, undoTakeButton;
     ksp::ui::TrackTabs trackTabs;
     ksp::ui::SevenSegDisplay lenDisplay { 2 }, bpmDisplay { 5 };
@@ -1508,6 +1584,7 @@ private:
         if (lowest < 128)
             lowPitch = std::min (96, lowest / 12 * 12);
         showPattern();
+        refreshCards();   // the arp mode and octave of the cards follow the pattern shown
         say (pattern.valid ? "Pattern loaded." : "Empty pattern (default).");
         if (pattern.unreadable > 0)
             say ("Warning: " + juce::String (pattern.unreadable) + " note slot(s) could not be read from the backup.");
@@ -1750,8 +1827,19 @@ private:
             const auto i = static_cast<std::size_t> (t);
             for (juce::Component* c : { static_cast<juce::Component*> (&instLabel[i]), static_cast<juce::Component*> (&instBox[i]),
                                         static_cast<juce::Component*> (&editButton[i]), static_cast<juce::Component*> (&muteToggle[i]), static_cast<juce::Component*> (&soloToggle[i]),
-                                        static_cast<juce::Component*> (&volSlider[i]), static_cast<juce::Component*> (&dbLabel[i]) })
+                                        static_cast<juce::Component*> (&volSlider[i]), static_cast<juce::Component*> (&dbLabel[i]),
+                                        static_cast<juce::Component*> (&seqToggle[i]), static_cast<juce::Component*> (&modeToggle[i]) })
                 addAndMakeVisible (*c);
+            dbLabel[i].setVisible (false);   // the level shows in the fader's tooltip
+            seqToggle[i].setButtonText ("Seq");
+            modeToggle[i].setButtonText (t == 0 ? "Drum" : "Arp");
+            seqToggle[i].setTooltip (t == 0 ? "Track 1 plays its sequencer" : "Track " + juce::String (t + 1) + " plays its sequencer");
+            if (t == 0)
+            {
+                modeToggle[0].setTooltip ("Track 1 is a drum track (lit)");
+                seqToggle[0].onClick = [this] { toggleDrumMode (0); refreshCards(); };
+                modeToggle[0].onClick = [this] { toggleDrumMode (1); refreshCards(); };
+            }
             instLabel[i].setText (juce::String (t + 1), juce::dontSendNotification);
             instLabel[i].setJustificationType (juce::Justification::centred);
             instLabel[i].setColour (juce::Label::textColourId, juce::Colours::white);
@@ -1763,10 +1851,10 @@ private:
             dbLabel[i].setJustificationType (juce::Justification::centredRight);
             dbLabel[i].setFont (juce::FontOptions (12.0f));
             dbLabel[i].setInterceptsMouseClicks (false, false);
-            editButton[i].setButtonText ("Edit");
+            editButton[i].setTooltip ("Open the plugin's own window");
             muteToggle[i].setButtonText ("M");
             soloToggle[i].setButtonText ("S");
-            volSlider[i].setSliderStyle (juce::Slider::LinearHorizontal);
+            volSlider[i].setSliderStyle (juce::Slider::LinearVertical);
             volSlider[i].setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
             volSlider[i].setRange (0.0, 1.0, 0.01);
             volSlider[i].setValue (0.8, juce::dontSendNotification);
@@ -1778,8 +1866,13 @@ private:
             // a click anywhere on a card, its controls included, selects that track (mouseDown below)
             for (juce::Component* c : { static_cast<juce::Component*> (&instBox[i]), static_cast<juce::Component*> (&editButton[i]),
                                         static_cast<juce::Component*> (&muteToggle[i]), static_cast<juce::Component*> (&soloToggle[i]),
-                                        static_cast<juce::Component*> (&volSlider[i]) })
+                                        static_cast<juce::Component*> (&volSlider[i]), static_cast<juce::Component*> (&seqToggle[i]),
+                                        static_cast<juce::Component*> (&modeToggle[i]) })
                 c->addMouseListener (this, true);
+            if (t > 0)
+                for (juce::Component* c : { static_cast<juce::Component*> (&arpModeBox[i - 1]), static_cast<juce::Component*> (&arpOctBox[i - 1]),
+                                            static_cast<juce::Component*> (&arpDivBox[i - 1]), static_cast<juce::Component*> (&arpSwingSlider[i - 1]) })
+                    c->addMouseListener (this, true);
         }
         addAndMakeVisible (meterLabel);
         meterLabel.setText ("Audio off", juce::dontSendNotification);
@@ -2652,7 +2745,32 @@ private:
         say ("Pattern cleared (not written yet).");
     }
 
-    /** The Edit button: whole-pattern operations (Source/Model/PatternOps.h), a normal edit like Clear. Each one is its own undo
+    bool arpUpdating = false;
+
+    /** Changes the arpeggiator settings of track 2..4 (mode and octave for the pattern shown) in the project, like any edit. */
+    void editArp (int t, const std::function<void (ksp::model::ArpSettings&)>& change)
+    {
+        if (! haveProject)
+            return;
+        commitPattern();
+        auto a = ksp::model::readArp (project, t, patNo());
+        if (! a.valid)
+        {
+            say ("This project has no arpeggiator values for track " + juce::String (t) + ".");
+            return;
+        }
+        change (a);
+        if (! ksp::model::writeArp (project, t, patNo(), a))
+        {
+            say ("Could not change the arpeggiator of track " + juce::String (t) + ".");
+            return;
+        }
+        noteChanged();
+        refreshCards();
+        say ("Track " + juce::String (t) + (a.on ? " arpeggiator" : " sequencer") + " changed (not written yet).");
+    }
+
+    /** The Ops button: whole-pattern operations (Source/Model/PatternOps.h), a normal edit like Clear. Each one is its own undo
         (nudge the other way, run reverse or invert again). */
     void patternOpsMenu()
     {
@@ -2668,48 +2786,10 @@ private:
         m.addItem (2, "Nudge right one step");
         m.addItem (3, "Reverse");
         m.addItem (4, "Invert pitches");
-        // arpeggiator of tracks 2-4 (read from the project; mode and octave belong to the pattern, swing to the track)
-        const auto arp = track() >= 2 ? ksp::model::readArp (project, track(), patNo()) : ksp::model::ArpSettings{};
-        if (arp.valid)
-        {
-            m.addSeparator();
-            m.addItem (500, "Arp on (this track)", true, arp.on);
-            juce::PopupMenu modes, octaves, swings, divisions;
-            for (int i = 0; i < ksp::model::ap::kModes; ++i)
-                modes.addItem (100 + i, ksp::model::ap::modeNames[i], true, arp.mode == i);
-            for (int o = ksp::model::ap::kOctaveMin; o <= ksp::model::ap::kOctaveMax; ++o)
-                octaves.addItem (200 + o + 1, (o > 0 ? "+" : "") + juce::String (o), true, arp.octave == o);
-            for (int sw = ksp::model::ap::kSwingMin; sw <= ksp::model::ap::kSwingMax; sw += 5)
-                swings.addItem (300 + sw, juce::String (sw) + " %", true, arp.swing == sw);
-            for (int d = 0; d < ksp::model::ap::kDivisions; ++d)
-                divisions.addItem (400 + d, ksp::model::ap::divisionNames[d], true, arp.division == d);
-            m.addSubMenu ("Arp mode (this pattern)", modes);
-            m.addSubMenu ("Arp octave (this pattern)", octaves);
-            m.addSubMenu ("Arp swing (this track)", swings);
-            m.addSubMenu ("Arp time division (this track)", divisions);
-        }
-        m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&opsButton), [this, arp] (int r)
+        m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&opsButton), [this] (int r)
         {
             if (r == 0)
                 return;
-            if (r >= 100)
-            {
-                commitPattern();
-                auto a = arp;
-                if (r < 200) a.mode = r - 100;
-                else if (r < 300) a.octave = r - 200 - 1;
-                else if (r < 400) a.swing = r - 300;
-                else if (r < 500) a.division = r - 400;
-                else a.on = ! a.on;
-                if (! ksp::model::writeArp (project, track(), patNo(), a))
-                {
-                    say ("Could not change the arpeggiator of this track.");
-                    return;
-                }
-                noteChanged();
-                say ("Arpeggiator of track " + juce::String (track()) + " changed (not written yet; the KeyStep needs the arp on to use it).");
-                return;
-            }
             bool ok = true;
             if (r == 1) ksp::model::nudgePattern (pattern, -1);
             else if (r == 2) ksp::model::nudgePattern (pattern, 1);
@@ -2729,13 +2809,16 @@ private:
 
     /** Switches track 1 between drum and sequencer mode in the project. Both kinds of patterns stay stored; the grid of
         track 1 follows the mode. */
-    void toggleDrumMode()
+    /** `want` 1 = drums, 0 = sequencer, -1 = switch. */
+    void toggleDrumMode (int want = -1)
     {
         if (! haveProject)
             return;
+        const bool drums = want < 0 ? ! ksp::model::isDrumMode (project) : want == 1;
+        if (drums == ksp::model::isDrumMode (project))
+            return;
         commitPattern();
         edited = false;
-        const bool drums = ! ksp::model::isDrumMode (project);
         if (! ksp::model::setDrumMode (project, drums))
         {
             say ("This project has no drum mode value for track 1.");

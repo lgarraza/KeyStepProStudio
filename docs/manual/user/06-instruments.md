@@ -30,8 +30,9 @@ T4 red) so you can tell tracks apart at a glance. The card of the selected track
 others are dimmed. Click anywhere on a card (its controls too) to select its track; the pointer turns into a hand over the cards you can select. Each card has:
 
 - a dot with the track number and the instrument list,
-- a volume slider with its level in dB,
-- **Edit**, which opens the plugin's own window,
+- a vertical volume fader on the left (hover it for the level in dB),
+- **Seq** and **Arp** keys (**Seq** and **Drum** on track 1), lit for the mode the track is in; see the grid chapter,
+- a key with three little faders, which opens the plugin's own window,
 - **M**, which mutes (lights red), and **S**, which solos (lights blue): while any track is soloed only the soloed tracks sound (you can solo
   several).
 
