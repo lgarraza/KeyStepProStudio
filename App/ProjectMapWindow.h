@@ -127,6 +127,15 @@ public:
         pick (e.getPosition(), false);
     }
     void mouseDown (const juce::MouseEvent& e) override { pick (e.getPosition(), true); }
+    void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& w) override
+    {
+        if (view != 0 || maxScrollX <= 0)
+            return;
+        const float d = std::abs (w.deltaX) > std::abs (w.deltaY) ? w.deltaX : w.deltaY;
+        scrollX = juce::jlimit (0, maxScrollX, scrollX - static_cast<int> (d * 400.0f));
+        hits.clear();
+        repaint();
+    }
     void mouseExit (const juce::MouseEvent&) override { setMouseCursor (juce::MouseCursor::NormalCursor); }
 
     void mouseUp (const juce::MouseEvent& e) override
@@ -473,27 +482,37 @@ private:
     {
         using namespace ksp::model;
         const int labelW = 36, headH = 36, gap = 3;
-        const int cw = (r.getWidth() - labelW - gap * kScenes) / kScenes;
+        const int minCell = 60;   // narrower than this the window scrolls sideways (wheel, or Shift + wheel)
+        const int cw = juce::jmax (minCell, (r.getWidth() - labelW - gap * kScenes) / kScenes);
+        const int contentW = labelW + kScenes * (cw + gap);
+        maxScrollX = juce::jmax (0, contentW - r.getWidth());
+        scrollX = juce::jlimit (0, maxScrollX, scrollX);
+        const int ox = r.getX() - scrollX;
+        const auto viewArea = r.withTrimmedLeft (labelW);
         const int ch = juce::jmax (40, juce::jmin (96, (r.getHeight() - headH - 40 - gap * 4) / 4));
+        g.saveState();
+        g.reduceClipRegion (viewArea);
         {   // the selected scene (click its number) keeps a column band
             g.setColour (palette::lit.withAlpha (0.24f));
-            g.fillRect (r.getX() + labelW + (scene - 1) * (cw + gap) - 2, r.getY(), cw + 4, headH + 4 * (ch + gap));
+            g.fillRect (ox + labelW + (scene - 1) * (cw + gap) - 2, r.getY(), cw + 4, headH + 4 * (ch + gap));
         }
         if (hover.scene > 0)   // the scene's column and the track's row stand out
         {
             g.setColour (palette::lit.withAlpha (0.16f));
-            g.fillRect (r.getX() + labelW + (hover.scene - 1) * (cw + gap) - 2, r.getY(), cw + 4, headH + 4 * (ch + gap));
+            g.fillRect (ox + labelW + (hover.scene - 1) * (cw + gap) - 2, r.getY(), cw + 4, headH + 4 * (ch + gap));
         }
         g.setColour (palette::blue);
         g.setFont (juce::FontOptions (9.0f).withStyle ("Bold"));
         g.drawText ("SCENE", r.getX(), r.getY(), labelW - 4, headH - 4, juce::Justification::centred);
         for (int s = 1; s <= kScenes; ++s)
         {
-            const int x = r.getX() + labelW + (s - 1) * (cw + gap);
+            const int x = ox + labelW + (s - 1) * (cw + gap);
             const juce::Rectangle<int> head { x, r.getY(), cw, headH - 4 };
             sceneHeader (g, head, s, s == hover.scene || s == scene);
-            hits.push_back ({ head, { s, -1, 0, -1, true } });
+            if (const auto vis = head.getIntersection (viewArea); ! vis.isEmpty())
+                hits.push_back ({ vis, { s, -1, 0, -1, true } });
         }
+        g.restoreState();
         for (int t = 0; t < 4; ++t)
         {
             const int y = r.getY() + headH + t * (ch + gap);
@@ -502,10 +521,13 @@ private:
                 g.setColour (palette::trackColour (t).withAlpha (0.22f));
                 g.fillRect (r.getX(), y - 2, r.getWidth(), ch + 4);
             }
-            trackHeader (g, { r.getX(), y, labelW - 4, ch }, t);
+            g.saveState();
+            g.reduceClipRegion (viewArea);
             for (int s = 1; s <= kScenes; ++s)
             {
-                const juce::Rectangle<int> cell { r.getX() + labelW + (s - 1) * (cw + gap), y, cw, ch };
+                const juce::Rectangle<int> cell { ox + labelW + (s - 1) * (cw + gap), y, cw, ch };
+                if (! cell.intersects (viewArea))
+                    continue;
                 const auto& sc = map.scenes[static_cast<std::size_t> (s - 1)];
                 const int pn = sc.pattern[static_cast<std::size_t> (t)];
                 const auto* p = sc.valid ? patternAt (t, pn) : nullptr;
@@ -515,10 +537,10 @@ private:
                 const juce::Rectangle<int> countBox { cell.getRight() - boxW - 2, cell.getBottom() - stripH - 19, boxW, 17 };
                 if (stepper)   // before the cell's own hit: the first rectangle that contains the mouse wins
                 {
-                    hits.push_back ({ countBox.withWidth (12), { s, t, pn, -1, false, -1 } });
-                    hits.push_back ({ countBox.withTrimmedLeft (countBox.getWidth() - 12), { s, t, pn, -1, false, 1 } });
+                    hits.push_back ({ countBox.withWidth (12).getIntersection (viewArea), { s, t, pn, -1, false, -1 } });
+                    hits.push_back ({ countBox.withTrimmedLeft (countBox.getWidth() - 12).getIntersection (viewArea), { s, t, pn, -1, false, 1 } });
                 }
-                hits.push_back ({ cell, { s, t, p != nullptr ? pn : 0, -1, false } });
+                hits.push_back ({ cell.getIntersection (viewArea), { s, t, p != nullptr ? pn : 0, -1, false } });
                 const bool on = hover.scene == s && hover.track == t;
                 if (p == nullptr)
                 {
@@ -544,6 +566,7 @@ private:
                         g.fillRect (x + 1.0f, static_cast<float> (cell.getBottom() - stripH + 1), juce::jmax (1.0f, w - 2.0f), static_cast<float> (stripH - 2));
                         x += w;
                     }
+                }
                 if (stepper)   // [<] xN [>]: the arrows shorten / lengthen the chain
                 {
                     const int n = c.empty() ? 1 : static_cast<int> (c.size());
@@ -570,12 +593,26 @@ private:
                 outline (g, cell, on);
                 badge (g, { cell.getX() + 2, cell.getY() + 2, 18, 13 }, juce::String (pn), palette::panelDark, palette::segOn);
             }
+            g.restoreState();
+            // the track label stays put while the scenes scroll
+            g.setColour (palette::chassis);
+            g.fillRect (r.getX(), y, labelW, ch);
+            trackHeader (g, { r.getX(), y, labelW - 4, ch }, t);
         }
-        auto note = r.withTop (r.getY() + headH + 4 * (ch + gap) + 6);
+        if (maxScrollX > 0)   // scroll bar
+        {
+            const float frac = static_cast<float> (r.getWidth()) / static_cast<float> (contentW);
+            const int barW = juce::jmax (30, static_cast<int> (frac * static_cast<float> (viewArea.getWidth())));
+            const int barX = viewArea.getX() + static_cast<int> (static_cast<float> (scrollX) / static_cast<float> (maxScrollX) * static_cast<float> (viewArea.getWidth() - barW));
+            const int barY = r.getY() + headH + 4 * (ch + gap) + 1;
+            g.setColour (palette::inkSoft.withAlpha (0.45f));
+            g.fillRoundedRectangle (static_cast<float> (barX), static_cast<float> (barY), static_cast<float> (barW), 4.0f, 2.0f);
+        }
+        auto note = r.withTop (r.getY() + headH + 4 * (ch + gap) + 10);
         g.setColour (palette::inkSoft);
         g.setFont (juce::FontOptions (11.5f));
         g.drawFittedText ("Each cell is the pattern that track plays in that scene, drawn as its own piano roll. The number is the pattern, x n means the track plays "
-                          "a chain of n patterns; the strip at the bottom of the cell shows that chain in order, to scale. Hatched: nothing to play. Click a cell to pick its pattern; click a scene number to select that scene (the Chain timeline shows it), right-click it to copy, paste or clear it. Drums are not shown yet.",
+                          "a chain of n patterns; the strip at the bottom of the cell shows that chain in order, to scale. Hatched: nothing to play. Click a cell to pick its pattern (the arrows beside x n change the chain); with a narrow window the scenes scroll sideways (mouse wheel); click a scene number to select that scene (the Chain timeline shows it), right-click it to copy, paste or clear it. Drums are not shown yet.",
                           note, juce::Justification::topLeft, 3);
     }
 
@@ -841,6 +878,7 @@ private:
     juce::String title { "Project" };
     int view = 0, scene = 1;
     bool scenePicked = false;
+    int scrollX = 0, maxScrollX = 0;
     Hit hover;
     std::vector<std::pair<juce::Rectangle<int>, Hit>> hits;
 };

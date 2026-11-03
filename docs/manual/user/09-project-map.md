@@ -14,6 +14,8 @@ Click **Project Map** in the top row. It opens a window with three views. Only t
 4. Hatched cells play nothing. Drums are not shown yet.
 5. Hover a cell to see its pattern, length, notes and chain in the panel on the right. With no cell under the mouse, the panel shows the selected scene: each track's chain and how many bars it lasts.
 
+When the window is too narrow for 16 scenes, the matrix scrolls sideways (mouse wheel, or Shift + wheel); the track names stay in place and a thin bar at the bottom shows where you are.
+
 ### Editing scenes
 
 - **Click a cell** and pick the pattern (1-16) that track plays in that scene. This removes that cell's chain; the menu also has *Remove the chain* to keep the pattern and drop the chain. Picking a pattern in an empty scene makes it a saved scene.
