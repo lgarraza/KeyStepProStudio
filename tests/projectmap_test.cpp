@@ -69,6 +69,36 @@ int main()
 
     CHECK (7, loopSteps (m, 1, 0) == 16 + 13 + 16 && loopSteps (m, 2, 0) == 13 && loopSteps (m, 5, 0) == 0);
 
+    // track 1 in drum mode: its patterns are the drum patterns (pitch = lane), the scenes already point at them
+    {
+        auto d = blank();
+        CHECK (9, setDrumMode (d, true));
+        DrumPattern dp;
+        dp.valid = true;
+        dp.length = 16;
+        for (int st : { 0, 4, 8, 12, 13 })
+        {
+            Hit h;
+            h.lane = st == 13 ? 3 : 0;
+            h.step = st;
+            dp.hits.push_back (h);
+        }
+        CHECK (9, writeDrumPattern (d, 3, dp).empty());
+        Scene sc;
+        sc.valid = true;
+        sc.pattern = { 3, 1, 1, 1 };
+        CHECK (9, writeScene (d, 1, sc).empty());
+        const auto dm = buildMap (d);
+        CHECK (9, dm.drumMode);
+        const auto& pt = dm.patterns[0][2];
+        CHECK (9, pt.valid && pt.length == 16);
+        CHECK (9, pt.steps[0].on && pt.steps[4].on && pt.steps[13].on && ! pt.steps[1].on);
+        CHECK (9, pt.steps[13].notes.size() == 1 && pt.steps[13].notes[0].pitch == 3);
+        CHECK (9, playOrder (dm, 1, 0) == std::vector<int> { 3 } && loopSteps (dm, 1, 0) == 16);
+        auto plain = blank();
+        CHECK (9, ! buildMap (plain).drumMode);
+    }
+
     std::printf (failures == 0 ? "projectmap_test OK\n" : "projectmap_test FAILED\n");
     return failures == 0 ? 0 : 1;
 }

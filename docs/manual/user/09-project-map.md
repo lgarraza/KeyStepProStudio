@@ -20,6 +20,8 @@ An empty scene shows the four tracks as empty lanes: click a lane (or right-clic
 
 Edits are not on the KeyStep until you **Save** and **Write**; **Undo edit** takes back the last one.
 
+When track 1 is in drum mode its blocks show the **drum pattern** (one row per drum lane) instead of notes, and the detail panel says *Hits* and *Lanes*. The KeyStep stores a scene's drum pattern as track 1's own pattern, so scenes, chains and edits work for drums the same way.
+
 ## Pattern bank
 
 The third tab lists the patterns recorded in the project.

@@ -867,7 +867,7 @@ private:
         g.setColour (palette::inkSoft);
         g.setFont (juce::FontOptions (11.5f));
         g.drawFittedText ("Each cell is the pattern that track plays in that scene, drawn as its own piano roll. The number is the pattern, x n means the track plays "
-                          "a chain of n patterns; the strip at the bottom of the cell shows that chain in order, to scale. Hatched: nothing to play. Click a cell to pick its pattern (the arrows beside x n change the chain); with a narrow window the scenes scroll sideways (mouse wheel); click a scene number to select that scene (the Chain timeline shows it), right-click it to copy, paste or clear it. Drums are not shown yet.",
+                          "a chain of n patterns; the strip at the bottom of the cell shows that chain in order, to scale. Hatched: nothing to play. Click a cell to pick its pattern (the arrows beside x n change the chain); with a narrow window the scenes scroll sideways (mouse wheel); click a scene number to select that scene (the Chain timeline shows it), right-click it to copy, paste or clear it. ",
                           note, juce::Justification::topLeft, 3);
     }
 
@@ -1122,10 +1122,13 @@ private:
             g.drawText (v, row, juce::Justification::centredLeft);
         };
         line ("Length", juce::String (p->length) + " steps (" + juce::String (p->length / 16.0, 2) + " bars)");
-        line ("Notes", juce::String (st.count));
+        const bool drums = map.drumMode && hover.track == 0;   // track 1 in drum mode: the "pitch" is the drum lane
+        line (drums ? "Hits" : "Notes", juce::String (st.count));
         if (st.count > 0)
-            line ("Range", juce::String (ksp::noteName (st.lo)) + " to " + ksp::noteName (st.hi));
-        line ("Root, scale", juce::String (ksp::pitchClassName (p->root)) + ", " + ksp::scaleName (p->scale));
+            line (drums ? "Lanes" : "Range", drums ? juce::String (st.lo + 1) + " to " + juce::String (st.hi + 1)
+                                                   : juce::String (ksp::noteName (st.lo)) + " to " + ksp::noteName (st.hi));
+        if (! drums)
+            line ("Root, scale", juce::String (ksp::pitchClassName (p->root)) + ", " + ksp::scaleName (p->scale));
         const auto used = scenesUsing (map, hover.track, hover.pat);
         juce::String u;
         for (std::size_t i = 0; i < used.size(); ++i)
