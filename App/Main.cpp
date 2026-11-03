@@ -2473,7 +2473,7 @@ private:
     void timerCallback() override
     {
         updatePendingGlow();
-        lenDisplay.setText (juce::String (pattern.length), ksp::ui::palette::trackColour (track() - 1).brighter (0.5f));
+        lenDisplay.setText (juce::String (drumView ? drum.length : pattern.length), ksp::ui::palette::trackColour (track() - 1).brighter (0.5f));
         bpmDisplay.setText (engine.isRunning() ? juce::String (engine.bpm(), 1) : juce::String ("---"));
         updateTransportUi();
         if (! engine.isRunning())

@@ -109,6 +109,21 @@ public:
         g.setColour (palette::panelDark);
         g.setFont (juce::FontOptions (10.0f, juce::Font::bold));
         g.drawText ("END " + juce::String (len), endX - flagW, 1, flagW, kRulerH - 2, juce::Justification::centred);
+
+        // the grip on the END line, as in the note grid: three bars between two arrows (drag it left or right)
+        const bool grabbed = brush == Paint::ruler;
+        const auto grip = gripBox();
+        g.setColour (grabbed ? colour.brighter (0.4f) : colour);
+        g.fillRoundedRectangle (grip.toFloat(), 4.0f);
+        g.setColour (grabbed ? juce::Colours::white : palette::panelDark);
+        g.drawRoundedRectangle (grip.toFloat().reduced (0.5f), 4.0f, 1.5f);
+        for (int i = -1; i <= 1; ++i)
+            g.fillRect (grip.getCentreX() + i * 4 - 1, grip.getY() + 8, 2, grip.getHeight() - 16);
+        const float cy = static_cast<float> (grip.getCentreY());
+        juce::Path tri;
+        tri.addTriangle (static_cast<float> (grip.getX() - 2), cy, static_cast<float> (grip.getX() - 8), cy - 5.0f, static_cast<float> (grip.getX() - 8), cy + 5.0f);
+        tri.addTriangle (static_cast<float> (grip.getRight() + 2), cy, static_cast<float> (grip.getRight() + 8), cy - 5.0f, static_cast<float> (grip.getRight() + 8), cy + 5.0f);
+        g.fillPath (tri);
     }
 
     void mouseMove (const juce::MouseEvent& e) override
@@ -120,7 +135,7 @@ public:
             hoverLane = overName ? lane : -1;
             repaint();
         }
-        setMouseCursor (e.y < kRulerH && e.x >= kNameW ? juce::MouseCursor::LeftRightResizeCursor
+        setMouseCursor ((e.y < kRulerH && e.x >= kNameW) || onEnd (e.x, e.y) ? juce::MouseCursor::LeftRightResizeCursor
                         : overName || e.x >= kNameW ? juce::MouseCursor::PointingHandCursor
                                                     : juce::MouseCursor::NormalCursor);
     }
@@ -136,10 +151,12 @@ public:
         brush = Paint::none;
         if (pattern == nullptr)
             return;
-        if (e.y < kRulerH)
+        if (e.y < kRulerH || onEnd (e.x, e.y))   // the ruler, the END line or its grip: drag to change the length
         {
-            setLength (e.x);
+            if (e.y < kRulerH)
+                setLength (e.x);
             brush = Paint::ruler;
+            repaint();
             return;
         }
         const int lane = laneAt (e.y);
@@ -162,7 +179,12 @@ public:
             apply (laneAt (e.y), stepAt (e.x));
     }
 
-    void mouseUp (const juce::MouseEvent&) override { brush = Paint::none; }
+    void mouseUp (const juce::MouseEvent&) override
+    {
+        if (brush == Paint::ruler)
+            repaint();
+        brush = Paint::none;
+    }
 
     void mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& w) override
     {
@@ -180,6 +202,21 @@ public:
 
 private:
     enum class Paint { none, add, erase, ruler };
+
+    /** The grip box, centred on the END line half way down the lanes. */
+    juce::Rectangle<int> gripBox() const
+    {
+        const int endX = kNameW + juce::jlimit (1, ksp::model::kSteps, pattern != nullptr ? pattern->length : 16) * kCellW;
+        return juce::Rectangle<int> (22, 38).withCentre ({ endX, kRulerH + kCellH * kLanes / 2 });
+    }
+
+    bool onEnd (int x, int y) const
+    {
+        if (pattern == nullptr || y < kRulerH)
+            return false;
+        const int endX = kNameW + juce::jlimit (1, ksp::model::kSteps, pattern->length) * kCellW;
+        return std::abs (x - endX) <= 3 || gripBox().expanded (9, 0).contains (x, y);
+    }
 
     int rowY (int lane) const { return kRulerH + (kLanes - 1 - lane) * kCellH; }
     int laneAt (int y) const { return juce::jlimit (0, kLanes - 1, kLanes - 1 - (y - kRulerH) / kCellH); }
