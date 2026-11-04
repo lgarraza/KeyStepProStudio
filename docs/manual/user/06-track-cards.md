@@ -14,6 +14,8 @@ others are dimmed. Click anywhere on a card (its controls too) to select its tra
 - **Seq** and **Arp** keys (**Seq** and **Drum** on track 1), lit for the mode the track is in; see the grid chapter,
 - on tracks 2-4, the arpeggiator settings: mode, octave, division and swing.
 
+![Track cards in the Lite edition](img/shot-track-cards.png)
+
 Each track sends on its own MIDI channel (T1 = 1 ... T4 = 4, the KeyStep defaults; drums on 10, or the channel the project sets in
 the **Project Map**).
 
