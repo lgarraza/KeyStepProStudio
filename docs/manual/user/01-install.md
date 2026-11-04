@@ -16,6 +16,17 @@
 
 The installer also adds `KspVstHelper.exe` (VST3 helper, Full edition) and the command-line tools. That helper only comes with the **Full** edition (`KeyStepProStudio-Full-Setup-x.y.z.exe`). We recommend the **Lite** edition (`KeyStepProStudio-Setup-x.y.z.exe`), which has no VST3 parts; installing one edition replaces the other.
 
+## Install (macOS)
+
+1. Download `KeyStepProStudio-x.y.z-mac.zip` (Lite, recommended) or `KeyStepProStudio-Full-x.y.z-mac.zip` from the
+   [Releases](../../../../../releases) page and unzip it. The app is universal (Apple silicon and Intel), macOS 11 or later.
+2. Drag `KeyStepPro Studio.app` to **Applications**.
+3. The app is signed ad hoc, not notarized by Apple, so the first time **right-click the app > Open > Open**
+   (or, if macOS still refuses, **System Settings > Privacy & Security > Open Anyway**).
+4. Check the download: `shasum -a 256 KeyStepProStudio-x.y.z-mac.zip` must equal the `.sha256` file on the release page.
+
+Data goes to `~/Documents/KeyStepPro Studio/`.
+
 ## First run
 
 - With no KeyStep connected, the app opens your most recent **Library** project. On a fresh install the library is empty,
