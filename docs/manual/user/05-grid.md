@@ -45,23 +45,13 @@ Drag up/down (hold **Shift** for fine), or use the mouse wheel. They are dark un
 | **Time Shift** | -49% to +50% of a step | Moves the note off the beat; 0 = exactly on the step |
 | **Randomness** | 0-100% | Chance the note plays on each pass; 100 = always |
 
-## Rec: playing notes into the pattern
-
-**Rec** (bottom left) adds notes you play on the KeyStep to the pattern you are looking at. It needs the KeyStep's MIDI port open (**Read** opens it).
-
-1. Pick the track and pattern, and set **Ch** (the MIDI channel the notes arrive on, normally the track's) and the grid next to it (**1/16**: notes snap to the nearest step of that size).
-2. Press **Rec**, then **Play** on the KeyStep (if it is already playing, Rec joins it). Rec follows the KeyStep's clock from its Start, wrapped to the pattern length.
-3. Play notes on the KeyStep's keys. Each one is added to the step it lands on. A note already on that step is skipped, so the KeyStep playing back what is stored does not duplicate it. **Undo take** removes the whole take.
-
-What it does not do: it does not know which pattern the KeyStep is playing (the KeyStep tells the app only its clock and notes), so with a chain that changes patterns the notes go to the pattern shown here, at the position counted from Start. For a clean take, loop one pattern on the KeyStep. The KeyStep's own **Rec** and **Overdub** buttons are not needed and are not shown by the app; the status line says why a note was ignored (waiting for Start, or another channel).
-
 ## Drums (track 1 in drum mode)
 
 When track 1 is in drum mode (set on the KeyStep, or by a generated style) its grid shows 24 drum lanes instead of
 notes, kick at the bottom, each named after the KeyStep's default drum map (kick 36, snare 38, clap 39, closed hat 42,
 open hat 46 ...). Click a cell to add or remove a hit and drag to paint more; the mouse wheel on a hit changes its
 velocity (darker = louder); click a lane name to hear it. END and the length box work as for notes. Root, scale,
-octave, the knobs, Rec and Copy do not apply to drums. The KeyStep holds up to 192 hits per pattern.
+octave, the knobs and Copy do not apply to drums. The KeyStep holds up to 192 hits per pattern.
 
 The **Drum** key on card 1 (and **Seq** for the sequencer) switches track 1 between drum and sequencer mode (lit = drums). Both kinds of patterns
 stay stored, so switching back loses nothing. **Clear** (left of *Copy to*) empties the pattern you are looking at,

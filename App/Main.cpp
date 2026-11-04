@@ -27,7 +27,6 @@
 #include "MidiMonitor.h"
 #include "Studio/Library.h"
 #include "Ksp/Device.h"
-#include "Model/Overdub.h"
 #include "Model/Pattern.h"
 #include "Model/NoteMove.h"
 #include "Model/PatternOps.h"
@@ -1042,9 +1041,9 @@ class MainComponent : public juce::Component, private juce::Timer
 public:
     MainComponent()
     {
-        for (auto* b : { &openButton, &readButton, &syncButton, &octDown, &octUp, &copyButton, &clearButton, &opsButton, &recButton, &undoTakeButton, &toolsButton, &libraryButton, &saveButton, &saveAsButton })
+        for (auto* b : { &openButton, &readButton, &syncButton, &octDown, &octUp, &copyButton, &clearButton, &opsButton, &toolsButton, &libraryButton, &saveButton, &saveAsButton })
             addAndMakeVisible (*b);
-        for (auto* c : { &projectBox, &patternBox, &lengthBox, &rootBox, &scaleBox, &copyTrackBox, &copyPatBox, &recChannelBox, &stepBox })
+        for (auto* c : { &projectBox, &patternBox, &lengthBox, &rootBox, &scaleBox, &copyTrackBox, &copyPatBox })
             addAndMakeVisible (*c);
         for (auto* l : { &status, &octLabel, &sectionLabel })
             addAndMakeVisible (*l);
@@ -1075,8 +1074,6 @@ public:
         libraryButton.setButtonText ("Library...");
         saveButton.setButtonText ("Save");
         saveAsButton.setButtonText ("Save as...");
-        recButton.setButtonText ("Rec");
-        undoTakeButton.setButtonText ("Undo take");
         sectionLabel.setText ("Project / Track / Pattern / Length / Root / Scale", juce::dontSendNotification);
         sectionLabel.setFont (juce::FontOptions (11.0f));
 
@@ -1087,11 +1084,6 @@ public:
         for (int sc : { 0, 1, 2, 3, 4, 5, 6, 8, 9 }) scaleBox.addItem (ksp::scaleName (sc), sc + 1);
         for (int t = 1; t <= 4; ++t) copyTrackBox.addItem ("Track " + juce::String (t), t);
         for (int n = 1; n <= 16; ++n) copyPatBox.addItem ("Pattern " + juce::String (n), n);
-        for (int c = 1; c <= 16; ++c) recChannelBox.addItem ("Ch " + juce::String (c), c);
-        for (auto [name, clocks] : { std::pair { "1/4", 24 }, { "1/8", 12 }, { "1/8T", 8 }, { "1/16", 6 }, { "1/16T", 4 }, { "1/32", 3 } })
-            stepBox.addItem (name, clocks);
-        recChannelBox.setSelectedId (1, juce::dontSendNotification);
-        stepBox.setSelectedId (6, juce::dontSendNotification);
         copyTrackBox.setSelectedId (1, juce::dontSendNotification);
         copyPatBox.setSelectedId (2, juce::dontSendNotification);
         projectBox.setSelectedId (1, juce::dontSendNotification);
@@ -1145,13 +1137,11 @@ public:
         libraryButton.onClick = [this] { showLibrary(); };
         saveButton.onClick = [this] { saveToLibrary (false); };
         saveAsButton.onClick = [this] { saveToLibrary (true); };
-        recButton.onClick = [this] { if (overdub) stopRecording(); else startRecording(); };
-        undoTakeButton.onClick = [this] { undoTake(); };
         octDown.onClick = [this] { lowPitch = std::max (0, lowPitch - 12); showPattern(); };
         octUp.onClick = [this] { lowPitch = std::min (96, lowPitch + 12); showPattern(); };
         projectBox.onChange = [this] { selectProject(); };
         trackTabs.onSelect = [this] (int t) { trackBox.setSelectedId (t, juce::sendNotification); };
-        trackBox.onChange = [this] { trackTabs.setSelected (trackBox.getSelectedId(), false); grid.setTrack (track() - 1); refreshCards(); loadPattern(); recChannelBox.setSelectedId (trackChannel[static_cast<std::size_t> (track() - 1)], juce::dontSendNotification); };
+        trackBox.onChange = [this] { trackTabs.setSelected (trackBox.getSelectedId(), false); grid.setTrack (track() - 1); refreshCards(); loadPattern(); };
         patternBox.onChange = [this] { loadPattern(); };
         lengthBox.onChange = [this] {
             const int n = lengthBox.getSelectedId();
@@ -1373,14 +1363,6 @@ public:
         lenDisplay.setBounds (row.removeFromRight (100));
         r.removeFromTop (6);
         auto bottom = r.removeFromBottom (30);
-        recButton.setBounds (bottom.removeFromLeft (60));
-        bottom.removeFromLeft (4);
-        recChannelBox.setBounds (bottom.removeFromLeft (76));
-        bottom.removeFromLeft (4);
-        stepBox.setBounds (bottom.removeFromLeft (76));
-        bottom.removeFromLeft (4);
-        undoTakeButton.setBounds (bottom.removeFromLeft (90));
-        bottom.removeFromLeft (10);
         status.setBounds (bottom);
         r.removeFromBottom (6);
         // four cards in a row, one per track, in the track's colour; the audio readout at the right
@@ -1531,7 +1513,6 @@ private:
     juce::Label recStatusLabel, meterLabel;
 #endif
     juce::Label transportLabel;
-    std::shared_ptr<std::atomic<bool>> recordingOn = std::make_shared<std::atomic<bool>> (false);
 #if KSP_ENABLE_VST_HOST
     std::array<std::unique_ptr<juce::DocumentWindow>, 4> editorWindow;
 #endif
@@ -1541,17 +1522,14 @@ private:
     ksp::studio::StudioProject current;   // the library project being edited (its plugin setup and name); current.ksp is not kept up to date
     bool haveStudio = false;              // false: what is shown came from a backup or the KeyStep and is not in the library yet
     std::unique_ptr<juce::AlertWindow> nameDialog, closeDialog;
-    std::optional<ksp::model::Overdub> overdub;   // while Rec is on
-    ksp::model::Pattern takeBefore;              // the pattern before the last take, for Undo take
-    bool haveTake = false;
 
     juce::TextButton clearButton, opsButton;
-    juce::TextButton libraryButton, saveButton, saveAsButton, copyButton, openButton, readButton, syncButton, octDown, octUp, recButton, undoTakeButton;
+    juce::TextButton libraryButton, saveButton, saveAsButton, copyButton, openButton, readButton, syncButton, octDown, octUp;
     ksp::ui::TrackTabs trackTabs;
     ksp::ui::SevenSegDisplay lenDisplay { 2 }, bpmDisplay { 5 };
     BusyOverlay busyOverlay;
     juce::String fwReadOnly;   // firmware version of a KeyStep that is connected but not tested: empty when writing is allowed
-    juce::ComboBox projectBox, trackBox, patternBox, lengthBox, rootBox, scaleBox, copyTrackBox, copyPatBox, recChannelBox, stepBox;
+    juce::ComboBox projectBox, trackBox, patternBox, lengthBox, rootBox, scaleBox, copyTrackBox, copyPatBox;
     juce::Label status, octLabel, sectionLabel;
     juce::Viewport viewport;
     PatternGrid grid;
@@ -1578,8 +1556,6 @@ private:
         for (juce::Component* c : { static_cast<juce::Component*> (&openButton), static_cast<juce::Component*> (&readButton) })
             c->setEnabled (! b);
         copyButton.setEnabled (haveProject);
-        recButton.setEnabled (! b && haveProject);
-        undoTakeButton.setEnabled (haveTake && ! overdub);
     }
 
     void say (const juce::String& s) { status.setText (s, juce::dontSendNotification); }
@@ -1638,9 +1614,6 @@ private:
     void loadPattern()
     {
         applyChannels();
-        stopRecording();
-        haveTake = false;
-        undoTakeButton.setEnabled (false);
         commitPattern();
         refreshMap();
         loadedTrack = track();
@@ -2399,7 +2372,6 @@ private:
     {
         if (! haveProject)
             return;
-        stopRecording();
         commitPattern();
         const auto before = project;
         const auto error = n != nullptr ? ksp::model::writeScene (project, sc, *n) : ksp::model::clearScene (project, sc);
@@ -2422,7 +2394,6 @@ private:
     {
         if (! haveProject)
             return;
-        stopRecording();
         commitPattern();
         const auto before = project;
         if (! ksp::model::writeSettings (project, bpm, swing))
@@ -2443,7 +2414,6 @@ private:
     {
         if (! haveProject)
             return;
-        stopRecording();
         commitPattern();
         const auto before = project;
         if (! ksp::model::writeChannel (project, track, channel))
@@ -2507,7 +2477,6 @@ private:
             say ("Open a project, a backup or read one from the KeyStep first: the generator writes into it.");
             return;
         }
-        stopRecording();
         commitPattern();
         edited = false;
         const auto before = project;
@@ -2671,11 +2640,11 @@ private:
     }
 
 #endif
-    /** The KeyStep's MIDI goes to the instruments (lock-free) and, while Rec is on, to the overdub on the message thread. */
+    /** The KeyStep's MIDI goes to the instruments (lock-free) and, while the MIDI monitor is open, to it on the message thread. */
 #if KSP_ENABLE_VST_HOST
     void installMidiListener()
     {
-        device->setListener ([eng = &engine, rec = recordingOn, mon = monitorOn, safe = juce::Component::SafePointer<MainComponent> (this)] (const juce::MidiMessage& m) {
+        device->setListener ([eng = &engine, mon = monitorOn, safe = juce::Component::SafePointer<MainComponent> (this)] (const juce::MidiMessage& m) {
             eng->midiFromDevice (m);
             if (mon->load())
             {
@@ -2685,20 +2654,12 @@ private:
                         safe->monitorWindow->content().add (bytes);
                 });
             }
-            if (rec->load())
-            {
-                const auto* raw = m.getRawData();
-                juce::MessageManager::callAsync ([safe, bytes = std::vector<std::uint8_t> (raw, raw + m.getRawDataSize())] {
-                    if (safe != nullptr)
-                        safe->recordMidi (bytes);
-                });
-            }
         });
     }
 #else
     void installMidiListener()
     {
-        device->setListener ([tr = &transport, rec = recordingOn, mon = monitorOn, safe = juce::Component::SafePointer<MainComponent> (this)] (const juce::MidiMessage& m) {
+        device->setListener ([tr = &transport, mon = monitorOn, safe = juce::Component::SafePointer<MainComponent> (this)] (const juce::MidiMessage& m) {
             if (m.getRawDataSize() == 1 && m.getRawData()[0] >= 0xF8)
                 tr->message (m.getRawData()[0], juce::Time::getMillisecondCounterHiRes() * 0.001);
             if (mon->load())
@@ -2707,14 +2668,6 @@ private:
                 juce::MessageManager::callAsync ([safe, bytes = std::vector<std::uint8_t> (raw, raw + m.getRawDataSize())] {
                     if (safe != nullptr && safe->monitorWindow != nullptr)
                         safe->monitorWindow->content().add (bytes);
-                });
-            }
-            if (rec->load())
-            {
-                const auto* raw = m.getRawData();
-                juce::MessageManager::callAsync ([safe, bytes = std::vector<std::uint8_t> (raw, raw + m.getRawDataSize())] {
-                    if (safe != nullptr)
-                        safe->recordMidi (bytes);
                 });
             }
         });
@@ -3065,7 +3018,7 @@ private:
         viewport.setViewedComponent (on ? static_cast<juce::Component*> (&drumGrid) : static_cast<juce::Component*> (&grid), false);
         for (juce::Component* c : { static_cast<juce::Component*> (&rootBox), static_cast<juce::Component*> (&scaleBox),
                                     static_cast<juce::Component*> (&octDown), static_cast<juce::Component*> (&octUp),
-                                    static_cast<juce::Component*> (&octLabel), static_cast<juce::Component*> (&recButton),
+                                    static_cast<juce::Component*> (&octLabel),
                                     static_cast<juce::Component*> (&copyButton), static_cast<juce::Component*> (&copyTrackBox),
                                     static_cast<juce::Component*> (&copyPatBox) })
             c->setEnabled (! on);
@@ -3088,7 +3041,6 @@ private:
 
     void setProject (ksp::ProjectData p, const juce::String& what)
     {
-        stopRecording();
         beforeMapEdit.reset();
         beforeGenerate.reset();   // Undo belongs to the project it was made on
         if (generatorWindow != nullptr)
@@ -3202,7 +3154,6 @@ private:
     void readFromDevice (int slot = 0)
     {
         const int p = slot > 0 ? slot : projectBox.getSelectedId();
-        stopRecording();
         work ([this, p] {
             if (! connect())
                 return;
@@ -3226,7 +3177,6 @@ private:
 
     void writeToSlot (int slot)
     {
-        stopRecording();
         commitPattern();
         edited = false;
         auto written = project;
@@ -3266,98 +3216,6 @@ private:
                 msg = "Slot " + juce::String (slot) + " written and verified.";
             post ([msg, ok = after.project && msg.startsWith ("Slot")] (MainComponent& m) { m.say (msg); if (ok) m.unwritten = false; });
         });
-    }
-
-    // ---- overdub (MIDI from the KeyStep; handled on the message thread in arrival order)
-    void startRecording()
-    {
-        if (! haveProject || busy || ! connect())
-            return;
-        takeBefore = pattern;
-        overdub.emplace (stepBox.getSelectedId(), recChannelBox.getSelectedId() - 1);
-        if (clock().playing())
-            overdub->join (clock().ticks());   // Play was pressed before Rec: no Start will come, follow the app's tick count
-        recordingOn->store (true);
-        recButton.setButtonText ("Stop rec");
-        recButton.setColour (juce::TextButton::buttonColourId, ksp::ui::palette::rec);
-        recButton.setColour (juce::TextButton::textColourOffId, juce::Colours::white);
-        undoTakeButton.setEnabled (false);
-        say ("Recording on channel " + juce::String (recChannelBox.getSelectedId())
-             + (overdub->isRunning() ? ": the KeyStep is playing, play over the pattern."
-                                     : ": press Play on the KeyStep and play over the pattern."));
-    }
-
-    /** The KeyStep's clock: the engine's in the Full edition, the app's own in Lite. */
-    const mix::Transport& clock() const
-    {
-#if KSP_ENABLE_VST_HOST
-        return engine.transport();
-#else
-        return transport;
-#endif
-    }
-
-    void recordMidi (const std::vector<std::uint8_t>& m)
-    {
-        if (! overdub || m.empty())
-            return;
-        const bool wasRunning = overdub->isRunning();
-        const int stopped = overdub->ignoredStopped, otherCh = overdub->ignoredChannel;
-        if (overdub->handle (pattern, m.data(), m.size()))
-        {
-            edited = true;
-            noteChanged();
-            const int pitch = m[1];
-            if (pitch < lowPitch || pitch >= lowPitch + kRows)
-            {
-                lowPitch = std::min (96, pitch / 12 * 12);   // the grid shows two octaves: scroll to the note that was just added
-                showPattern();
-            }
-            grid.repaint();
-        }
-        else if (overdub->ignoredStopped != stopped)
-        {
-            say ("Note ignored: Rec waits for the KeyStep's Start (press Stop and Play on the KeyStep).");
-            return;
-        }
-        else if (overdub->ignoredChannel != otherCh)
-        {
-            say ("Note ignored: it came on channel " + juce::String (overdub->lastOtherChannel) + ", Rec listens on channel "
-                 + juce::String (recChannelBox.getSelectedId()) + " (change Ch next to Rec).");
-            return;
-        }
-        else if (overdub->isRunning() == wasRunning)
-            return;
-        say (juce::String (overdub->isRunning() ? "Recording: " : "Recording (KeyStep stopped): ")
-             + juce::String (overdub->added) + " note(s) added"
-             + (overdub->dropped > 0 ? ", " + juce::String (overdub->dropped) + " did not fit" : juce::String()));
-    }
-
-    void stopRecording()
-    {
-        if (! overdub)
-            return;
-        recordingOn->store (false);
-        const int added = overdub->added, dropped = overdub->dropped;
-        overdub.reset();
-        haveTake = added > 0;
-        recButton.setButtonText ("Rec");
-        recButton.removeColour (juce::TextButton::buttonColourId);
-        recButton.removeColour (juce::TextButton::textColourOffId);
-        undoTakeButton.setEnabled (haveTake);
-        say ("Take: " + juce::String (added) + " note(s) added" + (dropped > 0 ? ", " + juce::String (dropped) + " did not fit" : juce::String())
-             + (added > 0 ? " (not written yet)." : "."));
-    }
-
-    void undoTake()
-    {
-        if (! haveTake || overdub)
-            return;
-        pattern = takeBefore;
-        haveTake = false;
-        undoTakeButton.setEnabled (false);
-        showPattern();
-        say ("Last take removed.");
     }
 
     int loadedTrack = 1, loadedPattern = 1;

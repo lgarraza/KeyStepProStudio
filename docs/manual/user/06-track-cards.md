@@ -15,7 +15,7 @@ others are dimmed. Click anywhere on a card (its controls too) to select its tra
 - on tracks 2-4, the arpeggiator settings: mode, octave, division and swing.
 
 Each track sends on its own MIDI channel (T1 = 1 ... T4 = 4, the KeyStep defaults; drums on 10, or the channel the project sets in
-the **Project Map**). **Rec** records from the channel chosen next to it.
+the **Project Map**).
 
 ## The clock
 
@@ -26,7 +26,6 @@ They need the KeyStep's MIDI port open: **Read** (or the **MIDI monitor** in **T
 ```mermaid
 flowchart LR
   K[KeyStep Pro] -- "USB MIDI: clock, Start, Stop" --> A[App: clock label and tempo]
-  K -- "notes" --> R[Rec: overdub into the pattern]
   K -- "every control" --> M[MIDI monitor]
 ```
 

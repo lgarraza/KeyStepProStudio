@@ -29,7 +29,6 @@ Build Full with `cmake -S . -B build-full -DKSP_ENABLE_VST_HOST=ON`.
 - **Pattern editor.** Read a project from the KeyStep over USB (or open a backup), see all 64 steps of every pattern,
   add, delete and edit notes (pitch, gate, velocity, time shift, randomness), change length, root and scale, copy patterns,
   shift a track by an octave, and write the result back to the KeyStep.
-- **Overdub.** Press Rec, hit Play on the KeyStep and play over the loop; notes land on the nearest step.
 - **Library.** Your projects live on the computer (`Documents/KeyStepPro Studio/Library`), with names, notes and the
   instruments of each track. The KeyStep's 16 slots are treated as a working area: open and edit projects without the
   KeyStep connected, load one into a slot when you want to play it.

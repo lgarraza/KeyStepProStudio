@@ -21,17 +21,10 @@ Icon: the white chassis, black display strip and the four track colours, drawn b
   would leave 0-127); it reaches the KeyStep with **Write to slot**.
 - **Send to slot N** (single button above the track cards, replaces Read from KeyStep / Write to slot / Slot box): shows "Read slot N from KeyStep" when the project matches the KeyStep and "Send to slot N" (blinking) when it has unsent edits; N is the slot the project came from, any of 1-16. Confirms, backs the slot up, writes, reads back and reports "written and
   verified" or the differing values. Edits are kept in memory when you switch pattern or track.
-- **Rec** (overdub, bottom row): with the KeyStep connected, press Rec, then Play on the KeyStep and play over the
-  loop; notes on the chosen channel (default = track number) are added to the pattern shown at the nearest step of the
-  chosen size (1/4 .. 1/32, default 1/16; it must match the track's time division on the KeyStep). Velocity comes from
-  the key, gate from the pattern default (not mapped yet). Notes already on that step are skipped, so the sequencer's
-  own playback is not recorded twice. **Stop rec** ends the take; **Undo take** removes it. Switching pattern, track or
-  project, reading or writing stops recording. The KeyStep keeps playing the stored pattern until you write the slot,
-  and pattern chains are not followed (the position is counted from Start, modulo this pattern's length).
 - **Drum grid**: when track 1 is in drum mode (the KeyStep's drum track, or after a generated style) the grid becomes 24 lanes x 64 steps
   (`App/DrumGrid.h`, lane 1 = kick at the bottom, names and notes of the default GM drum map). Click a cell to add / remove a hit, drag
   to paint more of the same, mouse wheel on a hit for its velocity (its shade), click a lane name to hear it, ruler or length box for the
-  last step (lanes that followed the length follow it). Root, scale, octave, knobs, Rec and Copy are disabled there. Up to 192 hits.
+  last step (lanes that followed the length follow it). Root, scale, octave, knobs and Copy are disabled there. Up to 192 hits.
 - **Drums** (card 1, lit when on): switches track 1 between drum and sequencer mode in the project (both kinds of patterns stay
   stored; the grid follows). **Clear** (left of Copy to) empties the pattern shown, notes or drum hits; length and settings stay.
   Both are ordinary edits: they reach the KeyStep with Write.
