@@ -21,8 +21,11 @@ The installer also adds `KspVstHelper.exe` (VST3 helper, Full edition) and the c
 1. Download `KeyStepProStudio-x.y.z-mac.zip` (Lite, recommended) or `KeyStepProStudio-Full-x.y.z-mac.zip` from the
    [Releases](../../../../../releases) page and unzip it. The app is universal (Apple silicon and Intel), macOS 11 or later.
 2. Drag `KeyStepPro Studio.app` to **Applications**.
-3. The app is signed ad hoc, not notarized by Apple, so the first time **right-click the app > Open > Open**
-   (or, if macOS still refuses, **System Settings > Privacy & Security > Open Anyway**).
+3. The app is signed ad hoc, not notarized by Apple, so macOS says *"KeyStepPro Studio Not Opened - Apple could not verify..."*.
+   This is expected. Click **Done** (not *Move to Trash*), then open **System Settings > Privacy & Security**, scroll to the
+   message about KeyStepPro Studio and click **Open Anyway**; enter your password and open the app again. You only do this once.
+   On older macOS, right-click the app > **Open** > **Open** is enough. From Terminal you can also run
+   `xattr -dr com.apple.quarantine "KeyStepPro Studio.app"`.
 4. Check the download: `shasum -a 256 KeyStepProStudio-x.y.z-mac.zip` must equal the `.sha256` file on the release page.
 
 Data goes to `~/Documents/KeyStepPro Studio/`.

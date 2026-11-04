@@ -6,7 +6,7 @@ VST3 instruments.
 
 ![KeyStepPro Studio main window](docs/images/main-window.png)
 
-Windows and macOS (universal app, ad-hoc signed, not notarized). Not affiliated with Arturia.
+Windows and macOS (universal app, ad-hoc signed, not notarized: on a Mac, allow it once in System Settings > Privacy & Security > Open Anyway). Not affiliated with Arturia.
 
 ## Editions
 
