@@ -56,6 +56,8 @@ public:
     long ticks() const noexcept { return tickCount.load(); }
     /** The tempo in BPM from the clock (120 until a clock arrives). */
     double bpm() const noexcept { return tempo.load(); }
+    /** Has a tempo been measured from the clock yet? */
+    bool hasTempo() const noexcept { return measured.load(); }
     /** How many Start / Continue and Stop messages arrived: a watcher compares them with what it saw last. */
     std::uint32_t starts() const noexcept { return startCounter.load(); }
     std::uint32_t stops() const noexcept { return stopCounter.load(); }
@@ -84,6 +86,7 @@ private:
             {
                 average = average == 0.0 ? dt : 0.95 * average + 0.05 * dt;
                 tempo.store (60.0 / (kClocksPerQuarter * average));
+                measured.store (true);
             }
         }
         lastClock = now;
@@ -92,6 +95,7 @@ private:
     std::atomic<bool> playingNow { false };
     std::atomic<long> tickCount { 0 };
     std::atomic<double> tempo { 120.0 };
+    std::atomic<bool> measured { false };
     std::atomic<std::uint32_t> startCounter { 0 }, stopCounter { 0 };
     double lastClock = 0.0, average = 0.0;   // MIDI thread only
 };

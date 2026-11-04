@@ -1,8 +1,7 @@
-// mix_test: Source/Mix/Limiter.h (the master limiter) and Transport.h (the KeyStep as master clock). No JUCE.
+// mix_test: Source/Mix/Transport.h (the KeyStep as master clock). No JUCE.
 #include <cmath>
 #include <cstdio>
 #include <vector>
-#include "Mix/Limiter.h"
 #include "Mix/Transport.h"
 
 static int failures = 0;
@@ -25,65 +24,15 @@ static float peakOf (const std::vector<float>& v, std::size_t from, std::size_t 
 
 int main()
 {
-    // 1. Limiter: a quiet signal passes unchanged (after the look-ahead), a loud one never goes above the ceiling, +9 dB boosts
-    {
-        mix::Limiter lim;
-        lim.prepare (kRate);
-        lim.setCeilingDb (-1.0f);
-        const float ceiling = std::pow (10.0f, -1.0f / 20.0f);
-
-        std::vector<float> l (48000), r (48000);
-        for (std::size_t i = 0; i < l.size(); ++i)
-            l[i] = r[i] = 0.2f * std::sin (2.0f * 3.14159265f * 220.0f * (float) i / (float) kRate);
-        const auto ref = l;
-        for (std::size_t i = 0; i < l.size(); i += kBlock)
-            lim.processStereo (l.data() + i, r.data() + i, (int) std::min<std::size_t> (kBlock, l.size() - i));
-        bool same = true;
-        const int lat = lim.latency();
-        for (std::size_t i = (std::size_t) lat; i < l.size(); ++i)
-            same = same && std::abs (l[i] - ref[i - (std::size_t) lat]) < 1.0e-6f;
-        CHECK (1, same && lat > 0);
-
-        lim.reset();
-        lim.takeReductionDb();
-        for (std::size_t i = 0; i < l.size(); ++i)
-            l[i] = r[i] = 1.8f * std::sin (2.0f * 3.14159265f * 110.0f * (float) i / (float) kRate);
-        for (std::size_t i = 0; i < l.size(); i += kBlock)
-            lim.processStereo (l.data() + i, r.data() + i, (int) std::min<std::size_t> (kBlock, l.size() - i));
-        CHECK (1, peakOf (l, 0, l.size()) <= ceiling + 1.0e-6f && peakOf (l, 24000, l.size()) > 0.5f);   // limited, not silenced
-        CHECK (1, lim.takeReductionDb() < -3.0f);
-
-        // a short loud burst, then the gain comes back (release), a quiet signal ends at its own level
-        lim.reset();
-        std::fill (l.begin(), l.end(), 0.0f);
-        std::fill (r.begin(), r.end(), 0.0f);
-        for (std::size_t i = 1000; i < 1200; ++i)
-            l[i] = r[i] = 4.0f;
-        for (std::size_t i = 4000; i < l.size(); ++i)
-            l[i] = r[i] = 0.1f;
-        for (std::size_t i = 0; i < l.size(); i += kBlock)
-            lim.processStereo (l.data() + i, r.data() + i, (int) std::min<std::size_t> (kBlock, l.size() - i));
-        CHECK (1, peakOf (l, 0, l.size()) <= ceiling + 1.0e-6f);
-        CHECK (1, std::abs (l[l.size() - 1] - 0.1f) < 0.01f);
-
-        mix::Limiter boost;
-        boost.prepare (kRate);
-        boost.setGainDb (9.0f);
-        std::vector<float> bl (24000, 0.05f), br (24000, 0.05f);
-        for (std::size_t i = 0; i < bl.size(); i += kBlock)
-            boost.processStereo (bl.data() + i, br.data() + i, (int) std::min<std::size_t> (kBlock, bl.size() - i));
-        CHECK (1, std::abs (bl.back() - 0.05f * std::pow (10.0f, 9.0f / 20.0f)) < 1.0e-4f);
-    }
-
     // 2. Transport: the tempo from the clock, Start / Continue / Stop, the position from the ticks
     {
         mix::Transport tr;
-        CHECK (2, ! tr.playing() && tr.ticks() == 0 && tr.bpm() == 120.0);
+        CHECK (2, ! tr.playing() && tr.ticks() == 0 && tr.bpm() == 120.0 && ! tr.hasTempo());
         const double dt = 60.0 / (90.0 * 24.0);   // 90 BPM
         double t = 1.0;
         for (int i = 0; i < 200; ++i, t += dt)
             tr.message (0xF8, t);
-        CHECK (2, std::abs (tr.bpm() - 90.0) < 0.1 && ! tr.playing() && tr.ticks() == 0);   // the clock runs, nothing plays: no position
+        CHECK (2, tr.hasTempo() && std::abs (tr.bpm() - 90.0) < 0.1 && ! tr.playing() && tr.ticks() == 0);   // the clock runs, nothing plays: no position
 
         tr.message (0xFA, t);   // Start
         CHECK (2, tr.playing() && tr.ticks() == 0 && tr.starts() == 1);

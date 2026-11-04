@@ -10,7 +10,7 @@ Icon: the white chassis, black display strip and the four track colours, drawn b
   **Read from KeyStep** reads the chosen project from the device instead.
 - Track, pattern (a `*` marks patterns with data), length, root and scale; the grid shows two octaves (`-`/`+` move
   by an octave): right click on a note deletes it; left click on an empty cell adds a note (up to 16 per step; new notes take the
-  pattern's default gate and velocity) and selects it (the track's instrument, if loaded, plays it for 0.3 s), on a note just selects it (red outline); dragging a knob edits it. Steps run left to right.
+  pattern's default gate and velocity) and selects it, on a note just selects it (red outline); dragging a knob edits it. Steps run left to right.
 - Moving notes: drag a note to another step and / or row (snap to cells, never to a row that is not shown); it is heard when its pitch changes. Ctrl / Shift + click adds or removes a note from the selection, Shift + drag on an empty cell selects the notes inside a rectangle, and dragging any selected note moves the whole group by the same steps and semitones. Alt + drag copies. A note landing on the same pitch of a step replaces the one there; a move that would leave the 64 steps or pass 16 notes in a step is not applied (the group stays where it last fitted). Delete / Backspace removes the selection; Ctrl+Z (grid focused) undoes the last add, delete or move (30 deep; it is dropped if the pattern was changed another way in between).
 - Under the grid, five KeyStep-style knobs (Pitch, Gate, Velocity, Time Shift, Randomness; red LED ring) edit the selected note: drag up / down
   (Shift = fine) or use the wheel. They are dark until a note is selected. Time Shift goes from -49% to +50% of a step (the ring
@@ -39,37 +39,15 @@ Icon: the white chassis, black display strip and the four track colours, drawn b
 - Smoke test without a KeyStep: `xvfb-run` the binary with a backup file; the grid should show its notes.
 - Write to slot now sends only what differs from the slot as it was just read (plus all state blocks), about 75 s in total instead of
   about 200 s (backup read, write, commit, full read-back).
-- **Layout**: the top bar keeps the KeyStep's own actions (Library, Save, Save as, Open backup, Read from KeyStep, project box, STEPS / BPM) plus Generate..., Project Map and FX... (also in Tools); the extras live in the **Tools** menu at its right: Scan plugins, Plugins..., MIDI monitor, Track -8va / +8va, Rec WAV (with mode, tail, Follow the KeyStep and the recordings folder), Audio..., FX... and Test note. Below the grid stay the T1-T4 instrument rows, the transport / REC status and the meter. Wherever these notes say "button" for those items, read "Tools menu item".
-- **Scan plugins**: scans the VST3 folders one file at a time in `KspVstHelper.exe` (next to the app; a plugin that crashes or hangs only
-  kills that child and is blacklisted), keeps the list in `Documents/KeyStepPro Studio/KnownPlugins.xml`. First run on Leo's machine:
-  116 instruments and 173 effects (289 types, a few minutes; Windows asked once to allow the unsigned helper).
-- **Plugins...**: the list with filter box, Instruments / Effects selector and a **Hide** checkbox per plugin (kept in `HiddenPlugins.xml`,
-  not deleted; **Show hidden** brings them back into view). `PluginList::instruments()` / `effects()`, what the tracks will offer,
-  leave the hidden ones out.
+- **Layout**: the top bar keeps the KeyStep's own actions (Library, Save, Save as, Open backup, Read from KeyStep, project box, STEPS / BPM) plus Generate... and Project Map; the extras live in the **Tools** menu at its right: MIDI monitor, Track -8va / +8va and the user manual.
 - **Library** (the truth of the app; the KeyStep only holds a volatile working copy): `Documents/KeyStepPro Studio/Library/`, one
   `<id>.kspstudio` file per project plus `index.json`. **Library...** lists the projects (name, change date, what the KeyStep project
-  holds, instruments) with Open (or double click), Duplicate and Delete; **Save** puts the project shown into the library (asks a name the
+  holds) with Open (or double click), Duplicate and Delete; **Save** puts the project shown into the library (asks a name the
   first time: a project opened from a backup or read from the KeyStep is always new to the library) and then overwrites it;
   **Save as...** asks a name and keeps it as a new library project. At start the app opens the most recent library project, with no KeyStep connected. **Open backup...** and **Read from
   KeyStep** bring a project in, **Save** keeps it. **Write to slot** loads it into any of the 16 slots (the slot is backed up and read
-  back; the warning says the KeyStep is only a working copy). Not yet: the instruments and effects of the four tracks (the file format
-  has room for them), naming a project from the window, loading several projects in one go.
+  back; the warning says the KeyStep is only a working copy). Not yet: naming a project from the window, loading several projects in one go.
   **Closing the app** asks Save / Discard / Cancel when the project has changes not saved to the library (Save reuses the name prompt), then, if the changes were never written to the KeyStep, a notice with OK / Cancel so you can go back and write them.
-- **Instruments** (two rows under the grid, T1 to T4): one hosted VST3 instrument per track of the KeyStep, chosen from the scanned list
-  (hidden plugins left out), with **Edit** (the plugin's own window), **M** (mute) and a volume slider. The notes of the KeyStep reach
-  each instrument on the track's MIDI channel (T1 to T4 = channels 1 to 4, the KeyStep's defaults and Leo's settings); the app connects
-  to the KeyStep's MIDI by itself when an instrument is loaded. **Audio...** picks the output device, **Test note** plays a C3 on every
-  loaded instrument (no KeyStep needed) and the label shows the output peak. **Save** keeps the instruments, their states, volume and
-  mute in the library project; opening it loads them again. A plugin that is missing on the machine shows as "Missing: name" and is
-  kept untouched in the file. Not yet: effects per track, the track's MIDI channel setting, transport and recording, a master limiter
-  (there is only a safety clip).
-- The label under the instruments shows the output peak, how much the master **limiter** is pulling down, and the **BPM** read from the
-  KeyStep's MIDI clock (120 until it plays). (A Mix window with six built-in send effects and a master boost existed until 2026-10-30; it was
-  removed: effects are VST3 inserts per track and the master chain.)
-- **FX...** (next to Test note): the effect positions, each with a box of Leo's VST3 effects (hidden plugins left out), **Edit** (the plugin's own window)
-  and **Byp** (bypass): four **inserts on each track** (after its instrument, before its fader) and a **master chain** of four (before the limiter). They are saved
-  with the project (state, bypass); a plugin missing on the machine shows as "Missing: name" and is kept in the file. Plugin latency is not
-  compensated yet.
 - **The 64 steps**: the grid always shows all 64 steps with a numbered ruler on top. The part up to the last step is bright; the last step is
   marked with an orange **END n** flag and a line, and everything after it is dimmed (notes there are kept and shown dim: the KeyStep does not
   play them). Clicking or dragging on the ruler sets the last step (the same as choosing the length in the box). Vel and Gate bars show all 64.
@@ -79,14 +57,6 @@ Icon: the white chassis, black display strip and the four track colours, drawn b
   **randomness**, the four **passes** in which the step plays (lit when the pass mask has them), and every note of the step. Over a lane or
   an empty row of the step it describes its highest note; after the last step it says the KeyStep does not play it. Time shift is shown
   in % of a step and randomness in %; gate is the 0-127 value the KeyStep stores (its musical scale is not decoded yet).
-- **Transport and WAV recording** (the row above the instruments). The KeyStep is the master: the label shows PLAY / STOP, the position (bar.beat.16th
-  counted from its last Start, 4/4), the elapsed time and the tempo read from its MIDI clock. **Rec WAV** records the **mix** (after the limiter),
-  the **stems** (T1 to T4: what each track sends to the mix, with its instrument, inserts and fader) or
-  **both**, as 24-bit stereo WAV at the audio device's rate, to `Documents/KeyStepPro Studio/Recordings/<project>-<date>-<mix|T1..T4>.wav`
-  (**Folder** opens it). With **Follow the KeyStep** (default) it arms and waits: nothing is written until the KeyStep says Start / Continue; after
-  its Stop it keeps recording for the **tail** (0 to 30 s, 5 by default: the reverbs and delays ring out) and then closes by itself. Without it,
-  it records from the click to the next click. An armed recording that never got audio leaves no files. The stems add up to the mix before the
-  master chain and the limiter, not after them.
 - **MIDI monitor** (button at the top): shows what the KeyStep sends while its controls are used. A table of the **controls seen** (one row per
   distinct control: notes of a channel with their range, each CC of each channel with its name, pitch bend, channel and key pressure, program
   change, Start / Stop / Continue), each with its channel, last value, range and count, above a **log** of the last messages (time, channel, what).
@@ -107,7 +77,9 @@ Icon: the white chassis, black display strip and the four track colours, drawn b
   **Generate into this project**: patterns 1-4 of the four tracks and scenes 1-8 of the project that is open are replaced (drums, the arpeggiator
   settings and other patterns are left alone; tracks 2-4 are switched to the sequencer, `setArpOn (t, false)`, and the scenes written lose their mutes). A style instead puts track 1 in drum mode, writes drum patterns 1-4 there (default drum map, GM notes),
   patterns 1-4 of tracks 2-4 (bass, chords, lead, with their division and Mono/Poly) and scenes 1-4; and the project's tempo (techno 130, house 118-128, dnb 174 BPM). While
-  track 1 is in drum mode its instrument listens on channel 10 (the KeyStep's default Drum output); the other instruments listen on the project's
-  channel of the track when it sets one (`effectiveChannel`: item 0x78 p123, else 1-4). Then play it through the instruments with the KeyStep, hear it, edit it, **Save** it to the library and load it into
+  track 1 is in drum mode it sends on channel 10 (the KeyStep's default Drum output); the other tracks on the project's
+  channel of the track when it sets one (`effectiveChannel`: item 0x78 p123, else 1-4). Then play it on the KeyStep, hear it, edit it, **Save** it to the library and load it into
   a slot with **Write to slot**. **Undo** brings the project back as it was before the last generation. The settings used are saved with the project
   (the library file keeps the style, the mood and the seed). It needs a project open (a library project, a backup or one read from the KeyStep).
+
+- **Removed 2026-11-04: VST3 hosting and WAV recording.** The app is for editing the KeyStep, so the VST3 host (instruments, inserts, master chain, limiter, plugin scan), audio output, grid audition and the WAV recorder were taken out. Kept: the KeyStep's clock readout (`Source/Mix/Transport.h`: PLAY / STOP, position, tempo), the library's plugin fields (`StudioProject` still reads and writes them untouched so older files lose nothing), the MIDI monitor and Rec (overdub).

@@ -16,7 +16,7 @@
 ## Add, select, delete
 
 - **Left click** an empty cell: adds a note (up to 16 per step). New notes take the pattern's default gate and
-  velocity, and the track's instrument plays it briefly so you hear what you put.
+  velocity.
 - **Left click** a note: selects it.
 - **Right click** a note: deletes it.
 - **Note names:** every key in the left column is named (the Cs in bold, middle C = C3 as on the KeyStep Pro), and

@@ -23,8 +23,8 @@ arpeggiate the generated notes instead of playing them. The drum patterns, the a
 
 **Techno, House and Drum & bass** put track 1 in drum mode and write its drum patterns 1-4 (the last one ends with a
 fill), plus patterns 1-4 of track 2 (bass), track 3 (chords) and track 4 (lead), and scenes 1-4. The drums use the
-KeyStep's default drum map (kick 36, snare 38, clap 39, closed hat 42, open hat 46), so load a General MIDI style kit on
-track 1; the app sends track 1 to its instrument on the drum channel (10). Tracks 2-4 are switched to **Seq** (not **Arp**). The project also gets the style's tempo
+KeyStep's default drum map (kick 36, snare 38, clap 39, closed hat 42, open hat 46), so use a General MIDI style kit on
+track 1; track 1 sends on the drum channel (10). Tracks 2-4 are switched to **Seq** (not **Arp**). The project also gets the style's tempo
 (techno 130; house deep 128, chill 118, melodic 124; drum & bass 174 BPM); change it on the KeyStep if you like. Track 1 then shows the drum grid (see *The grid*).
 
 **Musical arrangement** (Techno, House, Drum & bass; on by default) writes eight scenes with an energy curve instead of the
@@ -38,7 +38,7 @@ them live, so think of the eight scenes as a map. The Mood and seed still change
 Every generator clears the track mutes of the scenes it writes, so no generated track starts silenced by a mute left from
 the project's old scenes. Mute tracks again in the **Project Map** if you want.
 
-The window and the message after generating say which track plays what, so you know which instrument to load on each: styles
+The window and the message after generating say which track plays what, so you know what each track plays: styles
 put the **drums on track 1**, then bass (track 2), chords (track 3) and a lead melody or bells (track 4); Ambient puts a drone on
 track 1, pad chords on 2, a lead melody on 3 and bells on 4.
 
@@ -47,7 +47,7 @@ track 1, pad chords on 2, a lead melody on 3 and bells on 4.
 ```mermaid
 flowchart LR
   A[Style + seed] --> B[Generate]
-  B --> C[Listen through the instruments]
+  B --> C[Listen on the KeyStep]
   C --> D{Like it?}
   D -- no --> A
   D -- yes --> E[Edit in the grid]

@@ -34,8 +34,3 @@ SOFTWARE.
 
 [JUCE](https://github.com/juce-framework/JUCE) 8 (downloaded at build time), used under the GNU Affero General Public
 License v3.0. Copyright (c) Raw Material Software Limited.
-
-## VST3 SDK
-
-The VST3 hosting comes through JUCE, which includes the Steinberg VST3 SDK. VST is a registered trademark of Steinberg
-Media Technologies GmbH.

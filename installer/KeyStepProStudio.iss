@@ -40,19 +40,19 @@ WizardStyle=modern
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [InstallDelete]
-; the helper was called KspScanner.exe up to v0.4.1
+; files of older versions: the VST3 helper (KspScanner.exe up to v0.4.1, then KspVstHelper.exe) and KspHostCheck
 Type: files; Name: "{app}\KspScanner.exe"
+Type: files; Name: "{app}\KspVstHelper.exe"
+Type: files; Name: "{app}\tools\KspHostCheck.exe"
 
 [Files]
-; the app and its VST3 helper (the app looks for KspVstHelper.exe next to itself)
+; the app
 Source: "{#BuildDir}\KeyStepProStudio_artefacts\Release\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#BuildDir}\KspVstHelper_artefacts\Release\KspVstHelper.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; command-line tools
 Source: "{#BuildDir}\KspProbe_artefacts\Release\KspProbe.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
 Source: "{#BuildDir}\KspBackup_artefacts\Release\KspBackup.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
 Source: "{#BuildDir}\KspRestore_artefacts\Release\KspRestore.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
 Source: "{#BuildDir}\KspGen_artefacts\Release\KspGen.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
-Source: "{#BuildDir}\KspHostCheck_artefacts\Release\KspHostCheck.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
 ; documents
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\dist\KeyStepPro-Studio-Manual.pdf"; DestDir: "{app}"; Flags: ignoreversion
@@ -69,4 +69,4 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopico
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 
-; The library, backups, recordings and plugin list in Documents\KeyStepPro Studio are the user's data: the uninstaller leaves them.
+; The library, backups and the like in Documents\KeyStepPro Studio are the user's data: the uninstaller leaves them.

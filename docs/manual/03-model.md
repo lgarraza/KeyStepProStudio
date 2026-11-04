@@ -54,22 +54,11 @@
   flips the valid / default mark of the states not sent). `compareReadBack` ignores the note values of a sequencer slot that is empty on
   both sides (step = 127): the device keeps its own defaults there (7, 100, 49, 100). `model::transpose` / `transposeTrack` move notes
   by semitones, range-checked.
-- `Source/Host/PluginList.h` (JUCE): the VST3 list (`KnownPluginList`), the out-of-process `ProcessScanner`, the hidden set, `instruments()` / `effects()`. Phase 3 step 1; instances, audio and routing come next.
-- `Source/Studio/StudioProject.h`: one library project: the KeyStep project (`ksp`, project number a placeholder), per track an instrument
-  and a chain of effects (plugin description and state as opaque text, volume, mute, solo), the generator settings, name, notes, dates and
+- `Source/Studio/StudioProject.h`: one library project: the KeyStep project (`ksp`, project number a placeholder), per track the plugin fields of older versions
+  (instrument, effects: opaque text, volume, mute, solo; kept and written back untouched, the app no longer uses them), the generator settings, name, notes, dates and
   a 32-hex id; round-trips exactly (`toJson` / `fromJson`, UTF-8 and control characters escaped). `Source/Studio/Library.h`: the folder
   (`<id>.kspstudio`, atomic writes, `index.json` rebuilt from the files when missing or out of date, bad files skipped and reported),
   `list` / `load` / `save` / `duplicate` / `remove`. Test: `studio_test`.
-- `Source/Host/TrackInstrument.h` (JUCE): one hosted VST3 instrument (create, description and state as text, `process` for the audio
-  thread). `Source/Host/Engine.h` (JUCE): four instruments mixed to the audio device; MIDI through two lock-free FIFOs routed by channel;
-  an instrument is swapped with an enabled / busy pair of flags.
-- `Source/Mix/Limiter.h`: the 3 ms look-ahead master limiter (ceiling -1 dBFS, final clamp). The engine sums the tracks post-fader, runs the
-  master chain, then the limiter. Test: `mix_test`. (The six built-in send effects, `Source/Fx` and the Mix window were removed on 2026-10-30;
-  older project files with `mix` or `fx.sends` still open, those keys are ignored.)
-- `Source/Host/TrackEffect.h` (JUCE): one hosted VST3 effect (stereo in place, no MIDI, state as text). The engine has 20 effect
-  positions (4 inserts per track, 4 master), each with the enabled / busy handshake of the instruments. `StudioProject`: `tracks[t].effects`
-  (inserts, an empty name = empty position), `masterFx`.
-- `Source/Mix/Transport.h`: the KeyStep as master clock: Start / Continue / Stop and the 24-per-quarter clock give playing, position in ticks
-  (bar.beat.16th in 4/4) and tempo. `Source/Host/Recorder.h` (JUCE): WAV recording of the mix and the stems through `ThreadedWriter` (lock-free FIFO
-  to a background thread), with a gate that the KeyStep's Start opens and its Stop closes after the tail. The engine feeds them from the MIDI thread
-  (`midiFromDevice`) and the audio thread (`write` per tap, `advance` per block). Tests: `mix_test` (transport), `KspHostCheck --record`.
+- `Source/Mix/Transport.h`: follows the KeyStep's MIDI clock: Start / Continue / Stop and the 24-per-quarter clock give playing, position in ticks
+  (bar.beat.16th in 4/4) and tempo (`hasTempo()` once measured). The app feeds it from the MIDI thread for the clock label and the BPM box. Test: `mix_test`.
+  (The VST3 host, `Source/Host`, the limiter and the WAV recorder were removed on 2026-11-04.)

@@ -1,7 +1,7 @@
 # KeyStepPro Studio
 
 A free desktop companion for the **Arturia KeyStep Pro**: edit its sequencer patterns on a big screen, keep a library of
-projects on your computer, and play the KeyStep through your own VST3 instruments without opening a DAW.
+projects on your computer, and generate new music for it.
 
 ![KeyStepPro Studio main window](docs/images/main-window.png)
 
@@ -14,11 +14,8 @@ Windows (tested) and macOS (builds from the same code, not tested lately). Not a
   shift a track by an octave, and write the result back to the KeyStep.
 - **Overdub.** Press Rec, hit Play on the KeyStep and play over the loop; notes land on the nearest step.
 - **Library.** Your projects live on the computer (`Documents/KeyStepPro Studio/Library`), with names, notes and the
-  instruments of each track. The KeyStep's 16 slots are treated as a working area: open and edit projects without the
+  generator settings. The KeyStep's 16 slots are treated as a working area: open and edit projects without the
   KeyStep connected, load one into a slot when you want to play it.
-- **VST3 host.** One VST3 instrument per KeyStep track (T1 to T4 on MIDI channels 1 to 4), up to four effect inserts per
-  track and a master effect chain with a limiter. The KeyStep is the clock: its Play and Stop drive the app.
-- **WAV recording** of the mix and/or one stem per track, started and stopped by the KeyStep's transport.
 - **Generator** (Generate...): writes patterns and scenes into the open project in a style (Ambient with four moods,
   Techno, House deep / chill / melodic, Drum & bass) with a seed, pattern chains and undo. The styles add drums on track 1
   and set the project tempo.
@@ -30,9 +27,7 @@ Windows (tested) and macOS (builds from the same code, not tested lately). Not a
 - **Tempo, swing and MIDI channels.** Project tempo and swing, plus a MIDI channel (or Auto) for each track, in the Project Map.
 - **Arpeggiator** (tracks 2-4): on/off, mode, octave, swing and division per track, next to the Seq / Arp / Drum keys of each track card.
 - **Pattern ops** (Ops): nudge, reverse and invert a pattern.
-- **MIDI monitor** to see what each control of the KeyStep sends.
-
-![The effects window: four inserts per track and the master chain](docs/images/fx-window.png)
+- **MIDI monitor** to see what each control of the KeyStep sends, and the KeyStep's clock (Play / Stop, position, tempo).
 
 ![Project Map: scenes by tracks, each cell a mini piano roll](docs/images/project-map.png)
 
@@ -69,8 +64,6 @@ start writing to your KeyStep.
    selected note. Switch track and pattern at the top.
 3. **Save** keeps the project in your library. **Write to slot** sends it to a slot from 10 to 16 (backed up and
    verified as described above).
-4. To play it through VST3 instruments: **Scan plugins** once, pick an instrument per track in the rows under the grid,
-   choose your audio device with **Audio...**, and press Play on the KeyStep.
 
 **New to the app?** Start with the [User guide](docs/manual/user/README.md). Developer notes: [docs/manual](docs/manual/README.md).
 
@@ -84,7 +77,6 @@ Installed next to the app; useful for backups and troubleshooting.
 | `KspBackup` | no | Backup of all projects and the global settings to JSON (about 10 minutes). |
 | `KspRestore` | only with `--write` | Restore a project from a backup to a slot (backup first, read back after). |
 | `KspGen` | only with `--write` | Generate an ambient project, or a style with `--style`, into a slot. |
-| `KspHostCheck` | no | Check that a VST3 instrument or effect loads, sounds and restores its state. |
 
 Details in [docs/manual/02-tools.md](docs/manual/02-tools.md).
 
@@ -115,14 +107,14 @@ To build the Windows installer, see [installer/README.md](installer/README.md).
 
 ## Status and limits
 
-Working and used live: pattern editing, the library, the VST3 host, recording and the generator. Not done yet: plugin
-latency compensation. Only VST3 plugins are hosted (no AU, no VST2).
+Working and used live: pattern editing, the library and the generator. The app edits and generates; it does not host
+plugins or make sound (v0.6.0 and earlier did: VST3 hosting and WAV recording were removed).
 
 ## Credits and license
 
 - The SysEx protocol and the backup format come from [KSCON](https://github.com/canadianblaken/keystep-con) by
   canadianblaken (MIT). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-- Built with [JUCE](https://juce.com) (AGPLv3) and the Steinberg VST3 SDK.
+- Built with [JUCE](https://juce.com) (AGPLv3).
 - KeyStep Pro and MIDI Control Center are trademarks of Arturia. This project is not affiliated with or endorsed by Arturia.
 
 Licensed under the GNU Affero General Public License v3.0, see [LICENSE](LICENSE).
