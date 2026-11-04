@@ -10,9 +10,6 @@
   pattern): `readPattern`, `writePattern`, `check`. Drum lanes and arpeggio are not touched. Time shift is stored 0-99
   (49 = on the step, -49%..+50%) and randomness 0-100 (% chance to play, 100 = always); `readPattern` clamps values
   beyond that (earlier versions let the knobs write up to 127) and `check` refuses them.
-- `Source/Model/Overdub.h`: real-time recording onto a `Pattern` from raw MIDI (clock + note-ons of one channel):
-  nearest step by clock ticks modulo the length, velocity from the note, the rest from the pattern defaults; pitches
-  already on the step are skipped (the KeyStep playing its stored notes back); counts notes that did not fit.
 - `Source/Model/NoteMove.h`: `moveNotes` moves / copies a group of notes by steps and semitones, all or nothing (range, 16 notes per step; same pitch replaced); `sameSteps` compares two patterns' steps (the grid's Undo). `tests/notemove_test.cpp`.
 - `Source/Ksp/MidiLink.h` (JUCE): the USB port pair. `Source/Ksp/Device.h` (JUCE): `open`, `readSlot`, `backupSlot`,
   `writeSlot`, `setListener` (non-SysEx MIDI: notes, clock, Start/Stop, on the MIDI thread); used by `KspRestore` and the app.
@@ -20,7 +17,7 @@
   time shift / randomness / pass mask per hit): `readDrumPattern`, `writeDrumPattern`, `check`, `isDrumMode`, `setDrumMode`.
   Ported from KSCON (layout in the file header); the lane masks are rebuilt and freed slots emptied (127). Drum swing
   and flags are left as they are. NOT yet verified on hardware: do a slot 10-16 round trip (backup first) before relying on it.
-- Tests (`tests/`): `protocol_test`, `backup_test`, `restore_test`, `pattern_test`, `drum_test`, `overdub_test`; all with a fake device or none.
+- Tests (`tests/`): `protocol_test`, `backup_test`, `restore_test`, `pattern_test`, `drum_test`; all with a fake device or none.
   CI (GitHub Actions, Windows only since 2026-10-29) builds everything and runs them.
 - `Source/Gen/Theory.h` + `Roles.h`: the role engine. A `RoleSpec` (role drone / pad / melody / bells / bass / stab, length, density, register,
   RNG salt; for bass and stab euclidean pulses, rotation and gate) goes through `makeRolePattern`; `euclid` and `makeDrumPattern(DrumSpec)` build drum grooves (kick, backbeat snare, hats,

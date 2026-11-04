@@ -8,21 +8,25 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <thread>
+#include "AppFolders.h"
+#include "Mix/Transport.h"
+#include <juce_audio_devices/juce_audio_devices.h>
+#if KSP_ENABLE_VST_HOST
 #include "Host/PluginList.h"
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "Host/Engine.h"
-#include "KspStyle.h"
 #include "FxWindow.h"
+#include "PluginTable.h"
+#endif
+#include "KspStyle.h"
 #include "LibraryWindow.h"
 #include "GeneratorWindow.h"
 #include "DrumGrid.h"
 #include "ProjectMapWindow.h"
 #include "Gen/Arrangement.h"
 #include "MidiMonitor.h"
-#include "PluginTable.h"
 #include "Studio/Library.h"
 #include "Ksp/Device.h"
-#include "Model/Overdub.h"
 #include "Model/Pattern.h"
 #include "Model/NoteMove.h"
 #include "Model/PatternOps.h"
@@ -32,6 +36,7 @@ namespace
 {
 
 // The KeyStep's memory is a volatile working copy of the library: all 16 slots can be loaded (with a backup and a warning first)
+constexpr int kTracks = 4;
 constexpr int kFirstWritableSlot = 1, kLastWritableSlot = 16;
 constexpr int kRows = 24, kCellW = 18, kCellH = 14, kKeyW = 44, kRulerH = 18;
 
@@ -1036,9 +1041,9 @@ class MainComponent : public juce::Component, private juce::Timer
 public:
     MainComponent()
     {
-        for (auto* b : { &openButton, &readButton, &syncButton, &octDown, &octUp, &copyButton, &clearButton, &opsButton, &recButton, &undoTakeButton, &toolsButton, &libraryButton, &saveButton, &saveAsButton })
+        for (auto* b : { &openButton, &readButton, &syncButton, &octDown, &octUp, &copyButton, &clearButton, &opsButton, &toolsButton, &libraryButton, &saveButton, &saveAsButton })
             addAndMakeVisible (*b);
-        for (auto* c : { &projectBox, &patternBox, &lengthBox, &rootBox, &scaleBox, &copyTrackBox, &copyPatBox, &recChannelBox, &stepBox })
+        for (auto* c : { &projectBox, &patternBox, &lengthBox, &rootBox, &scaleBox, &copyTrackBox, &copyPatBox })
             addAndMakeVisible (*c);
         for (auto* l : { &status, &octLabel, &sectionLabel })
             addAndMakeVisible (*l);
@@ -1069,8 +1074,6 @@ public:
         libraryButton.setButtonText ("Library...");
         saveButton.setButtonText ("Save");
         saveAsButton.setButtonText ("Save as...");
-        recButton.setButtonText ("Rec");
-        undoTakeButton.setButtonText ("Undo take");
         sectionLabel.setText ("Project / Track / Pattern / Length / Root / Scale", juce::dontSendNotification);
         sectionLabel.setFont (juce::FontOptions (11.0f));
 
@@ -1081,11 +1084,6 @@ public:
         for (int sc : { 0, 1, 2, 3, 4, 5, 6, 8, 9 }) scaleBox.addItem (ksp::scaleName (sc), sc + 1);
         for (int t = 1; t <= 4; ++t) copyTrackBox.addItem ("Track " + juce::String (t), t);
         for (int n = 1; n <= 16; ++n) copyPatBox.addItem ("Pattern " + juce::String (n), n);
-        for (int c = 1; c <= 16; ++c) recChannelBox.addItem ("Ch " + juce::String (c), c);
-        for (auto [name, clocks] : { std::pair { "1/4", 24 }, { "1/8", 12 }, { "1/8T", 8 }, { "1/16", 6 }, { "1/16T", 4 }, { "1/32", 3 } })
-            stepBox.addItem (name, clocks);
-        recChannelBox.setSelectedId (1, juce::dontSendNotification);
-        stepBox.setSelectedId (6, juce::dontSendNotification);
         copyTrackBox.setSelectedId (1, juce::dontSendNotification);
         copyPatBox.setSelectedId (2, juce::dontSendNotification);
         projectBox.setSelectedId (1, juce::dontSendNotification);
@@ -1139,13 +1137,11 @@ public:
         libraryButton.onClick = [this] { showLibrary(); };
         saveButton.onClick = [this] { saveToLibrary (false); };
         saveAsButton.onClick = [this] { saveToLibrary (true); };
-        recButton.onClick = [this] { if (overdub) stopRecording(); else startRecording(); };
-        undoTakeButton.onClick = [this] { undoTake(); };
         octDown.onClick = [this] { lowPitch = std::max (0, lowPitch - 12); showPattern(); };
         octUp.onClick = [this] { lowPitch = std::min (96, lowPitch + 12); showPattern(); };
         projectBox.onChange = [this] { selectProject(); };
         trackTabs.onSelect = [this] (int t) { trackBox.setSelectedId (t, juce::sendNotification); };
-        trackBox.onChange = [this] { trackTabs.setSelected (trackBox.getSelectedId(), false); grid.setTrack (track() - 1); refreshCards(); loadPattern(); recChannelBox.setSelectedId (engine.channel (track() - 1), juce::dontSendNotification); };
+        trackBox.onChange = [this] { trackTabs.setSelected (trackBox.getSelectedId(), false); grid.setTrack (track() - 1); refreshCards(); loadPattern(); };
         patternBox.onChange = [this] { loadPattern(); };
         lengthBox.onChange = [this] {
             const int n = lengthBox.getSelectedId();
@@ -1166,13 +1162,21 @@ public:
         rootBox.onChange = [this] { pattern.root = rootBox.getSelectedId() - 1; markEdited(); };
         scaleBox.onChange = [this] { pattern.scale = scaleBox.getSelectedId() - 1; markEdited(); };
         grid.onEdited = [this] { markEdited(); };
+#if KSP_ENABLE_VST_HOST
         grid.onNoteAdded = [this] (int pitch, int velocity) { auditionNote (pitch, velocity); };
+#endif
         grid.onLastStep = [this] (int n) { lengthBox.setSelectedId (n, juce::sendNotification); };
         drumGrid.onEdited = [this] { markEdited(); };
+#if KSP_ENABLE_VST_HOST
         drumGrid.onHit = [this] (int note, int velocity) { auditionNote (note, velocity); };
+#endif
         drumGrid.onLastStep = [this] (int n) { lengthBox.setSelectedId (n, juce::sendNotification); };
         drumGrid.onMessage = [this] (const juce::String& m) { say (m); };
+#if KSP_ENABLE_VST_HOST
         buildInstrumentRow();
+#else
+        buildCardRow();
+#endif
         setSize (1220, 756);
         buildRecordRow();
         setSize (1220, 748);
@@ -1182,25 +1186,33 @@ public:
     ~MainComponent() override
     {
         stopTimer();
+#if KSP_ENABLE_VST_HOST
         stopScan->store (true);
+#endif
         if (device != nullptr)
             device->setListener (nullptr);
-        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
+#if KSP_ENABLE_VST_HOST
+        for (int t = 0; t < kTracks; ++t)
             closeEditor (t);
+#endif
         mapWindow.reset();
         generatorWindow.reset();
         monitorWindow.reset();
+#if KSP_ENABLE_VST_HOST
         pluginWindow.reset();
+#endif
         libraryWindow.reset();
+#if KSP_ENABLE_VST_HOST
         for (int p = 0; p < ksp::host::Engine::kFxPositions; ++p)
             fxEditorWindow[static_cast<std::size_t> (p)].reset();
         fxWindow.reset();
+#endif
     }
 
     /** The track cards: a body in the full track colour with a border; the selected track is bright, the others dimmed. */
     void paint (juce::Graphics& g) override
     {
-        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
+        for (int t = 0; t < kTracks; ++t)
         {
             const auto i = static_cast<std::size_t> (t);
             const auto c = ksp::ui::palette::trackColour (t);
@@ -1248,10 +1260,11 @@ public:
             arpSwingSlider[i].setEnabled (a.valid && a.on);
         }
         arpUpdating = false;
-        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
+        for (int t = 0; t < kTracks; ++t)
         {
             const auto i = static_cast<std::size_t> (t);
             const float a = t == track() - 1 ? 1.0f : 0.75f;
+#if KSP_ENABLE_VST_HOST
             for (juce::Component* c : { static_cast<juce::Component*> (&instLabel[i]), static_cast<juce::Component*> (&instBox[i]),
                                         static_cast<juce::Component*> (&editButton[i]), static_cast<juce::Component*> (&muteToggle[i]), static_cast<juce::Component*> (&soloToggle[i]),
                                         static_cast<juce::Component*> (&volSlider[i]), static_cast<juce::Component*> (&dbLabel[i]),
@@ -1261,6 +1274,11 @@ public:
             const double v = volSlider[i].getValue();
             dbLabel[i].setText (v <= 0.001 ? juce::String ("-inf") : juce::String (20.0 * std::log10 (v), 1) + " dB", juce::dontSendNotification);
             volSlider[i].setTooltip ("Track volume: " + dbLabel[i].getText());
+#else
+            for (juce::Component* c : { static_cast<juce::Component*> (&instLabel[i]), static_cast<juce::Component*> (&seqToggle[i]),
+                                        static_cast<juce::Component*> (&modeToggle[i]) })
+                c->setAlpha (a);
+#endif
         }
         repaint();
     }
@@ -1268,7 +1286,7 @@ public:
     int cardAt (const juce::MouseEvent& e)
     {
         const auto pos = e.getEventRelativeTo (this).getPosition();
-        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
+        for (int t = 0; t < kTracks; ++t)
             if (cardRect[static_cast<std::size_t> (t)].contains (pos))
                 return t + 1;
         return 0;
@@ -1317,7 +1335,9 @@ public:
         top.removeFromLeft (6);
         mapButton.setBounds (top.removeFromLeft (110));
         top.removeFromLeft (6);
+#if KSP_ENABLE_VST_HOST
         fxButton.setBounds (top.removeFromLeft (60));
+#endif
         r.removeFromTop (6);
         auto row = r.removeFromTop (28);
         for (auto* c : { &patternBox, &lengthBox, &rootBox, &scaleBox })
@@ -1343,26 +1363,19 @@ public:
         lenDisplay.setBounds (row.removeFromRight (100));
         r.removeFromTop (6);
         auto bottom = r.removeFromBottom (30);
-        recButton.setBounds (bottom.removeFromLeft (60));
-        bottom.removeFromLeft (4);
-        recChannelBox.setBounds (bottom.removeFromLeft (76));
-        bottom.removeFromLeft (4);
-        stepBox.setBounds (bottom.removeFromLeft (76));
-        bottom.removeFromLeft (4);
-        undoTakeButton.setBounds (bottom.removeFromLeft (90));
-        bottom.removeFromLeft (10);
         status.setBounds (bottom);
         r.removeFromBottom (6);
         // four cards in a row, one per track, in the track's colour; the audio readout at the right
         auto instArea = cardsRow;
         const int w = instArea.getWidth() / 4;
-        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
+        for (int t = 0; t < kTracks; ++t)
         {
             const auto i = static_cast<std::size_t> (t);
             cardRect[i] = instArea.removeFromLeft (w).withTrimmedRight (8);
             auto cell = cardRect[i].reduced (8, 6);
             auto line1 = cell.removeFromTop (26);
             cell.removeFromTop (4);
+#if KSP_ENABLE_VST_HOST
             instLabel[i].setBounds (line1.removeFromLeft (26));
             line1.removeFromLeft (6);
             instBox[i].setBounds (line1);
@@ -1382,6 +1395,14 @@ public:
             modeToggle[i].setBounds (colB.removeFromTop (30));
             muteToggle[i].setBounds (colA.removeFromBottom (30));
             soloToggle[i].setBounds (colB.removeFromBottom (30));
+#else
+            instLabel[i].setBounds (line1.removeFromLeft (26));
+            line1.removeFromLeft (6);
+            const int kw = (line1.getWidth() - 4) / 2;
+            seqToggle[i].setBounds (line1.removeFromLeft (kw));
+            line1.removeFromLeft (4);
+            modeToggle[i].setBounds (line1);
+#endif
             if (t > 0)
             {
                 cell.removeFromTop (6);
@@ -1399,8 +1420,10 @@ public:
         r.removeFromBottom (6);
         auto recRow = r.removeFromBottom (28);
         transportLabel.setBounds (recRow.removeFromLeft (330));
+#if KSP_ENABLE_VST_HOST
         meterLabel.setBounds (recRow.removeFromLeft (260));
         recStatusLabel.setBounds (recRow);
+#endif
         r.removeFromBottom (6);
         auto knobRow = r.removeFromBottom (86);
         r.removeFromBottom (4);
@@ -1424,6 +1447,7 @@ private:
     std::unique_ptr<ksp::Device> device;
     std::optional<ksp::BackupData> backup;
     std::atomic<bool> busy { false };
+#if KSP_ENABLE_VST_HOST
     std::shared_ptr<ksp::host::PluginList> plugins = std::make_shared<ksp::host::PluginList>();
     std::shared_ptr<std::atomic<bool>> stopScan = std::make_shared<std::atomic<bool>> (false);
     std::atomic<bool> scanning { false };
@@ -1431,21 +1455,47 @@ private:
 
     // ---- instruments: one hosted VST3 per track of the KeyStep, fed by the KeyStep's MIDI
     ksp::host::Engine engine;
+#if KSP_ENABLE_VST_HOST
     std::vector<juce::PluginDescription> instChoices;   // what the boxes offer: ids 2.. are indexes + 2
+#endif
+#else
+    // ---- the KeyStep's clock (Start / Stop / tempo)
+    mix::Transport transport;
+#endif
+    std::array<int, 4> trackChannel { 1, 2, 3, 4 };   // the MIDI channel each track sends on
     std::array<juce::Label, 4> instLabel;
+#if KSP_ENABLE_VST_HOST
     std::array<juce::ComboBox, 4> instBox;
+#endif
+#if KSP_ENABLE_VST_HOST
     std::array<ksp::ui::EditIconButton, 4> editButton;
+#endif
+#if KSP_ENABLE_VST_HOST
     std::array<juce::ToggleButton, 4> muteToggle, soloToggle;
+#endif
+#if KSP_ENABLE_VST_HOST
     std::array<juce::Slider, 4> volSlider;
+#endif
     // arpeggiator of tracks 2-4 (index track - 2): on/off, mode and octave of the pattern shown, division and swing of the track
     std::array<juce::ToggleButton, 4> seqToggle, modeToggle;   // Seq and Arp (Drum on track 1): the track mode, lit when on
     std::array<juce::ComboBox, 3> arpModeBox, arpOctBox, arpDivBox;
     std::array<juce::Slider, 3> arpSwingSlider;
+#if KSP_ENABLE_VST_HOST
     std::array<juce::Label, 4> dbLabel;
+#endif
     std::array<juce::Rectangle<int>, 4> cardRect;
+#if KSP_ENABLE_VST_HOST
     static constexpr int cardHeight = 140;
+#else
+    static constexpr int cardHeight = 80;   // no instrument rows: track number, Seq / Arp keys and the arp settings
+#endif
+#if KSP_ENABLE_VST_HOST
     std::array<juce::String, 4> missingName;             // a plugin of the project that is not on this machine: kept untouched
-    juce::TextButton toolsButton, mapButton, fxButton;   // FX is also in Tools; on the bar so the effects are easy to find
+#endif
+    juce::TextButton toolsButton, mapButton;
+#if KSP_ENABLE_VST_HOST
+    juce::TextButton fxButton;   // FX is also in Tools; on the bar so the effects are easy to find
+#endif
     ksp::ui::WandButton generateButton;   // a magic wand on it: the way to new music
     std::unique_ptr<ksp::ui::GeneratorWindow> generatorWindow;
     std::unique_ptr<ksp::ui::ProjectMapWindow> mapWindow;
@@ -1453,33 +1503,33 @@ private:
     std::optional<ksp::ProjectData> beforeGenerate;   // the project as it was before the last generation, for Undo
     std::unique_ptr<ksp::ui::MidiMonitorWindow> monitorWindow;
     std::shared_ptr<std::atomic<bool>> monitorOn = std::make_shared<std::atomic<bool>> (false);
+#if KSP_ENABLE_VST_HOST
     int recMode = 1, recTail = 3;   // WAV recording (Tools menu): 1 mix, 2 stems, 3 both; the tail is an index + 1 into the tails
     bool recFollow = true;          // start at the KeyStep's Start and end after its Stop plus the tail
-    juce::Label transportLabel, recStatusLabel;
     std::unique_ptr<ksp::ui::FxWindow> fxWindow;
     std::array<std::unique_ptr<juce::DocumentWindow>, ksp::host::Engine::kFxPositions> fxEditorWindow;
     std::array<std::optional<ksp::studio::PluginSetup>, ksp::host::Engine::kFxPositions> missingFx;   // plugins of the project not on this machine
     std::array<bool, ksp::host::Engine::kFxPositions> fxBypass {};
-    juce::Label meterLabel;
-    std::shared_ptr<std::atomic<bool>> recordingOn = std::make_shared<std::atomic<bool>> (false);
+    juce::Label recStatusLabel, meterLabel;
+#endif
+    juce::Label transportLabel;
+#if KSP_ENABLE_VST_HOST
     std::array<std::unique_ptr<juce::DocumentWindow>, 4> editorWindow;
+#endif
     std::shared_ptr<ksp::studio::Library> library = std::make_shared<ksp::studio::Library> (
-        std::filesystem::path (ksp::host::dataFolder().getChildFile ("Library").getFullPathName().toStdString()));
+        std::filesystem::path (ksp::dataFolder().getChildFile ("Library").getFullPathName().toStdString()));
     std::unique_ptr<ksp::ui::LibraryWindow> libraryWindow;
     ksp::studio::StudioProject current;   // the library project being edited (its plugin setup and name); current.ksp is not kept up to date
     bool haveStudio = false;              // false: what is shown came from a backup or the KeyStep and is not in the library yet
     std::unique_ptr<juce::AlertWindow> nameDialog, closeDialog;
-    std::optional<ksp::model::Overdub> overdub;   // while Rec is on
-    ksp::model::Pattern takeBefore;              // the pattern before the last take, for Undo take
-    bool haveTake = false;
 
     juce::TextButton clearButton, opsButton;
-    juce::TextButton libraryButton, saveButton, saveAsButton, copyButton, openButton, readButton, syncButton, octDown, octUp, recButton, undoTakeButton;
+    juce::TextButton libraryButton, saveButton, saveAsButton, copyButton, openButton, readButton, syncButton, octDown, octUp;
     ksp::ui::TrackTabs trackTabs;
     ksp::ui::SevenSegDisplay lenDisplay { 2 }, bpmDisplay { 5 };
     BusyOverlay busyOverlay;
     juce::String fwReadOnly;   // firmware version of a KeyStep that is connected but not tested: empty when writing is allowed
-    juce::ComboBox projectBox, trackBox, patternBox, lengthBox, rootBox, scaleBox, copyTrackBox, copyPatBox, recChannelBox, stepBox;
+    juce::ComboBox projectBox, trackBox, patternBox, lengthBox, rootBox, scaleBox, copyTrackBox, copyPatBox;
     juce::Label status, octLabel, sectionLabel;
     juce::Viewport viewport;
     PatternGrid grid;
@@ -1506,8 +1556,6 @@ private:
         for (juce::Component* c : { static_cast<juce::Component*> (&openButton), static_cast<juce::Component*> (&readButton) })
             c->setEnabled (! b);
         copyButton.setEnabled (haveProject);
-        recButton.setEnabled (! b && haveProject);
-        undoTakeButton.setEnabled (haveTake && ! overdub);
     }
 
     void say (const juce::String& s) { status.setText (s, juce::dontSendNotification); }
@@ -1554,21 +1602,25 @@ private:
     {
         const bool drums = haveProject && ksp::model::isDrumMode (project);
         for (int t = 0; t < 4; ++t)
-            engine.setChannel (t, haveProject ? ksp::model::effectiveChannel (project, t, drums) : (t == 0 && drums ? 10 : t + 1));
+        {
+            const int ch = haveProject ? ksp::model::effectiveChannel (project, t, drums) : (t == 0 && drums ? 10 : t + 1);
+            trackChannel[static_cast<std::size_t> (t)] = ch;
+#if KSP_ENABLE_VST_HOST
+            engine.setChannel (t, ch);
+#endif
+        }
     }
 
     void loadPattern()
     {
         applyChannels();
-        stopRecording();
-        haveTake = false;
-        undoTakeButton.setEnabled (false);
         commitPattern();
         refreshMap();
         loadedTrack = track();
         loadedPattern = patNo();
         fillPatternBox();
         setDrumView (haveProject && loadedTrack == 1 && ksp::model::isDrumMode (project));
+        refreshCards();   // the Seq / Arp / Drum keys follow the project (the drum view returns below before the other refresh)
         if (! haveProject)
             return;
         if (drumView)
@@ -1635,6 +1687,7 @@ private:
              + " an octave (not written to the KeyStep yet).");
     }
 
+#if KSP_ENABLE_VST_HOST
     /** Scans the VST3 folders (one file at a time in KspVstHelper.exe) and keeps the list: instruments for the tracks, effects for
         their chains. Takes a few minutes the first time. */
     void scanPlugins()
@@ -1679,6 +1732,7 @@ private:
         });
     }
 
+#endif
     // ---- library: the truth of the app. The KeyStep is only a volatile working copy of it.
     void showLibrary()
     {
@@ -1691,7 +1745,12 @@ private:
         juce::Component::SafePointer<MainComponent> self (this);
         libraryWindow = std::make_unique<ksp::ui::LibraryWindow> (
             library,
-            [self] (const std::string& id) { if (self != nullptr) self->openFromLibrary (id); },
+            [self] (const std::string& id) {
+                if (self == nullptr)
+                    return;
+                self->openFromLibrary (id);
+                juce::MessageManager::callAsync ([self] { if (self != nullptr) self->libraryWindow.reset(); });   // the project is in front: the window gets out of the way
+            },
             [self] (const std::string& id) { if (self != nullptr && self->haveStudio && self->current.id == id) self->haveStudio = false; },
             [self] { juce::MessageManager::callAsync ([self] { if (self != nullptr) self->libraryWindow.reset(); }); });
     }
@@ -1710,7 +1769,9 @@ private:
         backup.reset();
         setProject (current.ksp, "Library: " + juce::String (current.name));
         haveStudio = true;   // after setProject, which clears it
+#if KSP_ENABLE_VST_HOST
         restoreTracks();
+#endif
     }
 
     /** Opens the most recently changed library project, if any (at start, so the app is not empty without a KeyStep). */
@@ -1816,7 +1877,9 @@ private:
     {
         current.ksp = project;
         current.ksp.project = 1;
+#if KSP_ENABLE_VST_HOST
         captureTracks();
+#endif
         const auto error = library->save (current);
         haveStudio = error.empty();
         if (error.empty())
@@ -1827,10 +1890,11 @@ private:
         return error.empty();
     }
 
+#if KSP_ENABLE_VST_HOST
     // ---- instruments
     void buildInstrumentRow()
     {
-        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
+        for (int t = 0; t < kTracks; ++t)
         {
             const auto i = static_cast<std::size_t> (t);
             for (juce::Component* c : { static_cast<juce::Component*> (&instLabel[i]), static_cast<juce::Component*> (&instBox[i]),
@@ -1895,7 +1959,7 @@ private:
         instChoices = plugins->instruments();
         std::sort (instChoices.begin(), instChoices.end(),
                    [] (const auto& a, const auto& b) { return a.name.compareIgnoreCase (b.name) < 0; });
-        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
+        for (int t = 0; t < kTracks; ++t)
             rebuildInstBox (t);
     }
 
@@ -2011,9 +2075,47 @@ private:
         });
     }
 
-    // ---- the KeyStep's transport and WAV recording
-    static juce::File recordingsFolder() { return ksp::host::dataFolder().getChildFile ("Recordings"); }
+#else
+    // ---- the four track cards: track number, Seq / Arp (Drum) keys and the arpeggiator settings of tracks 2-4
+    void buildCardRow()
+    {
+        for (int t = 0; t < kTracks; ++t)
+        {
+            const auto i = static_cast<std::size_t> (t);
+            for (juce::Component* c : { static_cast<juce::Component*> (&instLabel[i]), static_cast<juce::Component*> (&seqToggle[i]),
+                                        static_cast<juce::Component*> (&modeToggle[i]) })
+                addAndMakeVisible (*c);
+            seqToggle[i].setButtonText ("Seq");
+            modeToggle[i].setButtonText (t == 0 ? "Drum" : "Arp");
+            seqToggle[i].setTooltip (t == 0 ? "Track 1 plays its sequencer" : "Track " + juce::String (t + 1) + " plays its sequencer");
+            if (t == 0)
+            {
+                modeToggle[0].setTooltip ("Track 1 is a drum track (lit)");
+                seqToggle[0].onClick = [this] { toggleDrumMode (0); refreshCards(); };
+                modeToggle[0].onClick = [this] { toggleDrumMode (1); refreshCards(); };
+            }
+            instLabel[i].setText (juce::String (t + 1), juce::dontSendNotification);
+            instLabel[i].setJustificationType (juce::Justification::centred);
+            instLabel[i].setColour (juce::Label::textColourId, juce::Colours::white);
+            instLabel[i].setFont (juce::FontOptions (15.0f, juce::Font::bold));
+            instLabel[i].setInterceptsMouseClicks (false, false);
+            // a click anywhere on a card, its controls included, selects that track (mouseDown below)
+            for (juce::Component* c : { static_cast<juce::Component*> (&seqToggle[i]), static_cast<juce::Component*> (&modeToggle[i]) })
+                c->addMouseListener (this, true);
+            if (t > 0)
+                for (juce::Component* c : { static_cast<juce::Component*> (&arpModeBox[i - 1]), static_cast<juce::Component*> (&arpOctBox[i - 1]),
+                                            static_cast<juce::Component*> (&arpDivBox[i - 1]), static_cast<juce::Component*> (&arpSwingSlider[i - 1]) })
+                    c->addMouseListener (this, true);
+        }
+        refreshCards();
+    }
 
+#endif
+    // ---- the KeyStep's transport and WAV recording
+#if KSP_ENABLE_VST_HOST
+    static juce::File recordingsFolder() { return ksp::dataFolder().getChildFile ("Recordings"); }
+
+#endif
     static juce::String formatTime (double seconds)
     {
         const int total = static_cast<int> (seconds);
@@ -2022,22 +2124,29 @@ private:
 
     void buildRecordRow()
     {
-        for (juce::Component* c : { static_cast<juce::Component*> (&transportLabel), static_cast<juce::Component*> (&recStatusLabel) })
-            addAndMakeVisible (*c);
+        addAndMakeVisible (transportLabel);
+#if KSP_ENABLE_VST_HOST
+        addAndMakeVisible (recStatusLabel);
+#endif
         addAndMakeVisible (generateButton);
         addAndMakeVisible (mapButton);
         mapButton.setButtonText ("Project Map");
         mapButton.onClick = [this] { showMap(); };
+#if KSP_ENABLE_VST_HOST
         addAndMakeVisible (fxButton);
         fxButton.setButtonText ("FX...");
         fxButton.onClick = [this] { showFx(); };
+#endif
         generateButton.setButtonText ("Generate...");
         generateButton.onClick = [this] { showGenerator(); };
         transportLabel.setText ("STOP", juce::dontSendNotification);
         transportLabel.setFont (juce::FontOptions (13.0f, juce::Font::bold));
+#if KSP_ENABLE_VST_HOST
         recStatusLabel.setFont (juce::FontOptions (12.0f));
+#endif
     }
 
+#if KSP_ENABLE_VST_HOST
     /** The Tools menu: the extras that are not the KeyStep's own (plugins, audio, WAV recording, the MIDI monitor). */
     void showToolsMenu()
     {
@@ -2090,6 +2199,31 @@ private:
         });
     }
 
+#else
+    /** The Tools menu: the MIDI monitor, the octave shift of a track and the manual. */
+    void showToolsMenu()
+    {
+        enum { monitor = 1, down, up, manual };
+        juce::PopupMenu menu;
+        menu.addItem (monitor, "MIDI monitor");
+        menu.addSeparator();
+        menu.addItem (down, "Track -8va", haveProject);
+        menu.addItem (up, "Track +8va", haveProject);
+        menu.addSeparator();
+        menu.addItem (manual, "User manual (PDF)");
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (toolsButton),
+                            [safe = juce::Component::SafePointer<MainComponent> (this)] (int id) {
+            if (safe == nullptr || id == 0)
+                return;
+            auto& m = *safe;
+            if (id == monitor)      m.showMonitor();
+            else if (id == down)    m.transposeCurrentTrack (-12);
+            else if (id == up)      m.transposeCurrentTrack (12);
+            else if (id == manual)  m.openManual();
+        });
+    }
+
+#endif
     /** Opens KeyStepPro-Studio-Manual.pdf (next to the exe, put there by the installer / portable zip) with the system viewer. */
     void openManual()
     {
@@ -2106,6 +2240,7 @@ private:
             say ("Could not open the manual. Open it by hand: " + pdf.getFullPathName());
     }
 
+#if KSP_ENABLE_VST_HOST
     /** Arms the recording: with "Follow the KeyStep" it starts at the KeyStep's Start and ends after its Stop plus the tail. */
     void startWavRecording()
     {
@@ -2159,6 +2294,18 @@ private:
                                     juce::dontSendNotification);
     }
 
+#else
+    /** The KeyStep's clock: PLAY / STOP, position since Start, time and tempo. */
+    void updateTransportUi()
+    {
+        const auto pos = mix::Transport::positionOf (transport.ticks());
+        transportLabel.setText ((transport.playing() ? "PLAY   " : "STOP   ") + juce::String (pos.bar) + "." + juce::String (pos.beat) + "."
+                                    + juce::String (pos.sixteenth) + "    " + formatTime (mix::Transport::secondsOf (transport.ticks(), transport.bpm()))
+                                    + "    " + juce::String (transport.bpm(), 1) + " BPM",
+                                juce::dontSendNotification);
+    }
+
+#endif
     /** The MIDI monitor: what the KeyStep sends while its controls are used. Needs the KeyStep's MIDI port open. */
     void showMonitor()
     {
@@ -2225,7 +2372,6 @@ private:
     {
         if (! haveProject)
             return;
-        stopRecording();
         commitPattern();
         const auto before = project;
         const auto error = n != nullptr ? ksp::model::writeScene (project, sc, *n) : ksp::model::clearScene (project, sc);
@@ -2248,7 +2394,6 @@ private:
     {
         if (! haveProject)
             return;
-        stopRecording();
         commitPattern();
         const auto before = project;
         if (! ksp::model::writeSettings (project, bpm, swing))
@@ -2269,7 +2414,6 @@ private:
     {
         if (! haveProject)
             return;
-        stopRecording();
         commitPattern();
         const auto before = project;
         if (! ksp::model::writeChannel (project, track, channel))
@@ -2333,7 +2477,6 @@ private:
             say ("Open a project, a backup or read one from the KeyStep first: the generator writes into it.");
             return;
         }
-        stopRecording();
         commitPattern();
         edited = false;
         const auto before = project;
@@ -2403,6 +2546,7 @@ private:
         say ("Generation undone: the project is as it was.");
     }
 
+#if KSP_ENABLE_VST_HOST
     void showAudioSettings()
     {
         if (const auto e = engine.start(); e.isNotEmpty())
@@ -2427,7 +2571,7 @@ private:
     void testNotes()
     {
         juce::Component::SafePointer<MainComponent> self (this);
-        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
+        for (int t = 0; t < kTracks; ++t)
             if (engine.instrument (t) != nullptr)
             {
                 engine.midiFromUi (juce::MidiMessage::noteOn (t + 1, 60, 0.8f));
@@ -2447,6 +2591,7 @@ private:
         juce::Timer::callAfterDelay (300, [self, ch, pitch] { if (self != nullptr) self->engine.midiFromUi (juce::MidiMessage::noteOff (ch, pitch)); });
     }
 
+#endif
     /** Slow glow on the sync button while the project has edits not yet written to the KeyStep (rides the existing 10 Hz timer). */
     void updateSyncUi()
     {
@@ -2470,6 +2615,7 @@ private:
         syncButton.repaint();
     }
 
+#if KSP_ENABLE_VST_HOST
     void timerCallback() override
     {
         updatePendingGlow();
@@ -2484,10 +2630,21 @@ private:
         meterLabel.setText (text, juce::dontSendNotification);
     }
 
-    /** The KeyStep's MIDI goes to the instruments (lock-free) and, while Rec is on, to the overdub on the message thread. */
+#else
+    void timerCallback() override
+    {
+        updatePendingGlow();
+        lenDisplay.setText (juce::String (drumView ? drum.length : pattern.length), ksp::ui::palette::trackColour (track() - 1).brighter (0.5f));
+        bpmDisplay.setText (transport.hasTempo() ? juce::String (transport.bpm(), 1) : juce::String ("---"));
+        updateTransportUi();
+    }
+
+#endif
+    /** The KeyStep's MIDI goes to the instruments (lock-free) and, while the MIDI monitor is open, to it on the message thread. */
+#if KSP_ENABLE_VST_HOST
     void installMidiListener()
     {
-        device->setListener ([eng = &engine, rec = recordingOn, mon = monitorOn, safe = juce::Component::SafePointer<MainComponent> (this)] (const juce::MidiMessage& m) {
+        device->setListener ([eng = &engine, mon = monitorOn, safe = juce::Component::SafePointer<MainComponent> (this)] (const juce::MidiMessage& m) {
             eng->midiFromDevice (m);
             if (mon->load())
             {
@@ -2497,22 +2654,32 @@ private:
                         safe->monitorWindow->content().add (bytes);
                 });
             }
-            if (rec->load())
+        });
+    }
+#else
+    void installMidiListener()
+    {
+        device->setListener ([tr = &transport, mon = monitorOn, safe = juce::Component::SafePointer<MainComponent> (this)] (const juce::MidiMessage& m) {
+            if (m.getRawDataSize() == 1 && m.getRawData()[0] >= 0xF8)
+                tr->message (m.getRawData()[0], juce::Time::getMillisecondCounterHiRes() * 0.001);
+            if (mon->load())
             {
                 const auto* raw = m.getRawData();
                 juce::MessageManager::callAsync ([safe, bytes = std::vector<std::uint8_t> (raw, raw + m.getRawDataSize())] {
-                    if (safe != nullptr)
-                        safe->recordMidi (bytes);
+                    if (safe != nullptr && safe->monitorWindow != nullptr)
+                        safe->monitorWindow->content().add (bytes);
                 });
             }
         });
     }
+#endif
 
+#if KSP_ENABLE_VST_HOST
     /** What the tracks hold now (instrument, its state, volume, mute) into the project being saved. A plugin that is missing on
         this machine keeps what the file had. */
     void captureTracks()
     {
-        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
+        for (int t = 0; t < kTracks; ++t)
         {
             const auto i = static_cast<std::size_t> (t);
             auto& ts = current.tracks[i];
@@ -2531,7 +2698,7 @@ private:
     /** Loads the instruments of the project that was just opened (a plugin that cannot be loaded stays as "Missing"). */
     void restoreTracks()
     {
-        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
+        for (int t = 0; t < kTracks; ++t)
         {
             const auto i = static_cast<std::size_t> (t);
             const auto& ts = current.tracks[i];
@@ -2585,7 +2752,7 @@ private:
                 v.pop_back();
             return v;
         };
-        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
+        for (int t = 0; t < kTracks; ++t)
             current.tracks[static_cast<std::size_t> (t)].effects = chain (t * ksp::host::Engine::kInserts, ksp::host::Engine::kInserts);
         current.masterFx = chain (ksp::host::Engine::kMasterFxBase, ksp::host::Engine::kMasterFx);
     }
@@ -2615,7 +2782,7 @@ private:
                 missingFx[i] = *ps;
             }
         };
-        for (int t = 0; t < ksp::host::Engine::kTracks; ++t)
+        for (int t = 0; t < kTracks; ++t)
             for (int k = 0; k < ksp::host::Engine::kInserts; ++k)
             {
                 const auto& v = current.tracks[static_cast<std::size_t> (t)].effects;
@@ -2731,6 +2898,7 @@ private:
         });
     }
 
+#endif
     /** Empties the pattern shown: its notes, or its drum hits in drum view. Length and settings stay; it is a normal edit
         (written with the project, Undo of the generator does not cover it). */
     void clearPattern()
@@ -2850,7 +3018,7 @@ private:
         viewport.setViewedComponent (on ? static_cast<juce::Component*> (&drumGrid) : static_cast<juce::Component*> (&grid), false);
         for (juce::Component* c : { static_cast<juce::Component*> (&rootBox), static_cast<juce::Component*> (&scaleBox),
                                     static_cast<juce::Component*> (&octDown), static_cast<juce::Component*> (&octUp),
-                                    static_cast<juce::Component*> (&octLabel), static_cast<juce::Component*> (&recButton),
+                                    static_cast<juce::Component*> (&octLabel),
                                     static_cast<juce::Component*> (&copyButton), static_cast<juce::Component*> (&copyTrackBox),
                                     static_cast<juce::Component*> (&copyPatBox) })
             c->setEnabled (! on);
@@ -2873,7 +3041,6 @@ private:
 
     void setProject (ksp::ProjectData p, const juce::String& what)
     {
-        stopRecording();
         beforeMapEdit.reset();
         beforeGenerate.reset();   // Undo belongs to the project it was made on
         if (generatorWindow != nullptr)
@@ -2963,7 +3130,11 @@ private:
             post ([ro, fw] (MainComponent& m) {
                 m.fwReadOnly = ro ? fw : juce::String();
                 m.say (ro ? "KeyStep Pro firmware " + fw + " is not tested: read only until it is (tested: 2.5.20)."
+#if KSP_ENABLE_VST_HOST
                           : juce::String ("KeyStep Pro connected: its notes play the instruments of the tracks."));
+#else
+                          : juce::String ("KeyStep Pro connected: its clock and notes are monitored."));
+#endif
             });
         }
         return device != nullptr;
@@ -2983,7 +3154,6 @@ private:
     void readFromDevice (int slot = 0)
     {
         const int p = slot > 0 ? slot : projectBox.getSelectedId();
-        stopRecording();
         work ([this, p] {
             if (! connect())
                 return;
@@ -3007,7 +3177,6 @@ private:
 
     void writeToSlot (int slot)
     {
-        stopRecording();
         commitPattern();
         edited = false;
         auto written = project;
@@ -3047,66 +3216,6 @@ private:
                 msg = "Slot " + juce::String (slot) + " written and verified.";
             post ([msg, ok = after.project && msg.startsWith ("Slot")] (MainComponent& m) { m.say (msg); if (ok) m.unwritten = false; });
         });
-    }
-
-    // ---- overdub (MIDI from the KeyStep; handled on the message thread in arrival order)
-    void startRecording()
-    {
-        if (! haveProject || busy || ! connect())
-            return;
-        takeBefore = pattern;
-        overdub.emplace (stepBox.getSelectedId(), recChannelBox.getSelectedId() - 1);
-        recordingOn->store (true);
-        recButton.setButtonText ("Stop rec");
-        recButton.setColour (juce::TextButton::buttonColourId, ksp::ui::palette::rec);
-        recButton.setColour (juce::TextButton::textColourOffId, juce::Colours::white);
-        undoTakeButton.setEnabled (false);
-        say ("Recording on channel " + juce::String (recChannelBox.getSelectedId()) + ": press Play on the KeyStep and play over the pattern.");
-    }
-
-    void recordMidi (const std::vector<std::uint8_t>& m)
-    {
-        if (! overdub || m.empty())
-            return;
-        const bool wasRunning = overdub->isRunning();
-        if (overdub->handle (pattern, m.data(), m.size()))
-        {
-            edited = true;
-            noteChanged();
-            grid.repaint();
-        }
-        else if (overdub->isRunning() == wasRunning)
-            return;
-        say (juce::String (overdub->isRunning() ? "Recording: " : "Recording (KeyStep stopped): ")
-             + juce::String (overdub->added) + " note(s) added"
-             + (overdub->dropped > 0 ? ", " + juce::String (overdub->dropped) + " did not fit" : juce::String()));
-    }
-
-    void stopRecording()
-    {
-        if (! overdub)
-            return;
-        recordingOn->store (false);
-        const int added = overdub->added, dropped = overdub->dropped;
-        overdub.reset();
-        haveTake = added > 0;
-        recButton.setButtonText ("Rec");
-        recButton.removeColour (juce::TextButton::buttonColourId);
-        recButton.removeColour (juce::TextButton::textColourOffId);
-        undoTakeButton.setEnabled (haveTake);
-        say ("Take: " + juce::String (added) + " note(s) added" + (dropped > 0 ? ", " + juce::String (dropped) + " did not fit" : juce::String())
-             + (added > 0 ? " (not written yet)." : "."));
-    }
-
-    void undoTake()
-    {
-        if (! haveTake || overdub)
-            return;
-        pattern = takeBefore;
-        haveTake = false;
-        undoTakeButton.setEnabled (false);
-        showPattern();
-        say ("Last take removed.");
     }
 
     int loadedTrack = 1, loadedPattern = 1;

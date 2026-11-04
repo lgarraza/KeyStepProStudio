@@ -1,24 +1,40 @@
 # KeyStepPro Studio
 
 A free desktop companion for the **Arturia KeyStep Pro**: edit its sequencer patterns on a big screen, keep a library of
-projects on your computer, and play the KeyStep through your own VST3 instruments without opening a DAW.
+projects on your computer, and generate new music for it. An optional Full edition also plays the KeyStep through your own
+VST3 instruments.
 
 ![KeyStepPro Studio main window](docs/images/main-window.png)
 
 Windows (tested) and macOS (builds from the same code, not tested lately). Not affiliated with Arturia.
+
+## Editions
+
+**We recommend Lite.** The app was made to edit KeyStep Pro projects visually, and Lite does exactly that. Full adds
+VST3 hosting, which takes the app a bit away from that purpose. Both editions are maintained from one source tree
+(CMake option `KSP_ENABLE_VST_HOST`, OFF by default = Lite):
+
+| | **Lite** (recommended) | Full |
+| --- | --- | --- |
+| Pattern editor, library, Project Map, generator, backups, sync, MIDI monitor | yes | yes |
+| KeyStep clock readout (PLAY / STOP, position, BPM) | yes | yes |
+| VST3 instruments, effects, audio output, WAV recording | no | yes |
+
+Lite has no VST3 SDK and no audio engine, so it is smaller and builds faster. Each release has both installers
+(`KeyStepProStudio-Setup-x.y.z.exe` for Lite and `KeyStepProStudio-Full-Setup-x.y.z.exe`); installing one replaces the other.
+Build Full with `cmake -S . -B build-full -DKSP_ENABLE_VST_HOST=ON`.
 
 ## What it does
 
 - **Pattern editor.** Read a project from the KeyStep over USB (or open a backup), see all 64 steps of every pattern,
   add, delete and edit notes (pitch, gate, velocity, time shift, randomness), change length, root and scale, copy patterns,
   shift a track by an octave, and write the result back to the KeyStep.
-- **Overdub.** Press Rec, hit Play on the KeyStep and play over the loop; notes land on the nearest step.
 - **Library.** Your projects live on the computer (`Documents/KeyStepPro Studio/Library`), with names, notes and the
   instruments of each track. The KeyStep's 16 slots are treated as a working area: open and edit projects without the
   KeyStep connected, load one into a slot when you want to play it.
-- **VST3 host.** One VST3 instrument per KeyStep track (T1 to T4 on MIDI channels 1 to 4), up to four effect inserts per
+- **VST3 host (Full edition).** One VST3 instrument per KeyStep track (T1 to T4 on MIDI channels 1 to 4), up to four effect inserts per
   track and a master effect chain with a limiter. The KeyStep is the clock: its Play and Stop drive the app.
-- **WAV recording** of the mix and/or one stem per track, started and stopped by the KeyStep's transport.
+- **WAV recording (Full edition)** of the mix and/or one stem per track, started and stopped by the KeyStep's transport.
 - **Generator** (Generate...): writes patterns and scenes into the open project in a style (Ambient with four moods,
   Techno, House deep / chill / melodic, Drum & bass) with a seed, pattern chains and undo. The styles add drums on track 1
   and set the project tempo.
@@ -52,7 +68,7 @@ start writing to your KeyStep.
 
 ## Install (Windows)
 
-1. Download `KeyStepProStudio-Setup-x.y.z.exe` from [Releases](../../releases) and run it. It installs the app, the
+1. Download `KeyStepProStudio-Setup-x.y.z.exe` (Lite, recommended; `KeyStepProStudio-Full-Setup-x.y.z.exe` adds VST3 hosting) from [Releases](../../releases) and run it. It installs the app, the
    VST3 helper and the command-line tools, and adds a Start menu entry. Prefer no installer? Download
    `KeyStepProStudio-x.y.z-portable.zip` instead, unzip it anywhere and run `KeyStepPro Studio.exe`.
 2. The installer and the app are **not code-signed** (see [docs/signing.md](docs/signing.md)). Windows SmartScreen will
@@ -69,7 +85,7 @@ start writing to your KeyStep.
    selected note. Switch track and pattern at the top.
 3. **Save** keeps the project in your library. **Write to slot** sends it to a slot from 10 to 16 (backed up and
    verified as described above).
-4. To play it through VST3 instruments: **Scan plugins** once, pick an instrument per track in the rows under the grid,
+4. Full edition only: to play it through VST3 instruments: **Scan plugins** once, pick an instrument per track in the rows under the grid,
    choose your audio device with **Audio...**, and press Play on the KeyStep.
 
 **New to the app?** Start with the [User guide](docs/manual/user/README.md). Developer notes: [docs/manual](docs/manual/README.md).
@@ -84,7 +100,7 @@ Installed next to the app; useful for backups and troubleshooting.
 | `KspBackup` | no | Backup of all projects and the global settings to JSON (about 10 minutes). |
 | `KspRestore` | only with `--write` | Restore a project from a backup to a slot (backup first, read back after). |
 | `KspGen` | only with `--write` | Generate an ambient project, or a style with `--style`, into a slot. |
-| `KspHostCheck` | no | Check that a VST3 instrument or effect loads, sounds and restores its state. |
+| `KspHostCheck` (Full only) | no | Check that a VST3 instrument or effect loads, sounds and restores its state. |
 
 Details in [docs/manual/02-tools.md](docs/manual/02-tools.md).
 

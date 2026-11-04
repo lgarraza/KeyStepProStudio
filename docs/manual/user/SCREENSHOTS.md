@@ -15,6 +15,7 @@ Save as PNG in `img/`, named as below. Add numbered red callouts (1, 2, 3...) ma
 | `shot-end-drag.png` | 5 | END grip on the line, hovered (lit, white outline) with the dimmed area after it |
 | `shot-instruments.png` | 6 (done, 0.6.0) | Four track cards (color per track, one selected, others dimmed) with plugins loaded |
 | `shot-plugins.png` | 6 (done) | Plugins... window (Hide column) |
+| `shot-track-cards.png` | 6 (done, Lite edition) | Four track cards without instrument rows: number, Seq / Arp keys, arp settings |
 | `shot-generate.png` | 7 (done) | Generate... window |
 | `shot-library.png` | 8 (done) | Library window with a few projects |
 | `shot-close-warning.png` | 8 (done) | The Save / Discard / Cancel dialog |

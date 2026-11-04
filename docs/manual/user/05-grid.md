@@ -16,7 +16,7 @@
 ## Add, select, delete
 
 - **Left click** an empty cell: adds a note (up to 16 per step). New notes take the pattern's default gate and
-  velocity, and the track's instrument plays it briefly so you hear what you put.
+  velocity, and (Full edition) the track's instrument plays it briefly so you hear what you put.
 - **Left click** a note: selects it.
 - **Right click** a note: deletes it.
 - **Note names:** every key in the left column is named (the Cs in bold, middle C = C3 as on the KeyStep Pro), and
@@ -51,7 +51,7 @@ When track 1 is in drum mode (set on the KeyStep, or by a generated style) its g
 notes, kick at the bottom, each named after the KeyStep's default drum map (kick 36, snare 38, clap 39, closed hat 42,
 open hat 46 ...). Click a cell to add or remove a hit and drag to paint more; the mouse wheel on a hit changes its
 velocity (darker = louder); click a lane name to hear it. END and the length box work as for notes. Root, scale,
-octave, the knobs, Rec and Copy do not apply to drums. The KeyStep holds up to 192 hits per pattern.
+octave, the knobs and Copy do not apply to drums. The KeyStep holds up to 192 hits per pattern.
 
 The **Drum** key on card 1 (and **Seq** for the sequencer) switches track 1 between drum and sequencer mode (lit = drums). Both kinds of patterns
 stay stored, so switching back loses nothing. **Clear** (left of *Copy to*) empties the pattern you are looking at,

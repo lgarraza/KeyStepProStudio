@@ -78,12 +78,12 @@ int main()
     // 2. Transport: the tempo from the clock, Start / Continue / Stop, the position from the ticks
     {
         mix::Transport tr;
-        CHECK (2, ! tr.playing() && tr.ticks() == 0 && tr.bpm() == 120.0);
+        CHECK (2, ! tr.playing() && tr.ticks() == 0 && tr.bpm() == 120.0 && ! tr.hasTempo());
         const double dt = 60.0 / (90.0 * 24.0);   // 90 BPM
         double t = 1.0;
         for (int i = 0; i < 200; ++i, t += dt)
             tr.message (0xF8, t);
-        CHECK (2, std::abs (tr.bpm() - 90.0) < 0.1 && ! tr.playing() && tr.ticks() == 0);   // the clock runs, nothing plays: no position
+        CHECK (2, tr.hasTempo() && std::abs (tr.bpm() - 90.0) < 0.1 && ! tr.playing() && tr.ticks() == 0);   // the clock runs, nothing plays: no position
 
         tr.message (0xFA, t);   // Start
         CHECK (2, tr.playing() && tr.ticks() == 0 && tr.starts() == 1);

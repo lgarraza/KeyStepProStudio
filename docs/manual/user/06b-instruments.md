@@ -1,4 +1,6 @@
-# 6. Tracks and instruments (VST3)
+# 6b. Instruments and effects (VST3, Full edition only)
+
+> The Lite edition has none of this: no plugins, no audio output. The track cards then show only the number and the Seq / Arp keys ([chapter 6](06-track-cards.md)).
 
 **You will:** give each KeyStep track a VST3 instrument and hear the sequencer through your computer.
 

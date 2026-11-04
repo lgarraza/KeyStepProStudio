@@ -25,7 +25,7 @@ I made a free, open-source desktop app for the KeyStep Pro and I'd like to share
 [list]
 [li]Read and write projects over USB (SysEx), with the KeyStep's 16 slots used as working memory.[/li]
 [li]Full backups of all projects and global settings to JSON.[/li]
-[li]Grid editor: all 64 steps of every pattern, notes with pitch, gate, velocity, time shift and randomness, length, root and scale, copy patterns, overdub recording.[/li]
+[li]Grid editor: all 64 steps of every pattern, notes with pitch, gate, velocity, time shift and randomness, length, root and scale, copy patterns.[/li]
 [li]Drum grid for track 1 in drum mode.[/li]
 [li]Project Map: scenes x tracks with a mini piano roll in each cell. Pick the pattern a track plays in a scene, copy / paste / clear scenes, Undo.[/li]
 [li]Generate: writes patterns and scenes into the open project in a style (Ambient, Techno, House, Drum & bass), with a seed and undo.[/li]

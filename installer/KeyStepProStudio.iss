@@ -9,6 +9,14 @@
   #define BuildDir "..\build"
 #endif
 
+; Default = Lite edition (editor only, recommended): output KeyStepProStudio-Setup-x.y.z.exe.
+; Full edition (adds VST3 hosting): ISCC /DFull=1; output KeyStepProStudio-Full-Setup-x.y.z.exe. Same AppId, so they replace each other.
+#ifdef Full
+  #define Edition "-Full"
+#else
+  #define Edition ""
+#endif
+
 #define AppName "KeyStepPro Studio"
 #define AppExe "KeyStepPro Studio.exe"
 
@@ -31,7 +39,7 @@ LicenseFile=..\LICENSE
 SetupIconFile=..\App\Resources\icon.ico
 UninstallDisplayIcon={app}\{#AppExe}
 OutputDir=..\dist
-OutputBaseFilename=KeyStepProStudio-Setup-{#AppVersion}
+OutputBaseFilename=KeyStepProStudio{#Edition}-Setup-{#AppVersion}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -42,17 +50,26 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [InstallDelete]
 ; the helper was called KspScanner.exe up to v0.4.1
 Type: files; Name: "{app}\KspScanner.exe"
+#ifndef Full
+; going from Full to Lite
+Type: files; Name: "{app}\KspVstHelper.exe"
+Type: files; Name: "{app}\tools\KspHostCheck.exe"
+#endif
 
 [Files]
 ; the app and its VST3 helper (the app looks for KspVstHelper.exe next to itself)
 Source: "{#BuildDir}\KeyStepProStudio_artefacts\Release\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
+#ifdef Full
 Source: "{#BuildDir}\KspVstHelper_artefacts\Release\KspVstHelper.exe"; DestDir: "{app}"; Flags: ignoreversion
+#endif
 ; command-line tools
 Source: "{#BuildDir}\KspProbe_artefacts\Release\KspProbe.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
 Source: "{#BuildDir}\KspBackup_artefacts\Release\KspBackup.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
 Source: "{#BuildDir}\KspRestore_artefacts\Release\KspRestore.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
 Source: "{#BuildDir}\KspGen_artefacts\Release\KspGen.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
+#ifdef Full
 Source: "{#BuildDir}\KspHostCheck_artefacts\Release\KspHostCheck.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
+#endif
 ; documents
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\dist\KeyStepPro-Studio-Manual.pdf"; DestDir: "{app}"; Flags: ignoreversion

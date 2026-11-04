@@ -22,6 +22,9 @@ App JUCE 8 (Standalone, Windows y Mac) para el Arturia KeyStep Pro: editor de pr
 - No mencionar otros proyectos de Leo en el código ni en los docs (Leo, 2026-10-30): el repo es público y trata solo del KSP.
 - Testear lo justo (app personal): `protocol_test` y los tests sin JUCE de lo que se toca.
 
+## Ediciones (Leo, 2026-11-04)
+- Un solo repo, dos builds, las dos mantenidas: Lite (solo editor) es la edición PRINCIPAL y recomendada (Leo: el host de VST aleja la app de su propósito, editar proyectos visualmente); Full agrega VST3, audio y WAV. Opción CMake `KSP_ENABLE_VST_HOST` (OFF por defecto = Lite) y macro `KSP_ENABLE_VST_HOST` en App/Main.cpp, App/LibraryWindow.h. Lite no enlaza juce_audio_processors / audio_utils ni compila Source/Host. Todo lo que sea del editor, la sincronización y el MIDI va en las dos; el código de VST solo dentro de `#if KSP_ENABLE_VST_HOST`. Source/Mix/Transport.h (reloj del KSP) y App/AppFolders.h son comunes. Instaladores: `build-installer.ps1` (Lite, sin sufijo: KeyStepProStudio-Setup-x.y.z.exe) y `-Full` (KeyStepProStudio-Full-Setup-x.y.z.exe). CI compila las dos ediciones en Windows y Mac.
+
 ## Build
 - `cmake -S . -B build -DCMAKE_BUILD_TYPE=Release` y `cmake --build build --config Release`. JUCE 8.0.4 se descarga solo (FetchContent) o se usa uno local con `-DJUCE_DIR=...`.
 - Windows: Visual Studio 2022/2026 con CMake (o `cmake -G "Visual Studio 17 2022"`). Mac: Xcode o Ninja.
@@ -39,7 +42,6 @@ App JUCE 8 (Standalone, Windows y Mac) para el Arturia KeyStep Pro: editor de pr
 - Tools/KspRestore/Main.cpp: fase 1b, `--file X --project N [--to M] [--write]`: backup previo del slot (ksp-pre-restore-P<M>-*.json), sin `--write` es un dry run; con `--write` abre sesión, manda, commit (3 s) y relee. Solo manda tramas al slot M (`ksp::isWriteFor`).
 - App/KspStyle.h: look del KeyStep Pro (paleta chasis blanco / panel negro / colores de track verde-naranja-amarillo-rojo, botones grises con bisel, brillo en lo encendido, KspLookAndFeel, TrackTabs, SevenSegDisplay de 7 segmentos). Los colores van en ksp::ui::palette; no hardcodear colores en las ventanas.
 - App/Main.cpp: KeyStepProStudio (fase 2): editor de patterns, abre un backup o lee del equipo, escribe a los 16 slots con backup previo y relectura. Source/Ksp/Device.h (JUCE): open, readSlot, backupSlot, writeSlot; lo usan la app y KspRestore.
-- Source/Model/Overdub.h: grabación en tiempo real (overdub) sobre un Pattern desde MIDI crudo: clock desde Start, paso más cercano módulo el largo, solo suma notas y salta las que ya están en el paso (el KSP tocando lo guardado). Lo usa el botón Rec de la app con Device::setListener.
 - Source/Model/Pattern.h: un pattern de secuenciador (largo, root, escala, pasos con notas) leído de y escrito en un ProjectData, sin tocar el equipo; después `writePlan` lo manda. Portado de edReadPattern / edWritePattern de KSCON. No toca drums ni arpegiador.
 - Source/Model/NoteMove.h: mover / copiar un grupo de notas de un Pattern (arrastre del grid), todo o nada, y sameSteps para el Undo del grid; tests/notemove_test.cpp.
 - Source/Model/PatternOps.h: nudge / reverse / invert de un Pattern entero (botón Ops de la app); tests/patternops_test.cpp.
@@ -57,7 +59,7 @@ App JUCE 8 (Standalone, Windows y Mac) para el Arturia KeyStep Pro: editor de pr
 - App/GeneratorWindow.h: la ventana Generate... (estilo, mood, semilla, cadenas, velocidad) que escribe patterns y scenes en el proyecto abierto, con deshacer.
 - Source/Gen/Theory.h (Chord, Params, escalas, RNG) + Roles.h (motor de roles: RoleSpec = drone/pad/melody/bells/bass/stab con densidad, registro, largo, pulsos y gate; euclid; makeDrumPattern con DrumSpec) + Ambient.h (el preset ambient = 4 RoleSpec, misma salida que antes: hash congelado en tests/gen_test.cpp) + Styles.h (presets techno/house/dnb: drums en el track 1 en drum mode, bajo, acordes, lead; `applyStyle`) + Arrangement.h (arreglo musical: 8 scenes con curva de energía; patterns 1-5 drums, 1-12 y 16 vacío en T2-T4; `applyArrangement`). En drum mode el instrumento del track 1 escucha el canal 10.
 - Source/Gen/Ambient.h: generador ambient (4 tracks, largos 16/13/17/19, semilla, scenes, cadenas, moods ethereal/dark/meditative). Tools/KspGen/Main.cpp: lo escribe a un slot 10-16 con backup y relectura. tests/gen_test.cpp.
-- tests/protocol_test.cpp: tramas contra las capturas de KSCON en hardware. tests/backup_test.cpp: plan, lectura con un equipo falso y JSON. tests/restore_test.cpp: JSON ida y vuelta, orden de envío, arreglo de drums, relectura. tests/pattern_test.cpp: leer / editar / escribir un pattern, límites. tests/overdub_test.cpp: cuantizado al paso, dedupe, canal, Start/Stop/Continue, límites.
+- tests/protocol_test.cpp: tramas contra las capturas de KSCON en hardware. tests/backup_test.cpp: plan, lectura con un equipo falso y JSON. tests/restore_test.cpp: JSON ida y vuelta, orden de envío, arreglo de drums, relectura. tests/pattern_test.cpp: leer / editar / escribir un pattern, límites.
 
 ## Manual
 - docs/manual/ (inglés): README con el estado por fase, protocolo y reglas de seguridad, herramientas, modelo, app y bitácora de hardware. Cada PR que cambie comportamiento, herramientas o resultados lo actualiza; es el contexto para tareas futuras. Conciso.
