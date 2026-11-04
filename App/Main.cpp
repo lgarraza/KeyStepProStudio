@@ -1647,6 +1647,7 @@ private:
         loadedPattern = patNo();
         fillPatternBox();
         setDrumView (haveProject && loadedTrack == 1 && ksp::model::isDrumMode (project));
+        refreshCards();   // the Seq / Arp / Drum keys follow the project (the drum view returns below before the other refresh)
         if (! haveProject)
             return;
         if (drumView)
@@ -1771,7 +1772,12 @@ private:
         juce::Component::SafePointer<MainComponent> self (this);
         libraryWindow = std::make_unique<ksp::ui::LibraryWindow> (
             library,
-            [self] (const std::string& id) { if (self != nullptr) self->openFromLibrary (id); },
+            [self] (const std::string& id) {
+                if (self == nullptr)
+                    return;
+                self->openFromLibrary (id);
+                juce::MessageManager::callAsync ([self] { if (self != nullptr) self->libraryWindow.reset(); });   // the project is in front: the window gets out of the way
+            },
             [self] (const std::string& id) { if (self != nullptr && self->haveStudio && self->current.id == id) self->haveStudio = false; },
             [self] { juce::MessageManager::callAsync ([self] { if (self != nullptr) self->libraryWindow.reset(); }); });
     }

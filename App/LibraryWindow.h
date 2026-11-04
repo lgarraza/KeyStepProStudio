@@ -155,6 +155,7 @@ private:
     }
 
     void selectedRowsChanged (int) override { updateButtons(); }
+    void returnKeyPressed (int) override { openSelected(); }
     void cellDoubleClicked (int row, int, const juce::MouseEvent&) override
     {
         table.selectRow (row);
