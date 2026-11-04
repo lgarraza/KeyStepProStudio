@@ -10,7 +10,7 @@ Windows and macOS (universal app, ad-hoc signed, not notarized). Not affiliated 
 
 ## Editions
 
-**We recommend Lite.** The app was made to edit KeyStep Pro projects visually, and Lite does exactly that. Full adds
+**Both editions are free and open source (AGPL-3.0).** **We recommend Lite.** The app was made to edit KeyStep Pro projects visually, and Lite does exactly that. Full adds
 VST3 hosting, which takes the app a bit away from that purpose. Both editions are maintained from one source tree
 (CMake option `KSP_ENABLE_VST_HOST`, OFF by default = Lite):
 
