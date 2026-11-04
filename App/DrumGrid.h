@@ -21,6 +21,7 @@ public:
     static constexpr int kCellW = 18, kCellH = 14, kNameW = 96, kRulerH = 18, kLanes = ksp::model::kDrumLanes;
 
     std::function<void()> onEdited;
+    std::function<void (int note, int velocity)> onHit;   // a hit was added or a lane name clicked: it is heard
     std::function<void (int)> onLastStep;                  // the ruler was clicked or dragged: the new length, 1..64
     std::function<void (const juce::String&)> onMessage;   // e.g. the 192 hits limit
 
@@ -176,6 +177,8 @@ public:
         const int lane = laneAt (e.y);
         if (e.x < kNameW)
         {
+            if (onHit)
+                onHit (laneNote (lane), 100);
             return;
         }
         const int step = stepAt (e.x);
@@ -252,6 +255,8 @@ private:
         h.lane = lane;
         h.step = step;
         hits.push_back (h);
+        if (onHit)
+            onHit (laneNote (lane), h.velocity);
         edited();
     }
 

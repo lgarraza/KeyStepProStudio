@@ -11,11 +11,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, macos-latest]
+        edition: [full, lite]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" "-DKSP_ENABLE_VST_HOST=${{ matrix.edition == 'full' && 'ON' || 'OFF' }}"
       - name: Build
         run: cmake --build build --config Release --parallel
       - name: Tests

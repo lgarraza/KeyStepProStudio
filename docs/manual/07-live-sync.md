@@ -8,7 +8,7 @@ engineering, not tried here) or **to check** (needs the MIDI monitor, see the en
 
 | Information | Source | State |
 | --- | --- | --- |
-| Notes played by each track (note, velocity, on / off), on the track's MIDI channel | MIDI notes | verified |
+| Notes played by each track (note, velocity, on / off), on the track's MIDI channel | MIDI notes | verified (the instruments play from it) |
 | Tempo | MIDI clock (24 per quarter), measured | verified (78.9 BPM read from project 16) |
 | Play / stop / continue | Start, Stop, Continue | verified |
 | Position (bar.beat.16th) since the last Start | counting the clock ticks | verified (shown in the transport row) |

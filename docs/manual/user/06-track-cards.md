@@ -4,6 +4,8 @@
 
 ## Per track
 
+This chapter is what the **Lite** edition shows. The Full edition adds the instrument, fader, mute and solo to each card ([chapter 6b](06b-instruments.md)).
+
 Above the grid there are four cards, one per track, each in the track's own color (T1 green, T2 orange, T3 yellow,
 T4 red) so you can tell tracks apart at a glance. The card of the selected track is full color with a thick white border; the
 others are dimmed. Click anywhere on a card (its controls too) to select its track; the pointer turns into a hand over the cards you can select. Each card has:
@@ -28,4 +30,4 @@ flowchart LR
   K -- "every control" --> M[MIDI monitor]
 ```
 
-**Watch out:** the app does not make sound. Play the KeyStep through its own outputs or your DAW; the app edits what the KeyStep plays.
+**Watch out:** in the Lite edition the app does not make sound. Play the KeyStep through its own outputs or your DAW; the app edits what the KeyStep plays.

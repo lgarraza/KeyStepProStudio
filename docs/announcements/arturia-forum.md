@@ -73,6 +73,7 @@ Existing files in this repo:
 | --- | --- | --- |
 | 1 | `docs/images/main-window.png` | Main window with the grid editor (lead image) |
 | 2 | `docs/images/project-map.png` | Project Map: scenes by tracks |
+| 3 | `docs/images/fx-window.png` | Effects window: four inserts per track and master chain |
 
 Raw URLs once on `main`:
 `https://raw.githubusercontent.com/lgarraza/KeyStepProStudio/main/docs/images/main-window.png` (same pattern for the others).

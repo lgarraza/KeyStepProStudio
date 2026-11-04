@@ -62,6 +62,8 @@ target_link_libraries(KspCompare PRIVATE ksp_core)
 # JUCE: a local checkout with -DJUCE_DIR=..., otherwise downloaded once into the build folder.
 # KSP_TESTS_ONLY=ON skips JUCE entirely (fast checks of the no-JUCE code).
 option(KSP_TESTS_ONLY "Build only the tests without JUCE" OFF)
+# Full edition (ON) hosts VST3 instruments and effects and records WAV; Lite (OFF) is the editor alone, without the VST3 SDK.
+option(KSP_ENABLE_VST_HOST "Build the Full edition with VST3 hosting (OFF = Lite)" ON)
 if(NOT KSP_TESTS_ONLY)
     set(JUCE_DIR "" CACHE PATH "Local JUCE checkout (empty = download)")
     if(JUCE_DIR)
@@ -115,17 +117,46 @@ if(NOT KSP_TESTS_ONLY)
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
 
+    if(KSP_ENABLE_VST_HOST)
+        # Phase 3: out-of-process VST3 scanner (one plugin file per run; a crash kills only this process).
+        juce_add_console_app(KspVstHelper PRODUCT_NAME "KspVstHelper")
+        target_sources(KspVstHelper PRIVATE Tools/KspVstHelper/Main.cpp)
+        target_compile_definitions(KspVstHelper PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_PLUGINHOST_VST3=1 JUCE_PLUGINHOST_AU=0)
+        target_link_libraries(KspVstHelper PRIVATE
+            juce::juce_audio_processors
+            juce::juce_recommended_config_flags
+            juce::juce_recommended_warning_flags)
+
+        # Phase 3: checks that a scanned VST3 instrument loads, sounds and restores its state (no audio device, no window).
+        juce_add_console_app(KspHostCheck PRODUCT_NAME "KspHostCheck")
+        target_sources(KspHostCheck PRIVATE Tools/KspHostCheck/Main.cpp)
+        target_compile_definitions(KspHostCheck PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_PLUGINHOST_VST3=1 JUCE_PLUGINHOST_AU=0)
+        target_link_libraries(KspHostCheck PRIVATE
+            ksp_core
+            juce::juce_audio_processors
+            juce::juce_audio_formats
+            juce::juce_recommended_config_flags
+            juce::juce_recommended_warning_flags)
+    endif()
+
     # Phase 2: KeyStepPro Studio, the editor app.
     # Icon: App/Resources/*.png from Tools/make_icon.py (the four track colours); JUCE makes the .ico / .icns.
     juce_add_gui_app(KeyStepProStudio PRODUCT_NAME "KeyStepPro Studio" COMPANY_NAME "KeyStepPro Studio"
         BUNDLE_ID io.github.lgarraza.keystepprostudio
         ICON_BIG App/Resources/icon.png ICON_SMALL App/Resources/icon_small.png)
     target_sources(KeyStepProStudio PRIVATE App/Main.cpp)
-    target_compile_definitions(KeyStepProStudio PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_APPLICATION_NAME_STRING="KeyStepPro Studio" JUCE_APPLICATION_VERSION_STRING="${PROJECT_VERSION}")
+    target_compile_definitions(KeyStepProStudio PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 KSP_ENABLE_VST_HOST=$<BOOL:${KSP_ENABLE_VST_HOST}> JUCE_APPLICATION_NAME_STRING="KeyStepPro Studio" JUCE_APPLICATION_VERSION_STRING="${PROJECT_VERSION}")
     target_link_libraries(KeyStepProStudio PRIVATE
         ksp_core
         juce::juce_gui_basics
         juce::juce_audio_devices
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
+    if(KSP_ENABLE_VST_HOST)
+        target_compile_definitions(KeyStepProStudio PRIVATE JUCE_PLUGINHOST_VST3=1 JUCE_PLUGINHOST_AU=0)
+        target_link_libraries(KeyStepProStudio PRIVATE juce::juce_audio_processors juce::juce_audio_utils)
+        add_dependencies(KeyStepProStudio KspVstHelper)
+        add_custom_command(TARGET KeyStepProStudio POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:KspVstHelper> $<TARGET_FILE_DIR:KeyStepProStudio>)
+    endif()
 endif()

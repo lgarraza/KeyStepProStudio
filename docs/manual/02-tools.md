@@ -26,3 +26,17 @@ to drum mode and gets the style's drum patterns, and tracks 2-4 get bass, chords
 (KspBackup output) using the same rules as the read-back check (`writePlan` fix-ups, then `compareReadBack`). Use it when a tool says
 "value block(s) differ" to see which blocks.
 
+## KspVstHelper (VST3 helper, run by the app)
+
+`KspVstHelper <plugin file> <result.xml>`: loads one VST3 file, writes its plugin descriptions to the XML and exits 0; a crash kills only
+this process. Not meant to be run by hand; the app starts it per file.
+
+## KspHostCheck (no device, no window)
+
+`KspHostCheck "plugin name"`: loads an instrument of the scanned list, plays a note, reports the peak, saves its state as text, loads it
+again, restores the state and plays again. Exit 0 when it sounds and the state round-trips.
+
+`KspHostCheck "effect name" --effect`: the same for an effect: a noise burst through it, then through a second instance with the restored state.
+
+`KspHostCheck --record`: the WAV recorder with a synthetic signal: manual mode with the mix and every stem, sync mode (nothing before Start, the music
+and the tail after Stop, it closes by itself) and an armed recording that never started; the files are read back and measured.

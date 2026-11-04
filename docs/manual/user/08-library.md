@@ -4,17 +4,17 @@
 
 ## Library
 
-**Library...** lists your projects (name, date, contents). **Open** (or double click), **Duplicate**,
+**Library...** lists your projects (name, date, contents, instruments). **Open** (or double click), **Duplicate**,
 **Delete**. They are files in `Documents\KeyStepPro Studio\Library\`, so you can back that folder up.
 
-![The Library window: name, last change and KeyStep project of each project](img/shot-library.png)
+![The Library window: name, last change, KeyStep project and instruments of each project](img/shot-library.png)
 
 ## Save
 
 - **Save** puts the project into the Library. The first time it asks for a **name** (a project read from the KeyStep or
   opened from a backup is always new to the library); after that it overwrites.
 - **Save as...** asks a name and keeps a new copy.
-- The Library file also keeps the generator settings. (Projects saved by older versions may hold VST3 plugin settings; the app no longer uses them but keeps them in the file.)
+- The Library file also keeps the instruments (state, volume, mute) and the generator settings.
 
 ## Closing
 

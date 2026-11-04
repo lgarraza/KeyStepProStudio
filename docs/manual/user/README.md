@@ -13,12 +13,17 @@ Short, task-oriented chapters. Each one says what you will do, how, and what to 
 | 4 | [Backups](04-backups.md) | ready |
 | 5 | [The pattern grid](05-grid.md) | ready |
 | 6 | [Track cards and the clock](06-track-cards.md) | ready |
+| 6b | [Instruments and effects (VST3, Full edition only)](06b-instruments.md) | ready |
 | 7 | [Generate](07-generate.md) | ready |
 | 8 | [Save, Library and closing](08-library.md) | ready |
 | 9 | [Project Map](09-project-map.md) | ready |
 | 9b | Tools menu | coming (**Tools > User manual (PDF)** opens this guide; see below) |
 | 10 | Dragging steps in the grid | coming |
-| 11 | MIDI monitor | next batch |
+| 11 | WAV recording (Full edition); MIDI monitor | next batch |
+
+## Editions
+
+**Full** hosts VST3 instruments and effects and records WAV; **Lite** is the editor alone. Parts marked *Full edition* do not exist in Lite.
 
 ## This guide as a PDF
 

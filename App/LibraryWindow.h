@@ -1,6 +1,6 @@
 /*
     LibraryWindow.h
-    The window with the Studio library: one row per project (name, last change, what the KeyStep project holds).
+    The window with the Studio library: one row per project (name, last change, what the KeyStep project holds, the instruments),
     Open (also a double click), Duplicate and Delete. The library is the truth of the app (the KeyStep Pro's memory is only a
     volatile working copy), so this works without a KeyStep connected. JUCE, message thread.
 */
@@ -33,6 +33,9 @@ public:
         h.addColumn ("Name", 1, 240, 100, 600);
         h.addColumn ("Changed", 2, 140, 80, 220);
         h.addColumn ("KeyStep project", 3, 270, 100, 500);
+#if KSP_ENABLE_VST_HOST
+        h.addColumn ("Instruments", 4, 200, 80, 500);
+#endif
         h.setStretchToFitActive (true);
 
         openButton.setButtonText ("Open");
@@ -139,6 +142,13 @@ private:
             text = juce::String (e.modified).replaceCharacter ('T', ' ').upToFirstOccurrenceOf ("Z", false, false);
         else if (column == 3)
             text = e.summary;
+#if KSP_ENABLE_VST_HOST
+        else
+        {
+            for (const auto& n : e.instruments)
+                text += (text.isEmpty() ? "" : ", ") + juce::String (n);
+        }
+#endif
         g.setColour (ksp::ui::palette::ink);
         g.setFont (14.0f);
         g.drawText (text, 4, 0, w - 8, h, juce::Justification::centredLeft, true);
