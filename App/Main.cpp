@@ -3307,6 +3307,12 @@ private:
         {
             edited = true;
             noteChanged();
+            const int pitch = m[1];
+            if (pitch < lowPitch || pitch >= lowPitch + kRows)
+            {
+                lowPitch = std::min (96, pitch / 12 * 12);   // the grid shows two octaves: scroll to the note that was just added
+                showPattern();
+            }
             grid.repaint();
         }
         else if (overdub->ignoredStopped != stopped)
