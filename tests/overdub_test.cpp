@@ -42,6 +42,17 @@ int main()
 
     // 1. Before Start nothing is recorded
     CHECK (1, ! send (o, p, 0x90, 64, 90));
+    CHECK (1, o.ignoredStopped == 1 && o.ignoredChannel == 0);
+
+    // 1b. Armed while the KeyStep already plays: join() takes the position from the app's tick count
+    {
+        Pattern q;
+        q.length = 16;
+        Overdub j (6, 0);
+        j.join (13);   // tick 13 -> step index 2
+        CHECK (11, j.isRunning() && send (j, q, 0x90, 65, 90) && has (q, 2, 65));
+        CHECK (11, ! send (j, q, 0x91, 66, 90) && j.ignoredChannel == 1 && j.lastOtherChannel == 2);
+    }
 
     // 2. After Start: the stored note on step 1 is skipped (the sequencer playing it), a new pitch is added
     send (o, p, 0xFA);

@@ -3275,12 +3275,26 @@ private:
             return;
         takeBefore = pattern;
         overdub.emplace (stepBox.getSelectedId(), recChannelBox.getSelectedId() - 1);
+        if (clock().playing())
+            overdub->join (clock().ticks());   // Play was pressed before Rec: no Start will come, follow the app's tick count
         recordingOn->store (true);
         recButton.setButtonText ("Stop rec");
         recButton.setColour (juce::TextButton::buttonColourId, ksp::ui::palette::rec);
         recButton.setColour (juce::TextButton::textColourOffId, juce::Colours::white);
         undoTakeButton.setEnabled (false);
-        say ("Recording on channel " + juce::String (recChannelBox.getSelectedId()) + ": press Play on the KeyStep and play over the pattern.");
+        say ("Recording on channel " + juce::String (recChannelBox.getSelectedId())
+             + (overdub->isRunning() ? ": the KeyStep is playing, play over the pattern."
+                                     : ": press Play on the KeyStep and play over the pattern."));
+    }
+
+    /** The KeyStep's clock: the engine's in the Full edition, the app's own in Lite. */
+    const mix::Transport& clock() const
+    {
+#if KSP_ENABLE_VST_HOST
+        return engine.transport();
+#else
+        return transport;
+#endif
     }
 
     void recordMidi (const std::vector<std::uint8_t>& m)
@@ -3288,11 +3302,23 @@ private:
         if (! overdub || m.empty())
             return;
         const bool wasRunning = overdub->isRunning();
+        const int stopped = overdub->ignoredStopped, otherCh = overdub->ignoredChannel;
         if (overdub->handle (pattern, m.data(), m.size()))
         {
             edited = true;
             noteChanged();
             grid.repaint();
+        }
+        else if (overdub->ignoredStopped != stopped)
+        {
+            say ("Note ignored: Rec waits for the KeyStep's Start (press Stop and Play on the KeyStep).");
+            return;
+        }
+        else if (overdub->ignoredChannel != otherCh)
+        {
+            say ("Note ignored: it came on channel " + juce::String (overdub->lastOtherChannel) + ", Rec listens on channel "
+                 + juce::String (recChannelBox.getSelectedId()) + " (change Ch next to Rec).");
+            return;
         }
         else if (overdub->isRunning() == wasRunning)
             return;

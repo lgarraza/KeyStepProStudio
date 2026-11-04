@@ -39,8 +39,19 @@ public:
             case 0xF8: if (running) ++clocks; return false;
             default: break;
         }
-        if (! running || size < 3 || (m[0] & 0xF0) != 0x90 || m[2] == 0 || (m[0] & 0x0F) != channel)
+        if (size < 3 || (m[0] & 0xF0) != 0x90 || m[2] == 0)
+            return false;   // not a note-on
+        if (! running)
+        {
+            ++ignoredStopped;
             return false;
+        }
+        if ((m[0] & 0x0F) != channel)
+        {
+            ++ignoredChannel;
+            lastOtherChannel = (m[0] & 0x0F) + 1;
+            return false;
+        }
 
         auto& step = pt.steps[static_cast<std::size_t> (stepAt (pt.length))];
         const int pitch = m[1];
@@ -73,7 +84,14 @@ public:
 
     bool isRunning() const noexcept { return running; }
 
+    /** The KeyStep was already playing when Rec was armed: no Start will come, so take the position from the clock the app
+        has been counting since the last Start (`ticks`, 24 per quarter note). */
+    void join (long ticks) noexcept { running = true; clocks = ticks - 1; }
+
     int added = 0, dropped = 0;   // notes recorded / refused because the step (16) or the pattern (192) was full
+    int ignoredStopped = 0;       // note-ons that arrived before any Start (nothing to align them to)
+    int ignoredChannel = 0;       // note-ons on another channel than the one recorded
+    int lastOtherChannel = 0;     // 1..16, the channel of the last of those
 
 private:
     int clocksPerStep, channel;
