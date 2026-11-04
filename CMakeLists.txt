@@ -62,8 +62,9 @@ target_link_libraries(KspCompare PRIVATE ksp_core)
 # JUCE: a local checkout with -DJUCE_DIR=..., otherwise downloaded once into the build folder.
 # KSP_TESTS_ONLY=ON skips JUCE entirely (fast checks of the no-JUCE code).
 option(KSP_TESTS_ONLY "Build only the tests without JUCE" OFF)
-# Full edition (ON) hosts VST3 instruments and effects and records WAV; Lite (OFF) is the editor alone, without the VST3 SDK.
-option(KSP_ENABLE_VST_HOST "Build the Full edition with VST3 hosting (OFF = Lite)" ON)
+# Lite (OFF, the default and the recommended edition) is the editor alone, without the VST3 SDK.
+# Full (ON) adds VST3 instruments and effects, audio output and WAV recording.
+option(KSP_ENABLE_VST_HOST "Build the Full edition with VST3 hosting (OFF = Lite, the default)" OFF)
 if(NOT KSP_TESTS_ONLY)
     set(JUCE_DIR "" CACHE PATH "Local JUCE checkout (empty = download)")
     if(JUCE_DIR)

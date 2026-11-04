@@ -1,12 +1,13 @@
 # Builds KeyStepPro Studio (Release), its Windows installer and a portable zip, and writes SHA256SUMS.txt (both files) next to it in dist\.
-#   powershell -ExecutionPolicy Bypass -File installer\build-installer.ps1 [-JuceDir F:\path\to\JUCE] [-SkipBuild] [-Lite]
-#   -Lite builds the edition without VST3 hosting (build-lite\, KeyStepProStudio-Lite-*).
+#   powershell -ExecutionPolicy Bypass -File installer\build-installer.ps1 [-JuceDir F:\path\to\JUCE] [-SkipBuild] [-Full]
+#   Default: the Lite edition (editor only, recommended; build\, KeyStepProStudio-*).
+#   -Full builds the edition with VST3 hosting (build-full\, KeyStepProStudio-Full-*).
 # Needs CMake, Visual Studio 2022 or newer (C++ workload) and Inno Setup 6 (winget install JRSoftware.InnoSetup)
 # and pandoc (winget install JohnMacFarlane.Pandoc) for the manual PDF; Edge or Chrome renders it.
 param(
     [string]$JuceDir = "",
     [switch]$SkipBuild,
-    [switch]$Lite
+    [switch]$Full
 )
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
@@ -16,12 +17,12 @@ Set-Location $root
 $match = Select-String -Path CMakeLists.txt -Pattern 'project\(KeyStepProStudio VERSION ([0-9.]+)'
 if (-not $match) { throw "No version in CMakeLists.txt" }
 $version = $match.Matches[0].Groups[1].Value
-$buildName = if ($Lite) { "build-lite" } else { "build" }
-$edition = if ($Lite) { "-Lite" } else { "" }
+$buildName = if ($Full) { "build-full" } else { "build" }
+$edition = if ($Full) { "-Full" } else { "" }
 
 if (-not $SkipBuild) {
     $configure = @("-S", ".", "-B", $buildName, "-DCMAKE_BUILD_TYPE=Release")
-    if ($Lite) { $configure += "-DKSP_ENABLE_VST_HOST=OFF" }
+    $configure += "-DKSP_ENABLE_VST_HOST=$(if ($Full) { 'ON' } else { 'OFF' })"
     if ($JuceDir) { $configure += "-DJUCE_DIR=$JuceDir" }
     cmake @configure
     if ($LASTEXITCODE -ne 0) { throw "CMake configure failed" }
@@ -41,7 +42,7 @@ $iscc = @(
 if (-not $iscc) { throw "Inno Setup 6 not found (winget install JRSoftware.InnoSetup)" }
 
 $isccArgs = @("/DAppVersion=$version", "/DBuildDir=$root\$buildName")
-if ($Lite) { $isccArgs += "/DLite=1" }
+if ($Full) { $isccArgs += "/DFull=1" }
 & $iscc @isccArgs "installer\KeyStepProStudio.iss"
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
 
@@ -52,9 +53,9 @@ if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 New-Item -ItemType Directory -Path "$stage\tools" | Out-Null
 $bd = Join-Path $root $buildName
 Copy-Item "$bd\KeyStepProStudio_artefacts\Release\KeyStepPro Studio.exe" $stage
-if (-not $Lite) { Copy-Item "$bd\KspVstHelper_artefacts\Release\KspVstHelper.exe" $stage }
+if ($Full) { Copy-Item "$bd\KspVstHelper_artefacts\Release\KspVstHelper.exe" $stage }
 $tools = @("KspProbe", "KspBackup", "KspRestore", "KspGen")
-if (-not $Lite) { $tools += "KspHostCheck" }
+if ($Full) { $tools += "KspHostCheck" }
 foreach ($t in $tools) {
     Copy-Item "$bd\${t}_artefacts\Release\$t.exe" "$stage\tools"
 }

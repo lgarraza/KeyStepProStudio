@@ -15,7 +15,7 @@ powershell -ExecutionPolicy Bypass -File installer\build-installer.ps1
 
 It builds Release into `build\`, compiles the installer into `dist\KeyStepProStudio-Setup-<version>.exe`, zips the same
 files as `dist\KeyStepProStudio-<version>-portable.zip` (no installer: unzip anywhere and run) and writes
-`dist\SHA256SUMS.txt` with the SHA-256 of both. Options: `-JuceDir <path>` to use a local JUCE, `-SkipBuild` to package what is already built, `-Lite` for the edition without VST3 hosting (builds into `build-lite\`, writes `KeyStepProStudio-Lite-Setup-<version>.exe`, `KeyStepProStudio-Lite-<version>-portable.zip` and `SHA256SUMS-Lite.txt`).
+`dist\SHA256SUMS.txt` with the SHA-256 of both. Options: `-JuceDir <path>` to use a local JUCE, `-SkipBuild` to package what is already built, `-Full` for the edition with VST3 hosting (builds into `build-full\`, writes `KeyStepProStudio-Full-Setup-<version>.exe`, `KeyStepProStudio-Full-<version>-portable.zip` and `SHA256SUMS-Full.txt`). Without `-Full` it builds Lite, the recommended edition.
 The version comes from `project(... VERSION x.y.z)` in `CMakeLists.txt`.
 
 ## Release

@@ -1,7 +1,8 @@
 # KeyStepPro Studio
 
 A free desktop companion for the **Arturia KeyStep Pro**: edit its sequencer patterns on a big screen, keep a library of
-projects on your computer, and play the KeyStep through your own VST3 instruments without opening a DAW.
+projects on your computer, and generate new music for it. An optional Full edition also plays the KeyStep through your own
+VST3 instruments.
 
 ![KeyStepPro Studio main window](docs/images/main-window.png)
 
@@ -9,17 +10,19 @@ Windows (tested) and macOS (builds from the same code, not tested lately). Not a
 
 ## Editions
 
-One source tree, two builds (CMake option `KSP_ENABLE_VST_HOST`, ON by default):
+**We recommend Lite.** The app was made to edit KeyStep Pro projects visually, and Lite does exactly that. Full adds
+VST3 hosting, which takes the app a bit away from that purpose. Both editions are maintained from one source tree
+(CMake option `KSP_ENABLE_VST_HOST`, OFF by default = Lite):
 
-| | Full | Lite |
+| | **Lite** (recommended) | Full |
 | --- | --- | --- |
 | Pattern editor, library, Project Map, generator, backups, sync, MIDI monitor | yes | yes |
 | KeyStep clock readout (PLAY / STOP, position, BPM) | yes | yes |
-| VST3 instruments, effects, audio output, WAV recording | yes | no |
+| VST3 instruments, effects, audio output, WAV recording | no | yes |
 
-Lite has no VST3 SDK and no audio engine, so it is smaller and builds faster. Both are in each release
-(`KeyStepProStudio-Setup-x.y.z.exe` and `KeyStepProStudio-Lite-Setup-x.y.z.exe`); installing one replaces the other.
-Build Lite with `cmake -S . -B build-lite -DKSP_ENABLE_VST_HOST=OFF`.
+Lite has no VST3 SDK and no audio engine, so it is smaller and builds faster. Each release has both installers
+(`KeyStepProStudio-Setup-x.y.z.exe` for Lite and `KeyStepProStudio-Full-Setup-x.y.z.exe`); installing one replaces the other.
+Build Full with `cmake -S . -B build-full -DKSP_ENABLE_VST_HOST=ON`.
 
 ## What it does
 
@@ -66,7 +69,7 @@ start writing to your KeyStep.
 
 ## Install (Windows)
 
-1. Download `KeyStepProStudio-Setup-x.y.z.exe` (or `KeyStepProStudio-Lite-Setup-x.y.z.exe` for the edition without VST3) from [Releases](../../releases) and run it. It installs the app, the
+1. Download `KeyStepProStudio-Setup-x.y.z.exe` (Lite, recommended; `KeyStepProStudio-Full-Setup-x.y.z.exe` adds VST3 hosting) from [Releases](../../releases) and run it. It installs the app, the
    VST3 helper and the command-line tools, and adds a Start menu entry. Prefer no installer? Download
    `KeyStepProStudio-x.y.z-portable.zip` instead, unzip it anywhere and run `KeyStepPro Studio.exe`.
 2. The installer and the app are **not code-signed** (see [docs/signing.md](docs/signing.md)). Windows SmartScreen will

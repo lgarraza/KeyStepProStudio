@@ -23,7 +23,7 @@ Short, task-oriented chapters. Each one says what you will do, how, and what to 
 
 ## Editions
 
-**Full** hosts VST3 instruments and effects and records WAV; **Lite** is the editor alone. Parts marked *Full edition* do not exist in Lite.
+**Lite** (recommended) is the editor alone: it edits and generates KeyStep Pro projects visually. **Full** adds VST3 instruments and effects and WAV recording. Both are maintained. Parts marked *Full edition* do not exist in Lite.
 
 ## This guide as a PDF
 

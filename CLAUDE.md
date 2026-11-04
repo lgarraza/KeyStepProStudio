@@ -23,7 +23,7 @@ App JUCE 8 (Standalone, Windows y Mac) para el Arturia KeyStep Pro: editor de pr
 - Testear lo justo (app personal): `protocol_test` y los tests sin JUCE de lo que se toca.
 
 ## Ediciones (Leo, 2026-11-04)
-- Un solo repo, dos builds: Full (VST3, audio, WAV) y Lite (solo editor). Opción CMake `KSP_ENABLE_VST_HOST` (ON por defecto) y macro `KSP_ENABLE_VST_HOST` en App/Main.cpp, App/LibraryWindow.h. Lite no enlaza juce_audio_processors / audio_utils ni compila Source/Host. Todo lo que sea del editor, la sincronización y el MIDI va en las dos; el código de VST solo dentro de `#if KSP_ENABLE_VST_HOST`. Source/Mix/Transport.h (reloj del KSP) y App/AppFolders.h son comunes. Instaladores: `build-installer.ps1` y `-Lite`. CI compila las dos ediciones en Windows y Mac.
+- Un solo repo, dos builds, las dos mantenidas: Lite (solo editor) es la edición PRINCIPAL y recomendada (Leo: el host de VST aleja la app de su propósito, editar proyectos visualmente); Full agrega VST3, audio y WAV. Opción CMake `KSP_ENABLE_VST_HOST` (OFF por defecto = Lite) y macro `KSP_ENABLE_VST_HOST` en App/Main.cpp, App/LibraryWindow.h. Lite no enlaza juce_audio_processors / audio_utils ni compila Source/Host. Todo lo que sea del editor, la sincronización y el MIDI va en las dos; el código de VST solo dentro de `#if KSP_ENABLE_VST_HOST`. Source/Mix/Transport.h (reloj del KSP) y App/AppFolders.h son comunes. Instaladores: `build-installer.ps1` (Lite, sin sufijo: KeyStepProStudio-Setup-x.y.z.exe) y `-Full` (KeyStepProStudio-Full-Setup-x.y.z.exe). CI compila las dos ediciones en Windows y Mac.
 
 ## Build
 - `cmake -S . -B build -DCMAKE_BUILD_TYPE=Release` y `cmake --build build --config Release`. JUCE 8.0.4 se descarga solo (FetchContent) o se usa uno local con `-DJUCE_DIR=...`.

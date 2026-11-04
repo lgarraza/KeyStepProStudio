@@ -14,7 +14,7 @@
    `SHA256SUMS.txt` on the release page. The release notes also link the VirusTotal scans.
 4. Start **KeyStepPro Studio** from the Start menu (installer) or run the exe (zip).
 
-The installer also adds `KspVstHelper.exe` (VST3 helper, Full edition) and the command-line tools. The **Lite** edition (`KeyStepProStudio-Lite-Setup-x.y.z.exe`) has no VST3 parts; installing one edition replaces the other.
+The installer also adds `KspVstHelper.exe` (VST3 helper, Full edition) and the command-line tools. That helper only comes with the **Full** edition (`KeyStepProStudio-Full-Setup-x.y.z.exe`). We recommend the **Lite** edition (`KeyStepProStudio-Setup-x.y.z.exe`), which has no VST3 parts; installing one edition replaces the other.
 
 ## First run
 
