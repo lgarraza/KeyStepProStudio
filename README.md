@@ -6,11 +6,11 @@ VST3 instruments.
 
 ![KeyStepPro Studio main window](docs/images/main-window.png)
 
-Windows (tested) and macOS (builds from the same code, not tested lately). Not affiliated with Arturia.
+Windows and macOS (universal app, ad-hoc signed, not notarized). Not affiliated with Arturia.
 
 ## Editions
 
-**We recommend Lite.** The app was made to edit KeyStep Pro projects visually, and Lite does exactly that. Full adds
+**Both editions are free and open source (AGPL-3.0).** **We recommend Lite.** The app was made to edit KeyStep Pro projects visually, and Lite does exactly that. Full adds
 VST3 hosting, which takes the app a bit away from that purpose. Both editions are maintained from one source tree
 (CMake option `KSP_ENABLE_VST_HOST`, OFF by default = Lite):
 
@@ -20,8 +20,13 @@ VST3 hosting, which takes the app a bit away from that purpose. Both editions ar
 | KeyStep clock readout (PLAY / STOP, position, BPM) | yes | yes |
 | VST3 instruments, effects, audio output, WAV recording | no | yes |
 
+The screenshot above is Lite. In **Full**, each track card also has an instrument box, a fader, mute and solo, and a button
+for its effects:
+
+![Full edition: instrument, fader, mute and solo on each track card](docs/manual/user/img/shot-instruments.png)
+
 Lite has no VST3 SDK and no audio engine, so it is smaller and builds faster. Each release has both installers
-(`KeyStepProStudio-Setup-x.y.z.exe` for Lite and `KeyStepProStudio-Full-Setup-x.y.z.exe`); installing one replaces the other.
+(`KeyStepProStudio-Setup-x.y.z.exe` for Lite and `KeyStepProStudio-Full-Setup-x.y.z.exe`), plus macOS zips (`KeyStepProStudio[-Full]-x.y.z-mac.zip`); installing one replaces the other.
 Build Full with `cmake -S . -B build-full -DKSP_ENABLE_VST_HOST=ON`.
 
 ## What it does
