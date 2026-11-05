@@ -9,3 +9,4 @@ ksp_probe_report.txt
 exp/
 *.patch
 dist/
+CLAUDE.md
