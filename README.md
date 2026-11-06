@@ -136,6 +136,8 @@ To build the Windows installer, see [installer/README.md](installer/README.md).
 
 ## Status and limits
 
+See [docs/LIMITATIONS.md](docs/LIMITATIONS.md) for what we tried, what did not work, and where the app's real limits are.
+
 Working and used live: pattern editing, the library, the VST3 host, recording and the generator. Not done yet: plugin
 latency compensation. Only VST3 plugins are hosted (no AU, no VST2).
 
